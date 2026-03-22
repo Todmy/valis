@@ -7,7 +7,7 @@ WORKSPACE := $(shell pwd)
 
 VOLUMES := \
 	-v "$(CLAUDE_DIR):/home/claude/.claude" \
-	-v "$(CLAUDE_JSON):/home/claude/.claude.json:ro" \
+	-v "$(CLAUDE_JSON):/home/claude/.claude.json" \
 	-v "$(WORKSPACE):/workspace" \
 	-v "$(GITCONFIG):/home/claude/.gitconfig:ro"
 
