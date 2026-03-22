@@ -16,7 +16,7 @@ RUN npm install -g @anthropic-ai/claude-code
 RUN useradd -m -s /bin/bash claude
 
 # Alias
-RUN echo 'alias cc="claude --dangerously-skip-permissions"' >> /home/claude/.bashrc
+RUN echo 'alias cc="claude --dangerously-skip-permissions --yes"' >> /home/claude/.bashrc
 
 USER claude
 
