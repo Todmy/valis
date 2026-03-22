@@ -12,10 +12,12 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 # Claude Code
 RUN npm install -g @anthropic-ai/claude-code
 
-# Supabase CLI
-RUN curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.deb -o /tmp/supabase.deb \
-    && dpkg -i /tmp/supabase.deb \
-    && rm /tmp/supabase.deb
+# Supabase CLI (via npx at runtime — global install not supported)
+# Use: npx supabase <command>
+
+# Non-root user (claude --dangerously-skip-permissions refuses root)
+RUN useradd -m -s /bin/bash claude
+USER claude
 
 WORKDIR /workspace
 

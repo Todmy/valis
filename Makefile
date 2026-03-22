@@ -1,12 +1,14 @@
 IMAGE_NAME := teamind-claude
 CLAUDE_DIR := $(HOME)/.claude
+CLAUDE_JSON := $(HOME)/.claude.json
 GITCONFIG := $(HOME)/.gitconfig
 WORKSPACE := $(shell pwd)
 
 DOCKER_RUN := docker run --rm -it \
-	-v "$(CLAUDE_DIR):/root/.claude" \
+	-v "$(CLAUDE_DIR):/home/claude/.claude" \
+	-v "$(CLAUDE_JSON):/home/claude/.claude.json:ro" \
 	-v "$(WORKSPACE):/workspace" \
-	-v "$(GITCONFIG):/root/.gitconfig:ro" \
+	-v "$(GITCONFIG):/home/claude/.gitconfig:ro" \
 	$(IMAGE_NAME)
 
 CLAUDE_FLAGS := --dangerously-skip-permissions \
@@ -30,9 +32,10 @@ run-task: build
 ## Open a shell inside the container for debugging
 shell: build
 	docker run --rm -it \
-		-v "$(CLAUDE_DIR):/root/.claude" \
+		-v "$(CLAUDE_DIR):/home/claude/.claude" \
+		-v "$(CLAUDE_JSON):/home/claude/.claude.json:ro" \
 		-v "$(WORKSPACE):/workspace" \
-		-v "$(GITCONFIG):/root/.gitconfig:ro" \
+		-v "$(GITCONFIG):/home/claude/.gitconfig:ro" \
 		--entrypoint bash \
 		$(IMAGE_NAME)
 
