@@ -79,13 +79,13 @@ Per-org daily operation counters.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
-| id | UUID | Primary key, auto-generated |
 | org_id | UUID | NOT NULL, FK → orgs.id |
-| date | date | NOT NULL |
+| day | date | NOT NULL, default CURRENT_DATE |
 | store_count | integer | NOT NULL, default 0 |
 | search_count | integer | NOT NULL, default 0 |
 
-**Uniqueness**: (org_id, date) is unique — one row per org per day.
+**Identity**: Composite primary key `(org_id, day)` — no separate UUID.
+Matches v5 schema exactly.
 
 ## Relationships
 
@@ -144,9 +144,9 @@ not a status — pending decisions have `status: active`.
 | Metric | Free tier | Expected max (paid) |
 |--------|-----------|---------------------|
 | Decisions per org | 500 | 10,000 |
-| Members per org | 3 | 50 |
+| Members per org | 5 | 50 |
 | Store ops per day | 100 | 1,000 |
-| Search ops per day | 200 | 2,000 |
+| Search ops per day | 100 | 2,000 |
 
 ## Indexes
 
@@ -154,10 +154,34 @@ not a status — pending decisions have `status: active`.
 - `orgs.api_key` (unique, used for auth on every request)
 - `orgs.invite_code` (unique, used for join)
 - `decisions.org_id` (filter all queries by org)
+- `decisions.(org_id, type)` (composite, for type-filtered queries)
 - `decisions.(org_id, content_hash)` (unique, dedup)
+- `decisions.session_id` (for cross-layer dedup lookups)
 - `decisions.created_at` (sort by recency)
-- `rate_limits.(org_id, date)` (unique, daily counter lookup)
+- `rate_limits.(org_id, day)` (composite PK, daily counter lookup)
 
 **Qdrant**:
 - `org_id` payload index (keyword, used as filter on every query)
 - `type` payload index (keyword, optional filter)
+
+## Row Level Security (RLS)
+
+Postgres RLS enforces tenant isolation at the database level:
+
+- **decisions**: `SELECT/INSERT/UPDATE/DELETE` restricted to rows where
+  `org_id` matches the authenticated org. Policy uses `current_setting('app.org_id')`.
+- **members**: Same pattern — scoped to `org_id`.
+- **rate_limits**: Same pattern — scoped to `org_id`.
+- **orgs**: Accessible only via API key lookup in Edge Functions.
+
+RLS is enforced server-side. Even if client code has a bug, cross-org
+data leakage is impossible at the database layer.
+
+## MVP Naming Differences from v5
+
+| v5 field | MVP field | Reason |
+|----------|-----------|--------|
+| `members.name` | `members.author_name` | Clarity — distinguishes from org name |
+| `members.created_at` | `members.joined_at` | Semantic accuracy — members join, not create |
+| `members.api_key` | (omitted) | MVP trade-off — org-level key only, Phase 2 RBAC |
+| `rate_limits PK` | Composite `(org_id, day)` | Aligned with v5 — no unnecessary UUID |

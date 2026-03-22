@@ -41,7 +41,7 @@
 - [ ] T005 [P] Define 7 error message constants (cloud_unreachable, org_not_found, invite_invalid, free_tier_limit, secret_detected, qdrant_unreachable, dual_write_partial) in packages/cli/src/errors.ts
 - [ ] T006 [P] Implement config store (loadConfig, saveConfig, updateConfig with 0600 permissions) in packages/cli/src/config/store.ts
 - [ ] T007 [P] Implement manifest tracker (loadManifest, saveManifest, trackFile for uninstall) in packages/cli/src/config/manifest.ts
-- [ ] T008 Create Supabase Postgres schema (orgs, members, decisions, rate_limits tables with indexes and RLS policies) in supabase/migrations/001_init.sql per data-model.md
+- [ ] T008 Create Supabase project config (supabase/config.toml) and Postgres schema (orgs, members, decisions, rate_limits tables with indexes, RLS policies, composite PK on rate_limits) in supabase/migrations/001_init.sql per data-model.md
 - [ ] T009 [P] Implement Edge Function create-org (generate UUID, API key tm_ + 32 hex, invite code XXXX-XXXX, INSERT org + member in transaction) in supabase/functions/create-org/index.ts per edge-functions contract
 - [ ] T010 [P] Implement Edge Function join-org (validate invite code, check member limit, INSERT member) in supabase/functions/join-org/index.ts per edge-functions contract
 - [ ] T012 Implement Supabase client (storeDecision, searchDecisions via RPC, getDashboardStats, healthCheck, batchStore for seed) in packages/cli/src/cloud/supabase.ts

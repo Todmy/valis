@@ -319,6 +319,17 @@ condition and verify the message includes action steps.
 - What happens when the Qdrant free tier limit is reached? Store
   succeeds in the relational database (source of truth). Vector search
   write fails and is retried. Search degrades but doesn't crash.
+- What happens on WSL2 where file watching is unreliable? Chokidar
+  handles it via polling fallback. If watcher fails entirely, log
+  warning and rely on MCP-only capture + startup sweep.
+- What happens when Claude Code cleans up transcripts after 30 days
+  (default cleanupPeriodDays)? `teamind init` sets cleanupPeriodDays
+  to 99999 to prevent this. If transcripts are already deleted,
+  startup sweep finds nothing — no crash.
+- What happens when the file watcher reads a partial JSONL line
+  (file still being written)? Buffer the incomplete line, process
+  only complete lines terminated by newline. awaitWriteFinish option
+  in chokidar provides 300ms stability threshold.
 
 ## Requirements *(mandatory)*
 
@@ -393,8 +404,8 @@ condition and verify the message includes action steps.
 - Decision relationships (depends_on, replaces) are deferred to Phase 2.
 - The team brain dashboard is CLI-only in MVP; web dashboard is a future
   cloud feature.
-- The free tier has reasonable limits (e.g., 500 decisions, 3 members)
-  sufficient for early adoption.
+- The free tier has reasonable limits (500 decisions, 5 devs,
+  100 searches/day) per v5 pricing table.
 
 ## Success Criteria *(mandatory)*
 
