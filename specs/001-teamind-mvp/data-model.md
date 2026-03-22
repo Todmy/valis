@@ -37,6 +37,11 @@ A person belonging to an organization.
 **Identity**: UUID primary key.
 **Uniqueness**: (org_id, author_name) should be unique within an org.
 
+**MVP trade-off**: design-spec-v5 defines per-member API keys
+(`members.api_key`). MVP uses org-level API key + local author_name
+instead — simpler key distribution, adequate for attribution. Per-member
+keys (individual revocation, audit trail) deferred to Phase 2 RBAC.
+
 ### Decision
 
 The core data object. Stored in both Postgres and Qdrant.

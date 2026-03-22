@@ -66,11 +66,11 @@
 - [ ] T018 [P] [US1] Implement Claude Code MCP config writer (JSON merge into settings.json, stop hook config, cleanupPeriodDays: 99999) in packages/cli/src/ide/claude-code.ts
 - [ ] T019 [P] [US1] Implement Codex MCP config writer (write to .codex/ mcp config) in packages/cli/src/ide/codex.ts
 - [ ] T020 [P] [US1] Implement CLAUDE.md/AGENTS.md marker injection (create if missing, append between <!-- teamind:start/end --> markers, idempotent, never modify parent-level) in packages/cli/src/ide/claude-code.ts (extend)
-- [ ] T021 [P] [US1] Implement seed parser: extract decisions from CLAUDE.md in packages/cli/src/seed/parse-claude-md.ts
+- [ ] T021 [P] [US1] Implement seed parser: extract decisions from CLAUDE.md in packages/cli/src/seed/parse-claude-md.ts (reference: docs/validation/seed-claude-md.js)
 - [ ] T022 [P] [US1] Implement seed parser: extract decisions from AGENTS.md in packages/cli/src/seed/parse-agents-md.ts
-- [ ] T023 [P] [US1] Implement seed parser: extract decisions from git log (recent meaningful commits) in packages/cli/src/seed/parse-git-log.ts
+- [ ] T023 [P] [US1] Implement seed parser: extract decisions from git log (recent meaningful commits) in packages/cli/src/seed/parse-git-log.ts (reference: docs/validation/seed-git-log.js)
 - [ ] T024 [US1] Implement seed orchestrator (run all parsers, batch store to Supabase + Qdrant, report count) in packages/cli/src/seed/index.ts
-- [ ] T025 [US1] Implement init command (interactive prompts, create/join org via Edge Functions, save config, detect IDEs, configure MCP, inject markers, run seed, verify round-trip, print invite code) in packages/cli/src/commands/init.ts
+- [ ] T025 [US1] Implement init command (interactive prompts, create/join org via Edge Functions, save config, detect IDEs, configure MCP + --dangerously-load-development-channels flag, inject markers, run seed, verify round-trip, print invite code) in packages/cli/src/commands/init.ts
 - [ ] T026 [US1] Implement CLI entry point with commander (register init + version + help) in packages/cli/bin/teamind.ts
 
 **Checkpoint**: `teamind init` works end-to-end. Org created, IDEs configured, decisions seeded.
@@ -85,7 +85,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts
+- [ ] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts (reference: docs/validation/mcp-prototype.js, contracts/channel-events.md § Implementation Constraints)
 - [ ] T028 [US2] Implement teamind_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
 - [ ] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity, push channel capture reminder) in packages/cli/src/capture/watcher.ts
 - [ ] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.teamind/hook-port) in packages/cli/src/capture/hook-handler.ts
@@ -328,3 +328,14 @@ Address during implementation:
   `<!-- teamind:start/end -->` markers not specified in contracts.
   Define during T020 implementation — derive from MCP tool descriptions
   and design-spec-v5 § CLAUDE.md instructions.
+
+Docs/ coverage (added 2026-03-22):
+- **contracts/channel-events.md**: Added Implementation Constraints
+  section with channel research details (meta key format, console.error
+  requirement, --dangerously-load-development-channels flag, Enterprise
+  channelsEnabled setting, bug #36800, auth requirement).
+- **T021, T023**: Added prototype references (docs/validation/seed-*.js)
+- **T025**: Added --dangerously-load-development-channels flag to init
+- **T027**: Added MCP prototype + channel constraints references
+- **docs/validation/extraction-prompt.md**: NOT needed for MVP — Haiku
+  enrichment removed in v5. Startup sweep stores raw text as pending.

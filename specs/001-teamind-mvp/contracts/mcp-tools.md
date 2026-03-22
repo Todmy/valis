@@ -32,6 +32,20 @@ Store a team decision into the shared team brain.
       "type": "array",
       "items": { "type": "string" },
       "description": "Affected areas, e.g. ['auth', 'payments']"
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Confidence score (optional, 1-10)"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project directory name (optional, auto-detected from cwd)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session UUID for cross-layer dedup (optional, auto-detected)"
     }
   },
   "required": ["text"]

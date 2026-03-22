@@ -2,6 +2,7 @@
 
 **Protocol**: MCP channel push (`notifications/claude/channel`)
 **Requirement**: Claude Code v2.1.80+ with `--channels` flag
+**Research source**: `docs/claude-code-channels-research.md`
 
 ## capture_reminder
 
@@ -51,3 +52,47 @@ required — informational only.
   For MVP, the MCP server pushes to local channel only (its own
   session). Cross-session push (Dev A → Dev B) requires Supabase
   Realtime or polling — scoped for later in MVP if time permits.
+
+## Implementation Constraints (from channels research)
+
+**Server setup**:
+- Declare capability: `{ experimental: { 'claude/channel': {} } }`
+- Provide `instructions` string in Server constructor — injected into
+  Claude's system prompt. Use to tell the agent what events to expect.
+- Push via `mcp.notification({ method: 'notifications/claude/channel',
+  params: { content, meta } })`
+- `meta` keys MUST be identifiers only: `[a-z0-9_]`. Hyphens and
+  special characters are silently dropped. Use `event`, `author`,
+  `type` — not `event-type` or `decision-id`.
+
+**Logging**:
+- All server logging MUST use `console.error`. `console.log` writes
+  to stdout which is reserved for MCP protocol — using it breaks
+  the stdio transport.
+
+**Development mode**:
+- Custom (non-marketplace) channels require:
+  `claude --dangerously-load-development-channels server:teamind`
+- `teamind init` MUST configure this flag in Claude Code settings
+  or document it as a manual step.
+- Research preview only — when channels graduate to stable, switch
+  to `--channels` flag.
+
+**Enterprise/Team orgs**:
+- `channelsEnabled` must be enabled in managed settings by org admin
+  at `claude.ai → Admin settings → Claude Code → Channels`.
+- If disabled, channel events are silently dropped. MCP tools still
+  work (pull-based). Document this in `teamind status` output.
+
+**Auth requirement**:
+- Channels require claude.ai login. API key auth and Console auth
+  are NOT supported. Document in README prerequisites.
+
+**Known issues**:
+- Bug #36800: Claude Code can spawn duplicate plugin instances
+  mid-session, causing 409 Conflict and tool loss. Mitigation:
+  handle gracefully — if MCP server detects duplicate startup,
+  log warning and exit cleanly.
+
+**Transport**: stdio only. Claude Code spawns the channel server as
+a subprocess.
