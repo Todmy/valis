@@ -21,7 +21,7 @@ Store a team decision into the shared team brain.
     "type": {
       "type": "string",
       "enum": ["decision", "constraint", "pattern", "lesson"],
-      "description": "Decision classification (optional, defaults to pending)"
+      "description": "Decision classification (optional). If omitted, server stores as type 'pending'"
     },
     "summary": {
       "type": "string",
