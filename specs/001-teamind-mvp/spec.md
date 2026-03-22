@@ -51,14 +51,15 @@ invite code, join from a second machine, verify shared access.
 Developers work with their AI agents as usual. Teamind automatically
 captures decisions through multiple layers without manual effort:
 
-1. **Channel reminders (primary)**: Teamind monitors transcript activity.
-   After significant work (15+ min of activity, or session end), it
-   sends a reminder to the agent. The agent — which has full session
-   context — summarizes and stores classified decisions.
-2. **Keyword triggers + explicit store (secondary)**: When the user says
-   "запам'ятай", "збережи", "remember this", or "store this", the
-   agent calls the store tool. Agent can also store proactively based on
-   CLAUDE.md instructions.
+1. **CLAUDE.md keyword triggers + explicit store (baseline)**: Agent
+   stores decisions proactively based on CLAUDE.md instructions, or
+   when the user says "запам'ятай", "збережи", "remember this", or
+   "store this". Works without any channel support. ~30-50% capture.
+2. **Channel reminders (enhancement)**: If channels are available,
+   Teamind monitors transcript activity. After significant work
+   (15+ min of activity, or session end), it sends a reminder to the
+   agent. The agent summarizes and stores classified decisions. ~80%+
+   capture. Graceful fallback to baseline if channels unavailable.
 3. **Startup sweep (catch-up)**: On every Teamind launch, unprocessed
    transcript content is scanned and stored.
 

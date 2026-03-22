@@ -27,7 +27,7 @@
 
 - [ ] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore (include .env*), LICENSE (Apache 2.0) at repo root
 - [ ] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
-- [ ] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts)
+- [ ] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts). All tests use mocked Supabase/Qdrant clients — no cloud credentials needed for pnpm test
 
 ---
 
@@ -87,7 +87,7 @@
 
 - [ ] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts (reference: docs/validation/mcp-prototype.js, contracts/channel-events.md § Implementation Constraints)
 - [ ] T028 [US2] Implement teamind_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
-- [ ] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity, push channel capture reminder) in packages/cli/src/capture/watcher.ts
+- [ ] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity → if channels available: push capture reminder, if not: log activity for startup sweep. Channels are enhancement, not hard dependency) in packages/cli/src/capture/watcher.ts
 - [ ] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.teamind/hook-port) in packages/cli/src/capture/hook-handler.ts
 - [ ] T031 [US2] Implement startup sweep (scan ~/.claude/projects/ for unprocessed JSONL since last timestamp, extract and store raw decisions as type:pending, flush offline queue) in packages/cli/src/capture/startup-sweep.ts
 - [ ] T032 [US2] Implement serve command (load config → startup sweep async → start watcher → start hook handler → start MCP server blocking → on exit save state) in packages/cli/src/commands/serve.ts

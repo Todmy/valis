@@ -80,13 +80,16 @@ eliminates the need for local SQLite.
 ### VI. Auto-Capture by Default
 
 Decision capture MUST happen automatically without manual developer
-action. Three capture layers — channel-driven reminders (primary),
-CLAUDE.md keyword triggers + explicit `teamind_store` (secondary),
-and startup sweep (catch-up) — run in a single process.
+action. Three capture layers — CLAUDE.md keyword triggers + explicit
+`teamind_store` (baseline), channel-driven reminders (enhancement),
+and startup sweep (catch-up) — run in a single process. The baseline
+MUST work without channels. Channels improve capture rate (~80% vs
+~30-50%) but MUST NOT be a hard dependency.
 
-**Rationale:** Manual capture has <20% compliance. The channel-driven
-approach leverages the agent's full session context to produce
-high-quality classified decisions at zero additional LLM cost.
+**Rationale:** Manual capture has <20% compliance. Channels are
+research preview and may change — the system must degrade gracefully.
+CLAUDE.md triggers are the stable foundation; channels enhance when
+available.
 
 ### VII. Dual Storage
 

@@ -21,7 +21,8 @@ server-side org management.
 **Storage**: Supabase Postgres (source of truth) + Qdrant Cloud (hybrid search, server-side embeddings with FastEmbed MiniLM 384d)
 **Auth Model**: CLI uses `service_role key` + application-level org_id filtering. RLS as defense-in-depth (via `set_config('app.org_id', ...)` RPC). Edge Functions use `service_role key` (server-side, trusted). Custom JWT/RLS enforcement deferred to Phase 2.
 **Qdrant Setup**: Single global `decisions` collection, created automatically via `ensureCollection` ("create if not exists") on first CLI run. Vector: 384d cosine, sparse BM25 enabled. Reindex from Postgres if schema changes (Postgres = source of truth).
-**Testing**: vitest (unit + integration)
+**Testing**: vitest with mocked Supabase/Qdrant clients for unit tests. Real cloud services for manual E2E only (T052). No cloud credentials needed for `pnpm test`.
+**Capture Resilience**: CLAUDE.md keyword triggers = baseline (works without channels, ~30-50%). Channel reminders = enhancement (~80%+, graceful fallback). Channels are research preview — not a hard dependency.
 **Target Platform**: macOS ARM64/Intel, Linux x64 (CLI tool, npm global install)
 **Project Type**: CLI + MCP server (hybrid MCP + Channel)
 **Performance Goals**: <200ms store, <2s status/dashboard, <10s seed extraction, <3min full onboarding
