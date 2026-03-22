@@ -17,6 +17,11 @@ RUN npm install -g @anthropic-ai/claude-code
 
 # Non-root user (claude --dangerously-skip-permissions refuses root)
 RUN useradd -m -s /bin/bash claude
+
+# Alias for running claude with full flags
+RUN echo 'alias cc="claude --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official"' \
+    >> /home/claude/.bashrc
+
 USER claude
 
 WORKDIR /workspace
