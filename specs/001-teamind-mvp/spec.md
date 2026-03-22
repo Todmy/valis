@@ -355,8 +355,10 @@ condition and verify the message includes action steps.
   unreachable and sync on reconnect.
 - **FR-015**: System MUST return empty results (not errors) for search
   operations when offline.
-- **FR-016**: System MUST push new decisions to all active sessions in
-  the same org via channel notifications.
+- **FR-016**: System SHOULD push new decisions to active sessions in
+  the same org via channel notifications. MVP: local session push only.
+  Cross-session broadcast (Dev A → Dev B) via Supabase Realtime is
+  Phase 2.
 - **FR-017**: System MUST provide CLI commands: status, dashboard,
   export (JSON + Markdown), config, and uninstall.
 - **FR-018**: System MUST deduplicate decisions across capture layers
