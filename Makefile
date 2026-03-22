@@ -11,16 +11,13 @@ VOLUMES := \
 	-v "$(WORKSPACE):/workspace" \
 	-v "$(GITCONFIG):/home/claude/.gitconfig:ro"
 
-CLAUDE_CMD := claude --dangerously-skip-permissions \
-	--channels plugin:telegram@claude-plugins-official
-
 .PHONY: build start shell stop clean status claude
 
 ## Build the Docker image
 build:
 	docker build -t $(IMAGE_NAME) .
 
-## Start container in background (singleton — copies plugins from host, rebuilds for Linux)
+## Start container in background (singleton, copies config from host)
 start: build
 	@if docker ps -q -f name=^$(CONTAINER_NAME)$$ 2>/dev/null | grep -q .; then \
 		echo "Already running. Use: make shell"; \
@@ -29,17 +26,14 @@ start: build
 		docker run -d --name $(CONTAINER_NAME) $(VOLUMES) \
 			--entrypoint sleep $(IMAGE_NAME) infinity \
 			> /dev/null && \
-		echo "Copying plugins from host..." && \
 		docker exec $(CONTAINER_NAME) bash -c ' \
 			cp -r ~/.claude-host/* ~/.claude/ 2>/dev/null; \
 			cp -r ~/.claude-host/.* ~/.claude/ 2>/dev/null; \
 			true' && \
-		echo "Rebuilding plugins for Linux..." && \
-		docker exec $(CONTAINER_NAME) setup && \
-		echo "Ready. Use: make shell"; \
+		echo "Ready. Use: make shell → cc"; \
 	fi
 
-## Attach to the running container (detach with Ctrl+D)
+## Attach to the running container
 shell:
 	@if docker ps -q -f name=^$(CONTAINER_NAME)$$ 2>/dev/null | grep -q .; then \
 		docker exec -it $(CONTAINER_NAME) bash; \
@@ -47,10 +41,10 @@ shell:
 		echo "Not running. Use: make start"; \
 	fi
 
-## Run claude with full flags inside the container
+## Run claude --dangerously-skip-permissions inside the container
 claude:
 	@if docker ps -q -f name=^$(CONTAINER_NAME)$$ 2>/dev/null | grep -q .; then \
-		docker exec -it $(CONTAINER_NAME) $(CLAUDE_CMD); \
+		docker exec -it $(CONTAINER_NAME) claude --dangerously-skip-permissions; \
 	else \
 		echo "Not running. Use: make start"; \
 	fi
