@@ -16,8 +16,11 @@ server-side org management.
 ## Technical Context
 
 **Language/Version**: TypeScript (ES2022, NodeNext module resolution), Node.js 20+
+**Edge Functions Runtime**: Deno (Supabase Edge Functions). `supabase/functions/` use Deno imports (`https://esm.sh/@supabase/supabase-js@2`), not Node requires. No shared types between CLI (Node) and Edge Functions (Deno).
 **Primary Dependencies**: @modelcontextprotocol/sdk, @supabase/supabase-js, @qdrant/js-client-rest, commander, chokidar, picocolors, zod
-**Storage**: Supabase Postgres (source of truth, RLS) + Qdrant Cloud (hybrid search, server-side embeddings with FastEmbed MiniLM 384d)
+**Storage**: Supabase Postgres (source of truth) + Qdrant Cloud (hybrid search, server-side embeddings with FastEmbed MiniLM 384d)
+**Auth Model**: CLI uses `service_role key` + application-level org_id filtering. RLS as defense-in-depth (via `set_config('app.org_id', ...)` RPC). Edge Functions use `service_role key` (server-side, trusted). Custom JWT/RLS enforcement deferred to Phase 2.
+**Qdrant Setup**: Single global `decisions` collection, created automatically via `ensureCollection` ("create if not exists") on first CLI run. Vector: 384d cosine, sparse BM25 enabled. Reindex from Postgres if schema changes (Postgres = source of truth).
 **Testing**: vitest (unit + integration)
 **Target Platform**: macOS ARM64/Intel, Linux x64 (CLI tool, npm global install)
 **Project Type**: CLI + MCP server (hybrid MCP + Channel)

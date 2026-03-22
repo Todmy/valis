@@ -25,8 +25,8 @@
 
 **Purpose**: Monorepo scaffold, both packages compiling
 
-- [ ] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore, LICENSE (Apache 2.0) at repo root
-- [ ] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base)
+- [ ] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore (include .env*), LICENSE (Apache 2.0) at repo root
+- [ ] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
 - [ ] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts)
 
 ---
@@ -42,10 +42,10 @@
 - [ ] T006 [P] Implement config store (loadConfig, saveConfig, updateConfig with 0600 permissions) in packages/cli/src/config/store.ts
 - [ ] T007 [P] Implement manifest tracker (loadManifest, saveManifest, trackFile for uninstall) in packages/cli/src/config/manifest.ts
 - [ ] T008 Create Supabase project config (supabase/config.toml) and Postgres schema (orgs, members, decisions, rate_limits tables with indexes, RLS policies, composite PK on rate_limits) in supabase/migrations/001_init.sql per data-model.md
-- [ ] T009 [P] Implement Edge Function create-org (generate UUID, API key tm_ + 32 hex, invite code XXXX-XXXX, INSERT org + member in transaction) in supabase/functions/create-org/index.ts per edge-functions contract
-- [ ] T010 [P] Implement Edge Function join-org (validate invite code, check member limit, INSERT member) in supabase/functions/join-org/index.ts per edge-functions contract
-- [ ] T012 Implement Supabase client (storeDecision, searchDecisions via RPC, getDashboardStats, healthCheck, batchStore for seed) in packages/cli/src/cloud/supabase.ts
-- [ ] T013 [P] Implement Qdrant client (ensureCollection, upsertDecision, hybridSearch with org_id filter, getDashboardStats) in packages/cli/src/cloud/qdrant.ts
+- [ ] T009 [P] Implement Edge Function create-org (Deno runtime, import supabase-js via esm.sh, generate UUID, API key tm_ + 32 hex, invite code XXXX-XXXX, INSERT org + member in transaction, use service_role key) in supabase/functions/create-org/index.ts per edge-functions contract
+- [ ] T010 [P] Implement Edge Function join-org (Deno runtime, validate invite code, check member limit, INSERT member, use service_role key) in supabase/functions/join-org/index.ts per edge-functions contract
+- [ ] T012 Implement Supabase client (service_role key auth, set_config('app.org_id') for RLS, storeDecision, searchDecisions via RPC, getDashboardStats, healthCheck, batchStore for seed — all connections HTTPS enforced) in packages/cli/src/cloud/supabase.ts
+- [ ] T013 [P] Implement Qdrant client (ensureCollection: create-if-not-exists with 384d cosine vectors + sparse BM25, upsertDecision, hybridSearch with org_id filter, getDashboardStats — all connections HTTPS enforced) in packages/cli/src/cloud/qdrant.ts
 - [ ] T014 [P] Implement secret detection (10 regex patterns: AWS, Anthropic, OpenAI, GitHub, private key, JWT, DB URL, Slack, Stripe, generic) in packages/cli/src/security/secrets.ts
 - [ ] T015 [P] Implement offline queue (appendToQueue, readQueue, flushQueue, getCount using pending.jsonl) in packages/cli/src/offline/queue.ts
 - [ ] T016 [P] Implement content dedup (contentHash via SHA-256 of normalized text, isDuplicate with LRU cache 1000 entries, session_id awareness) in packages/cli/src/capture/dedup.ts
