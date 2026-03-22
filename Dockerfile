@@ -9,12 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # pnpm
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
-# Claude Code (native installer puts binary in ~/.claude/bin/)
-RUN curl -fsSL https://claude.ai/install.sh | bash
-# Symlink to global path so all users can run it
-RUN ln -s /root/.claude/bin/claude /usr/local/bin/claude
+# Claude Code
+RUN npm install -g @anthropic-ai/claude-code
 
-# Non-root user (claude --dangerously-skip-permissions refuses root)
+# Non-root user (--dangerously-skip-permissions refuses root)
 RUN useradd -m -s /bin/bash claude
 
 # Alias
