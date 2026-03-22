@@ -1,0 +1,1667 @@
+# Teamind MVP Implementation Plan
+
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build Teamind MVP — shared decision intelligence for AI-augmented engineering teams. Dual storage (Supabase Postgres + Qdrant Cloud), channel-driven capture, agent-driven classification, zero native deps.
+
+**Architecture:** Single `cli` package (hybrid MCP+Channel server + activity watcher + CLI commands) talks directly to Supabase Postgres (source of truth) and Qdrant Cloud (search). Three Supabase Edge Functions handle server-side logic (create-org, join-org, rotate-key). No LLM enrichment — agents classify decisions at store time, prompted by channel capture reminders.
+
+**Key innovation:** Instead of parsing transcripts with fragile heuristics, Teamind pushes channel reminders to the agent. The agent — with full session context — summarizes and stores decisions via `teamind_store`. Quality is dramatically higher than raw text extraction.
+
+**Tech Stack:** Node.js + TypeScript, pnpm workspace, @modelcontextprotocol/sdk, @supabase/supabase-js, commander, chokidar, zod, picocolors, vitest
+
+**Spec:** `docs/teamind-design-spec-v5.md`
+
+**License:** Apache 2.0
+
+**Timeline:** 2-3 weeks (AI-assisted implementation)
+
+---
+
+## File Structure
+
+```
+teamind/
+├── packages/
+│   └── cli/
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── vitest.config.ts
+│       ├── bin/
+│       │   └── teamind.ts                    # CLI entry (#!/usr/bin/env node)
+│       ├── src/
+│       │   ├── types.ts                      # Decision, Config, API response types
+│       │   ├── errors.ts                     # Error message constants (spec Section 13)
+│       │   ├── constants.ts                  # Shared constants (secret patterns, defaults)
+│       │   ├── clients/
+│       │   │   ├── supabase.ts               # Supabase client factory (singleton)
+│       │   │   └── qdrant.ts                 # Qdrant REST client (upsert, search, scroll)
+│       │   ├── storage/
+│       │   │   ├── dual-write.ts             # Dual write orchestrator (Postgres + Qdrant)
+│       │   │   └── rate-limiter.ts           # Rate limit check + increment (Postgres)
+│       │   ├── mcp/
+│       │   │   ├── server.ts                 # Hybrid MCP+Channel server setup
+│       │   │   ├── channel.ts                # Channel push logic (broadcast to team sessions)
+│       │   │   └── tools/
+│       │   │       ├── store.ts              # teamind_store handler
+│       │   │       ├── search.ts             # teamind_search handler
+│       │   │       └── context.ts            # teamind_context handler
+│       │   ├── capture/
+│       │   │   ├── activity-watcher.ts       # JSONL activity monitor → triggers channel reminders
+│       │   │   ├── hook-handler.ts           # Stop hook HTTP handler → triggers channel reminder
+│       │   │   ├── startup-sweep.ts          # On startup → push channel reminder for missed sessions
+│       │   │   └── dedup.ts                  # Content hash + session_id dedup
+│       │   ├── security/
+│       │   │   └── secrets.ts                # 10 secret detection patterns
+│       │   ├── offline/
+│       │   │   └── queue.ts                  # pending.jsonl read/write/flush
+│       │   ├── seed/
+│       │   │   ├── index.ts                  # Seed orchestrator
+│       │   │   ├── parse-claude-md.ts        # Extract from CLAUDE.md
+│       │   │   ├── parse-agents-md.ts        # Extract from AGENTS.md
+│       │   │   └── parse-git-log.ts          # Extract from git log
+│       │   ├── ide/
+│       │   │   ├── detect.ts                 # Detect installed IDEs
+│       │   │   ├── claude-code.ts            # Configure Claude Code MCP + hooks
+│       │   │   └── codex.ts                  # Configure Codex MCP
+│       │   ├── config/
+│       │   │   ├── store.ts                  # ~/.teamind/config.json CRUD
+│       │   │   └── manifest.ts               # Track what init created
+│       │   └── commands/
+│       │       ├── init.ts                   # teamind init + init --join
+│       │       ├── serve.ts                  # teamind serve (MCP + watcher + hook)
+│       │       ├── search-cmd.ts             # teamind search (CLI search for humans)
+│       │       ├── status.ts                 # teamind status
+│       │       ├── dashboard.ts              # teamind dashboard
+│       │       ├── export-cmd.ts             # teamind export
+│       │       ├── uninstall.ts              # teamind uninstall
+│       │       └── config-cmd.ts             # teamind config set/get
+│       └── test/
+│           ├── security/secrets.test.ts
+│           ├── offline/queue.test.ts
+│           ├── capture/
+│           │   ├── activity-watcher.test.ts
+│           │   ├── dedup.test.ts
+│           │   └── hook-handler.test.ts
+│           ├── storage/
+│           │   ├── dual-write.test.ts
+│           │   └── rate-limiter.test.ts
+│           ├── mcp/tools/
+│           │   ├── store.test.ts
+│           │   ├── search.test.ts
+│           │   └── context.test.ts
+│           ├── seed/
+│           │   ├── parse-claude-md.test.ts
+│           │   ├── parse-agents-md.test.ts
+│           │   └── parse-git-log.test.ts
+│           └── config/store.test.ts
+├── supabase/
+│   ├── config.toml                           # Supabase project config
+│   ├── migrations/
+│   │   └── 00001_initial_schema.sql          # Orgs, members, decisions, rate_limits + RLS
+│   └── functions/
+│       ├── create-org/index.ts               # Edge Function: create org + API key
+│       ├── join-org/index.ts                 # Edge Function: join with invite code
+│       └── rotate-key/index.ts               # Edge Function: rotate API key
+├── .gitignore
+├── .env.example                              # SUPABASE_URL, SUPABASE_ANON_KEY, QDRANT_URL, QDRANT_API_KEY
+├── LICENSE                                   # Apache 2.0
+├── AGENTS.md                                 # Teamind eats its own dogfood
+├── package.json                              # pnpm workspace root
+├── pnpm-workspace.yaml
+└── tsconfig.base.json
+```
+
+---
+
+## Build Order (6-8 weeks)
+
+| Day | Chunk | Deliverable |
+|-----|-------|-------------|
+| 1-2 | 1: Scaffold + Types + DB | Monorepo compiling, Supabase schema deployed, Edge Functions live |
+| 3-4 | 2: Clients + Dual Write | Supabase + Qdrant clients, dual write orchestrator, secret detection, offline queue |
+| 5-6 | 3: MCP Server + Tools | Hybrid MCP+Channel server, 3 tools + channel capture reminder + broadcast |
+| 7-8 | 4: Capture Triggers | Activity watcher + stop hook → channel reminders. Dedup. Startup sweep. |
+| 9-10 | 5: Seed + Config | Seed parsers (CLAUDE.md, AGENTS.md, git log) + config store + manifest |
+| 11-12 | 6: CLI Commands | init, serve, status, search, uninstall |
+| 13-14 | 7: IDE Setup + Polish | Auto-detect IDEs, configure MCP, inject CLAUDE.md/AGENTS.md with keyword triggers, error messages |
+| Week 3 | 8: Dogfood + Beta | End-to-end testing, dogfood, 3-5 beta clients |
+
+---
+
+## Chunk 1: Scaffold + Types + Database (Week 1)
+
+### Task 1.1: Initialize monorepo
+
+**Files:**
+- Create: `package.json`
+- Create: `pnpm-workspace.yaml`
+- Create: `tsconfig.base.json`
+- Create: `.gitignore`
+- Create: `LICENSE`
+- Create: `.env.example`
+
+- [ ] **Step 1: Create root package.json**
+
+```json
+{
+  "name": "teamind",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+```
+
+- [ ] **Step 2: Create pnpm-workspace.yaml**
+
+```yaml
+packages:
+  - "packages/*"
+```
+
+- [ ] **Step 3: Create tsconfig.base.json**
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  }
+}
+```
+
+- [ ] **Step 4: Create .gitignore**
+
+```
+node_modules/
+dist/
+.env
+.env.local
+.supabase/
+*.tsbuildinfo
+```
+
+- [ ] **Step 5: Create LICENSE (Apache 2.0)**
+
+Full Apache 2.0 license text with `Copyright 2026 Teamind Contributors`.
+
+- [ ] **Step 6: Create .env.example**
+
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+QDRANT_URL=https://your-cluster.qdrant.io
+QDRANT_API_KEY=your-qdrant-api-key
+```
+
+- [ ] **Step 7: Run pnpm install and commit**
+
+```bash
+pnpm install
+git add -A
+git commit -m "chore: initialize pnpm monorepo"
+```
+
+---
+
+### Task 1.2: CLI package scaffold + types
+
+**Files:**
+- Create: `packages/cli/package.json`
+- Create: `packages/cli/tsconfig.json`
+- Create: `packages/cli/vitest.config.ts`
+- Create: `packages/cli/src/types.ts`
+- Create: `packages/cli/src/errors.ts`
+- Create: `packages/cli/src/constants.ts`
+
+- [ ] **Step 1: Create CLI package.json**
+
+```json
+{
+  "name": "teamind",
+  "version": "0.1.0",
+  "description": "Shared decision intelligence for AI-augmented engineering teams",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "teamind": "./dist/bin/teamind.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "chokidar": "^4.0.0",
+    "@inquirer/prompts": "^7.0.0",
+    "commander": "^12.0.0",
+    "picocolors": "^1.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+```
+
+- [ ] **Step 2: Create CLI tsconfig.json**
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["src", "bin", "test"]
+}
+```
+
+- [ ] **Step 3: Create vitest.config.ts**
+
+```typescript
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    root: '.',
+    include: ['test/**/*.test.ts'],
+  },
+})
+```
+
+- [ ] **Step 4: Create src/types.ts**
+
+Full Decision interface, config types, API response types from spec Section 2 (Decision Object Schema). Include:
+- `DecisionType` = `'decision' | 'constraint' | 'pattern' | 'lesson' | 'pending'`
+- `DecisionSource` = `'mcp_store' | 'file_watcher' | 'stop_hook' | 'seed'`
+- `DecisionStatus` = `'active' | 'deprecated' | 'superseded' | 'proposed'`
+- `Decision` interface (full schema from spec)
+- `CreateDecisionInput` (what teamind_store accepts)
+- `SearchInput`, `SearchResult`
+- `TeamindConfig` (org_id, api_key, qdrant_url, etc.)
+
+- [ ] **Step 5: Create src/errors.ts**
+
+All 7 error message constants from spec Section 13:
+- `CLOUD_UNREACHABLE`
+- `ORG_NOT_FOUND`
+- `INVITE_CODE_INVALID`
+- `FREE_TIER_LIMIT`
+- `SECRET_DETECTED`
+- `QDRANT_UNREACHABLE`
+- `DUAL_WRITE_PARTIAL`
+
+Each constant is a function that takes context params and returns formatted error string.
+
+- [ ] **Step 6: Create src/constants.ts**
+
+```typescript
+export const TEAMIND_DIR = '.teamind'
+export const CONFIG_FILE = 'config.json'
+export const MANIFEST_FILE = 'manifest.json'
+export const PENDING_FILE = 'pending.jsonl'
+export const MARKER_START = '<!-- teamind:start -->'
+export const MARKER_END = '<!-- teamind:end -->'
+export const QDRANT_COLLECTION = 'decisions'
+export const STATE_FILE = 'state.json'
+export const MIN_DECISION_LENGTH = 10
+export const MAX_SUMMARY_LENGTH = 100
+export const HOOK_DEFAULT_PORT = 7483
+```
+
+- [ ] **Step 7: pnpm install, build, verify, commit**
+
+```bash
+cd packages/cli && pnpm install && pnpm build
+git add packages/cli/
+git commit -m "feat: add CLI package scaffold with types and error constants"
+```
+
+---
+
+### Task 1.3: Supabase schema + Edge Functions
+
+**Files:**
+- Create: `supabase/config.toml`
+- Create: `supabase/migrations/00001_initial_schema.sql`
+- Create: `supabase/functions/create-org/index.ts`
+- Create: `supabase/functions/join-org/index.ts`
+- Create: `supabase/functions/rotate-key/index.ts`
+
+- [ ] **Step 1: Initialize Supabase project**
+
+```bash
+supabase init
+```
+
+This creates `supabase/config.toml`. Update it with the project reference.
+
+- [ ] **Step 2: Create Supabase migration**
+
+Full SQL from spec Section 3 (Supabase Postgres Schema):
+- `orgs` table (id, name, api_key, invite_code, plan, decision_count, created_at)
+- `members` table (id, org_id, name, role, api_key, created_at)
+- `decisions` table (id, org_id, type, summary, detail, status, author, source, project_id, session_id, confidence, affects, content_hash, created_at, updated_at)
+- `rate_limits` table (org_id, day, store_count, search_count)
+- All indexes from spec
+
+**RLS setup — custom API key based isolation:**
+
+```sql
+-- Helper function: resolve API key to org_id
+CREATE OR REPLACE FUNCTION get_org_id_from_key()
+RETURNS UUID AS $$
+  SELECT org_id FROM members
+  WHERE api_key = current_setting('request.headers', true)::json->>'x-teamind-key'
+  LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Enable RLS
+ALTER TABLE decisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+
+-- Decisions: users can only access their org's decisions
+CREATE POLICY "decisions_org_isolation" ON decisions
+  FOR ALL USING (org_id = get_org_id_from_key());
+
+-- Rate limits: users can only access their org's counters
+CREATE POLICY "rate_limits_org_isolation" ON rate_limits
+  FOR ALL USING (org_id = get_org_id_from_key());
+```
+
+**Note:** The Supabase client must set the `x-teamind-key` header on every request. This is configured in Task 2.1 (Supabase client factory).
+
+- [ ] **Step 3: Create create-org Edge Function**
+
+`supabase/functions/create-org/index.ts`:
+- Receives `{ name: string, member_name: string }`
+- Generates UUID for org, crypto-random API key (`tmnd_` prefix + 32 hex chars), invite code (`XXXX-XXXX` format)
+- INSERT into `orgs` + INSERT first member as `admin`
+- Returns `{ org_id, api_key, invite_code }`
+- Uses `crypto.randomUUID()` and `crypto.getRandomValues()` for key generation
+
+- [ ] **Step 4: Create join-org Edge Function**
+
+`supabase/functions/join-org/index.ts`:
+- Receives `{ invite_code: string, member_name: string }`
+- Validates invite code exists in `orgs`
+- Checks member count < plan limit (free = 5)
+- INSERT into `members` with new API key
+- Returns `{ org_id, api_key, org_name, decision_count }`
+
+- [ ] **Step 5: Create rotate-key Edge Function**
+
+`supabase/functions/rotate-key/index.ts`:
+- Receives old API key in `Authorization` header
+- Validates old key exists in `members`
+- Generates new API key
+- UPDATE `members` set new key
+- Returns `{ api_key: newKey }`
+
+- [ ] **Step 6: Apply migration to Supabase project**
+
+```bash
+supabase db push
+```
+
+- [ ] **Step 7: Deploy Edge Functions**
+
+```bash
+supabase functions deploy create-org
+supabase functions deploy join-org
+supabase functions deploy rotate-key
+```
+
+- [ ] **Step 8: Test Edge Functions with curl**
+
+```bash
+# Create org
+curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/create-org \
+  -H "Content-Type: application/json" \
+  -d '{"name": "test-org", "member_name": "dev1"}'
+
+# Join org
+curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/join-org \
+  -H "Content-Type: application/json" \
+  -d '{"invite_code": "XXXX-XXXX", "member_name": "dev2"}'
+```
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add supabase/
+git commit -m "feat: add Supabase schema with RLS and Edge Functions (create-org, join-org, rotate-key)"
+```
+
+---
+
+## Chunk 2: Clients + Dual Write + Security (Week 1-2)
+
+### Task 2.1: Supabase client
+
+**Files:**
+- Create: `packages/cli/src/clients/supabase.ts`
+
+- [ ] **Step 1: Write tests for Supabase client factory**
+
+`packages/cli/test/clients/supabase.test.ts`:
+- Test: creates client with URL + anon key from config
+- Test: throws with clear error if config missing
+- Test: returns same instance (singleton)
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+```bash
+cd packages/cli && pnpm test -- test/clients/supabase.test.ts
+```
+
+- [ ] **Step 3: Implement Supabase client**
+
+`packages/cli/src/clients/supabase.ts`:
+- `createSupabaseClient(config: TeamindConfig)` — creates `@supabase/supabase-js` client
+- Singleton pattern: returns cached instance if same config
+- Uses config's `supabase_url` and `supabase_anon_key`
+- Sets `x-teamind-key` global header to member's API key for RLS context:
+  ```typescript
+  createClient(url, anonKey, {
+    global: { headers: { 'x-teamind-key': config.api_key } }
+  })
+  ```
+- Edge Function calls use `supabase.functions.invoke('name', { body: data })`
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add Supabase client factory"
+```
+
+---
+
+### Task 2.2: Qdrant client
+
+**Files:**
+- Create: `packages/cli/src/clients/qdrant.ts`
+- Test: `packages/cli/test/clients/qdrant.test.ts`
+
+- [ ] **Step 1: Write tests for Qdrant REST client**
+
+Tests (mocked HTTP):
+- `upsert(point)` — sends correct PUT request to `/collections/decisions/points`
+- `search(query, filter, limit)` — sends POST to `/collections/decisions/points/query` with hybrid search params
+- `scroll(filter, limit)` — sends POST to `/collections/decisions/points/scroll`
+- `ensureCollection()` — creates collection if 404, no-op if exists
+- Returns properly typed results
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement Qdrant client**
+
+`packages/cli/src/clients/qdrant.ts`:
+- `QdrantClient` class:
+  - Constructor: `url`, `apiKey`
+  - `ensureCollection()` — PUT collection with server-side embedding config (MiniLM 384d, on-disk storage)
+  - `upsert(id, payload, document)` — upsert point with `document` field for server-side embedding
+  - `search(query, orgId, type?, limit?)` — hybrid search (dense + BM25) with `org_id` payload filter
+  - `scroll(orgId, filter?, limit?)` — scroll all points with org_id filter
+- All methods use `fetch()` with `api-key` header, 5s timeout
+- Returns typed results
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add Qdrant REST client with hybrid search"
+```
+
+---
+
+### Task 2.3: Secret detection
+
+**Files:**
+- Create: `packages/cli/src/security/secrets.ts`
+- Test: `packages/cli/test/security/secrets.test.ts`
+
+- [ ] **Step 1: Write tests for secret detection**
+
+Test each of the 10 patterns from spec:
+- AWS key (`AKIA...`) → detected, pattern name returned
+- Anthropic key (`sk-ant-...`) → detected
+- OpenAI key → detected
+- GitHub token → detected
+- Private key → detected
+- JWT → detected
+- Database URL → detected
+- Slack token → detected
+- Stripe key → detected
+- Generic secret → detected
+- Clean text → no detection (null)
+- Text with decision content containing "api_key" as topic (not actual secret) → no false positive
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement secret detection**
+
+`packages/cli/src/security/secrets.ts`:
+- `detectSecret(text: string): { pattern: string } | null`
+- Array of `{ name: string, regex: RegExp }` — all 10 patterns from spec
+- Returns first match with pattern name, or null
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add secret detection (10 patterns)"
+```
+
+---
+
+### Task 2.4: Offline queue
+
+**Files:**
+- Create: `packages/cli/src/offline/queue.ts`
+- Test: `packages/cli/test/offline/queue.test.ts`
+
+- [ ] **Step 1: Write tests for offline queue**
+
+Tests (using temp directory):
+- `append(decision)` — appends JSON line to `pending.jsonl`
+- `read()` — returns array of pending decisions
+- `clear()` — empties file
+- `count()` — returns number of pending items
+- `flush(callback)` — calls callback for each item, clears on success
+- Handles: empty file, missing file (creates), corrupt line (skips)
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement offline queue**
+
+`packages/cli/src/offline/queue.ts`:
+- `OfflineQueue` class:
+  - Constructor: `filePath` (defaults to `~/.teamind/pending.jsonl`)
+  - `append(data: CreateDecisionInput)` — `appendFileSync` JSON line
+  - `read(): CreateDecisionInput[]` — read + parse lines, skip corrupt
+  - `clear()` — `writeFileSync('')`
+  - `count(): number`
+  - `flush(fn: (item) => Promise<void>)` — process each, clear on all success
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add offline queue (pending.jsonl)"
+```
+
+---
+
+### Task 2.5: Dedup
+
+**Files:**
+- Create: `packages/cli/src/capture/dedup.ts`
+- Test: `packages/cli/test/capture/dedup.test.ts`
+
+- [ ] **Step 1: Write tests for dedup**
+
+Tests:
+- `contentHash(text)` — returns consistent SHA-256 hex for same text
+- `isDuplicate(hash, sessionId, supabase)` — queries Postgres `WHERE content_hash = hash`, returns true if exists. If `sessionId` provided, also checks `session_id` to allow same text in different sessions.
+- Different text → different hash
+- Same text → same hash
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement dedup**
+
+`packages/cli/src/capture/dedup.ts`:
+- `contentHash(text: string): string` — `crypto.createHash('sha256').update(text).digest('hex')`
+- `isDuplicate(hash: string, sessionId: string | null, supabase: SupabaseClient): Promise<boolean>` — SELECT from decisions WHERE content_hash = hash LIMIT 1. If sessionId provided, adds AND session_id != sessionId (allows same text from different capture layers in same session to dedup)
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add content hash dedup"
+```
+
+---
+
+### Task 2.6: Dual write orchestrator
+
+**Files:**
+- Create: `packages/cli/src/storage/dual-write.ts`
+- Test: `packages/cli/test/storage/dual-write.test.ts`
+
+- [ ] **Step 1: Write tests for dual write**
+
+Tests (mocked Supabase + Qdrant):
+- Both succeed → returns `{id, status: "stored"}`
+- Postgres fails, Qdrant succeeds → logs warning, retries Postgres
+- Qdrant fails, Postgres succeeds → decision safe, queues Qdrant retry
+- Both fail → queues to offline queue, returns `{stored: true, synced: false}`
+- Dedup: duplicate content_hash → returns `{id, status: "duplicate"}`
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement dual write orchestrator**
+
+`packages/cli/src/storage/dual-write.ts`:
+- `dualWrite(input: CreateDecisionInput, config: deps): Promise<StoreResult>`
+  1. Compute `contentHash(input.text)`
+  2. Check dedup via Postgres
+  3. If duplicate → return early
+  4. Generate UUID
+  5. `Promise.allSettled([postgres.insert(), qdrant.upsert()])`
+  6. Handle partial failures per spec
+  7. **After successful write:** if `offlineQueue.count() > 0`, attempt flush (fire-and-forget)
+  8. Return result
+
+Dependencies injected: `{ supabase, qdrant, offlineQueue }`
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add dual write orchestrator (Postgres + Qdrant)"
+```
+
+---
+
+### Task 2.7: Rate limiter
+
+**Files:**
+- Create: `packages/cli/src/storage/rate-limiter.ts`
+- Test: `packages/cli/test/storage/rate-limiter.test.ts`
+
+- [ ] **Step 1: Write tests for rate limiter**
+
+Tests (mocked Supabase):
+- `checkAndIncrement('store', orgId)` — under limit → returns `{allowed: true}`, increments counter
+- Over free tier limit (500 decisions) → returns `{allowed: false, error: FREE_TIER_LIMIT}`
+- Search rate limit (100/day) → returns `{allowed: false}` when exceeded
+- New day → counter resets (UPSERT with current date)
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement rate limiter**
+
+`packages/cli/src/storage/rate-limiter.ts`:
+- `RateLimiter` class:
+  - `checkStore(orgId: string, supabase): Promise<{allowed: boolean, error?: string}>`
+    - UPSERT into `rate_limits` for today, increment `store_count`
+    - Check against plan limit (free = 500 total decisions via `orgs.decision_count`)
+  - `checkSearch(orgId: string, supabase): Promise<{allowed: boolean, error?: string}>`
+    - UPSERT into `rate_limits` for today, increment `search_count`
+    - Check against plan limit (free = 100/day)
+  - Returns `FREE_TIER_LIMIT` error message when exceeded
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add rate limiter (free tier enforcement)"
+```
+
+---
+
+## Chunk 3: MCP Server + Tools (Week 2-3)
+
+### Task 3.1: Hybrid MCP+Channel server skeleton
+
+**Files:**
+- Create: `packages/cli/src/mcp/server.ts`
+- Create: `packages/cli/src/mcp/channel.ts`
+
+- [ ] **Step 1: Create hybrid MCP+Channel server with stdio transport**
+
+`packages/cli/src/mcp/server.ts`:
+- Uses `@modelcontextprotocol/sdk` Server class
+- **Hybrid capabilities**: both tools AND channel push:
+  ```typescript
+  const server = new Server(
+    { name: 'teamind', version: '0.1.0' },
+    {
+      capabilities: {
+        tools: {},
+        experimental: { 'claude/channel': {} },
+      },
+      instructions:
+        'Teamind is your team\'s shared decision brain. ' +
+        'Events from <channel source="teamind"> are real-time decisions from your team. ' +
+        'Read them for context. No reply expected.',
+    },
+  )
+  ```
+- Registers 3 tools: `teamind_store`, `teamind_search`, `teamind_context`
+- Tool descriptions from spec Section 2 (MCP Tools)
+- Input schemas via zod (validated by MCP SDK)
+- stdio transport
+- `startServer(config: TeamindConfig)` exported function
+
+- [ ] **Step 2: Create channel push module**
+
+`packages/cli/src/mcp/channel.ts`:
+- `broadcastDecision(server, decision)`:
+  ```typescript
+  await server.notification({
+    method: 'notifications/claude/channel',
+    params: {
+      content: decision.summary || decision.detail.slice(0, 200),
+      meta: {
+        event: 'new_decision',
+        type: decision.type,
+        author: decision.author,
+        decision_id: decision.id,
+      },
+    },
+  })
+  ```
+- Called after successful `dualWrite()` in `teamind_store`
+- Fire-and-forget: errors logged, never thrown (non-blocking)
+- No-op if channel capability not active (graceful degradation)
+- **No separate buffering needed**: channel push is supplementary. Sessions that missed push events will get decisions via `teamind_context` (pull) on next task start. Teamind's existing startup sweep + offline queue already solve the "missed events" problem at the storage layer.
+- **Bug #36800 safe**: custom dev channels (`--dangerously-load-development-channels`) don't have the duplicate process spawn bug that affects official plugins
+
+- [ ] **Step 3: Verify server starts and responds to tool list**
+
+```bash
+echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node dist/mcp/server.js
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "feat: add hybrid MCP+Channel server with team decision broadcast"
+```
+
+---
+
+### Task 3.2: teamind_store tool
+
+**Files:**
+- Create: `packages/cli/src/mcp/tools/store.ts`
+- Test: `packages/cli/test/mcp/tools/store.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests:
+- Valid input `{text, type, summary, affects}` → calls dualWrite, returns `{id, status: "stored"}`
+- Valid input `{text}` only (minimal) → stores with `type: 'pending'`
+- Text < 10 chars → returns validation error
+- Secret detected → returns `{error: "secret_detected", pattern, action: "blocked"}`
+- Cloud unreachable → stores to offline queue, returns `{stored: true, synced: false}`
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement store handler**
+
+`packages/cli/src/mcp/tools/store.ts`:
+- `handleStore(input, deps)`:
+  1. Validate text length >= 10
+  2. Secret check → block if matched
+  3. Rate limit check → `rateLimiter.checkStore(orgId)` → block if exceeded
+  4. Build decision: merge input fields, set `source: 'mcp_store'`, `author` from config
+  5. Call `dualWrite()`
+  6. **Broadcast via channel** → `broadcastDecision(server, decision)` (fire-and-forget)
+  7. Return result
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add teamind_store MCP tool"
+```
+
+---
+
+### Task 3.3: teamind_search tool
+
+**Files:**
+- Create: `packages/cli/src/mcp/tools/search.ts`
+- Test: `packages/cli/test/mcp/tools/search.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests (mocked Qdrant):
+- Query with results → returns formatted `[{decision, score, type, summary, affects}]`
+- Query with type filter → passes type to Qdrant payload filter
+- Query with limit → passes limit to Qdrant
+- Empty results → returns `[]`
+- Qdrant unreachable → returns `{results: [], offline: true, note: "..."}`
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement search handler**
+
+`packages/cli/src/mcp/tools/search.ts`:
+- `handleSearch(input, deps)`:
+  1. Rate limit check → `rateLimiter.checkSearch(orgId)` → block if exceeded
+  2. Call `qdrant.search(query, orgId, type, limit)`
+  3. Map results to response format
+  4. Return sorted by score
+  5. Catch connection errors → return offline response
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add teamind_search MCP tool"
+```
+
+---
+
+### Task 3.4: teamind_context tool
+
+**Files:**
+- Create: `packages/cli/src/mcp/tools/context.ts`
+- Test: `packages/cli/test/mcp/tools/context.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests (mocked Qdrant + Supabase):
+- Task description → searches Qdrant, returns grouped by type
+- Task + files → includes file names in search query
+- First call in session → includes "N total decisions" note (count from Postgres)
+- Subsequent calls → no count note
+- Offline → empty results, no crash
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement context handler**
+
+`packages/cli/src/mcp/tools/context.ts`:
+- `handleContext(input, deps, sessionState)`:
+  1. Build query: `task_description + files.join(' ')`
+  2. Call `qdrant.search(query, orgId, null, 10)`
+  3. Group results by type
+  4. If `sessionState.firstCall` → prepend count note from `supabase.from('decisions').select('count')`
+  5. Return formatted context
+  6. Catch errors → return empty gracefully
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add teamind_context MCP tool"
+```
+
+---
+
+## Chunk 4: Capture Triggers (Day 7-8)
+
+**Key design change:** Teamind does NOT parse transcripts. Instead, it detects activity and pushes channel reminders to the agent, which has full context and produces high-quality classified decisions via `teamind_store`.
+
+### Task 4.1: Activity watcher (channel capture trigger)
+
+**Files:**
+- Create: `packages/cli/src/capture/activity-watcher.ts`
+- Test: `packages/cli/test/capture/activity-watcher.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests (mocked chokidar + server):
+- File change detected → after debounce period (15 min) → `broadcastCaptureReminder()` called
+- Multiple rapid changes → only one reminder per debounce window
+- No changes → no reminder
+- `stop()` → watcher cleaned up
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement activity watcher**
+
+`packages/cli/src/capture/activity-watcher.ts`:
+- `startActivityWatcher(server, config)`:
+  - Uses `chokidar.watch('~/.claude/projects/**/*.jsonl', { persistent: true })`
+  - On file change: start/reset debounce timer (configurable, default 15 min)
+  - When timer fires → push channel capture reminder:
+    ```typescript
+    await server.notification({
+      method: 'notifications/claude/channel',
+      params: {
+        content: 'Review your recent work. If any decisions, constraints, patterns, or lessons were established, store them via teamind_store with type, summary, and affects.',
+        meta: { event: 'capture_reminder' },
+      },
+    })
+    ```
+  - Track last reminder timestamp to avoid spamming
+  - Non-blocking: errors logged, never thrown
+  - Returns `{ stop() }` for cleanup
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add activity watcher with channel capture reminders"
+```
+
+---
+
+### Task 4.2: Stop hook HTTP handler (capture trigger)
+
+**Files:**
+- Create: `packages/cli/src/capture/hook-handler.ts`
+- Test: `packages/cli/test/capture/hook-handler.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests (mocked server):
+- POST `/hook/stop` → pushes channel capture reminder with `event: 'session_end'`
+- POST with missing fields → returns 400
+- Returns `{ status: 'reminder_sent' }`
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement stop hook handler**
+
+`packages/cli/src/capture/hook-handler.ts`:
+- `startHookHandler(port, server, config)`:
+  - HTTP server on `localhost:PORT` (configurable, default 7483)
+  - POST `/hook/stop` — receives `{ session_id }`
+  - Pushes channel capture reminder:
+    ```typescript
+    await server.notification({
+      method: 'notifications/claude/channel',
+      params: {
+        content: 'This session is ending. Store any remaining decisions, constraints, patterns, or lessons via teamind_store before the session closes.',
+        meta: { event: 'session_end', session_id },
+      },
+    })
+    ```
+  - Returns `{ status: 'reminder_sent' }`
+  - Returns `{ stop() }` for cleanup
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add stop hook handler with channel capture reminder"
+```
+
+---
+
+### Task 4.3: Startup sweep (simplified)
+
+**Files:**
+- Create: `packages/cli/src/capture/startup-sweep.ts`
+
+- [ ] **Step 1: Implement startup sweep**
+
+`packages/cli/src/capture/startup-sweep.ts`:
+- `runStartupSweep(server, config, deps)`:
+  - Read last sweep timestamp from `~/.teamind/state.json`
+  - Check if JSONL files in `~/.claude/projects/` were modified since last sweep
+  - If yes → push channel reminder on first tool call:
+    ```xml
+    <channel source="teamind" event="startup_sweep">
+    Sessions occurred while Teamind was offline. Review recent project activity
+    and store any important decisions via teamind_store.
+    </channel>
+    ```
+  - Update `state.json` with current timestamp
+  - **Flush offline queue** if any items pending
+  - Graceful: never throws, logs errors
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add startup sweep with channel reminder for missed sessions"
+```
+
+---
+
+## Chunk 5: Seed + Config (Week 4-5)
+
+### Task 5.1: Config store
+
+**Files:**
+- Create: `packages/cli/src/config/store.ts`
+- Test: `packages/cli/test/config/store.test.ts`
+
+- [ ] **Step 1: Write tests**
+
+Tests (using temp directory):
+- `load()` — reads `~/.teamind/config.json`, returns typed config
+- `save(config)` — writes with 0600 permissions
+- `get(key)` — returns single value
+- `set(key, value)` — updates single value, preserves rest
+- Missing file → returns null / creates on save
+- Corrupt JSON → throws clear error
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+- [ ] **Step 3: Implement config store**
+
+`packages/cli/src/config/store.ts`:
+- `ConfigStore` class:
+  - `configDir` defaults to `~/.teamind`
+  - `load(): TeamindConfig | null`
+  - `save(config: TeamindConfig): void` — `writeFileSync` with mode 0o600
+  - `get(key: keyof TeamindConfig): string | undefined`
+  - `set(key: keyof TeamindConfig, value: string): void`
+  - Creates `~/.teamind` dir if not exists
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: add config store (~/.teamind/config.json)"
+```
+
+---
+
+### Task 5.2: Manifest tracking
+
+**Files:**
+- Create: `packages/cli/src/config/manifest.ts`
+
+- [ ] **Step 1: Implement manifest**
+
+`packages/cli/src/config/manifest.ts`:
+- `Manifest` class:
+  - Tracks what `teamind init` created: `{ files_created, files_modified, mcp_configs_added }`
+  - `addFile(path)`, `addModified(path)`, `addMcpConfig(ide, path)`
+  - `save()` — writes to `~/.teamind/manifest.json`
+  - `load()` — reads manifest for uninstall
+  - Used by `teamind uninstall` to cleanly reverse init
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add manifest tracking for clean uninstall"
+```
+
+---
+
+### Task 5.3: Seed parsers
+
+**Files:**
+- Create: `packages/cli/src/seed/parse-claude-md.ts`
+- Create: `packages/cli/src/seed/parse-agents-md.ts`
+- Create: `packages/cli/src/seed/parse-git-log.ts`
+- Create: `packages/cli/src/seed/index.ts`
+- Test: `packages/cli/test/seed/parse-claude-md.test.ts`
+- Test: `packages/cli/test/seed/parse-agents-md.test.ts`
+- Test: `packages/cli/test/seed/parse-git-log.test.ts`
+
+- [ ] **Step 1: Write tests for CLAUDE.md parser**
+
+Tests:
+- File with headings + bullet points → extracts decisions from structured sections
+- Sections like "## Architecture", "## Conventions" → extracted as patterns/decisions
+- Sections like "## Do NOT" → extracted as constraints
+- Teamind markers section → skipped (don't self-seed)
+- Empty file → returns `[]`
+- No file → returns `[]`
+
+- [ ] **Step 2: Write tests for AGENTS.md parser**
+
+Similar to CLAUDE.md but adapted for AGENTS.md structure.
+
+- [ ] **Step 3: Write tests for git log parser**
+
+Tests:
+- Commit with "chose X because Y" → extracted
+- Commit with "fix: typo" → skipped (too short / no decision)
+- Commit with 80+ chars → extracted if decision-worthy
+- Merge commits → skipped
+- Returns max 20 most recent meaningful commits
+
+- [ ] **Step 4: Run all tests to verify they fail**
+
+- [ ] **Step 5: Implement all three parsers**
+
+Each parser:
+- Takes file path (or cwd for git log)
+- Returns `Array<{ text: string, source: 'seed' }>`
+- Graceful: never throws, returns `[]` on error
+
+- [ ] **Step 6: Implement seed orchestrator**
+
+`packages/cli/src/seed/index.ts`:
+- `runSeed(projectDir, deps)`:
+  1. `parseCLAUDEMD(projectDir)` → decisions
+  2. `parseAGENTSMD(projectDir)` → decisions
+  3. `parseGitLog(projectDir)` → decisions
+  4. Combine + dedup by content hash
+  5. Set `type: 'pending'` and `source: 'seed'` on all items
+  6. Batch `dualWrite()` all
+  7. Return `{ claude_md: N, agents_md: M, git_log: K, total: T }`
+
+- [ ] **Step 7: Run all tests to verify they pass**
+
+- [ ] **Step 8: Commit**
+
+```bash
+git commit -m "feat: add seed parsers (CLAUDE.md, AGENTS.md, git log)"
+```
+
+---
+
+## Chunk 6: CLI Commands (Week 5-6)
+
+### Task 6.1: CLI entry + commander setup
+
+**Files:**
+- Create: `packages/cli/bin/teamind.ts`
+
+- [ ] **Step 1: Create CLI entry point**
+
+`packages/cli/bin/teamind.ts`:
+```typescript
+#!/usr/bin/env node
+import { Command } from 'commander'
+
+const program = new Command()
+  .name('teamind')
+  .description('Shared decision intelligence for AI-augmented engineering teams')
+  .version('0.1.0')
+
+// Register commands (each imported from src/commands/)
+// init, serve, status, dashboard, export, uninstall, config
+
+program.parse()
+```
+
+- [ ] **Step 2: Verify `teamind --help` works**
+
+```bash
+pnpm build && node dist/bin/teamind.js --help
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: add CLI entry point with commander"
+```
+
+---
+
+### Task 6.2: teamind init
+
+**Files:**
+- Create: `packages/cli/src/commands/init.ts`
+
+- [ ] **Step 1: Implement init command**
+
+`packages/cli/src/commands/init.ts`:
+- `teamind init` (create new org):
+  1. Interactive prompt: org name, member name (uses `@inquirer/prompts`)
+  2. Call `create-org` Edge Function
+  3. Save config to `~/.teamind/config.json`
+  4. **Ensure Qdrant collection exists** → `qdrant.ensureCollection()`
+  5. Detect IDEs (Task 7.1)
+  6. Run seed (Task 5.3) — all seeded decisions get `type: 'pending'`, `source: 'seed'`
+  7. Configure IDEs (Task 7.2)
+  8. Verification: store test decision → search for it → confirm roundtrip
+  9. Print summary with invite code
+- `teamind init --join CODE`:
+  1. Call `join-org` Edge Function
+  2. Same flow from step 3
+
+- [ ] **Step 2: Test manually: create org**
+
+```bash
+node dist/bin/teamind.js init
+```
+
+- [ ] **Step 3: Test manually: join org**
+
+```bash
+node dist/bin/teamind.js init --join TEST-CODE
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "feat: add teamind init command (create + join)"
+```
+
+---
+
+### Task 6.3: teamind search (CLI)
+
+**Files:**
+- Create: `packages/cli/src/commands/search-cmd.ts`
+
+- [ ] **Step 1: Implement search command**
+
+`packages/cli/src/commands/search-cmd.ts`:
+- `teamind search <query>` — search decisions from CLI (for humans, not agents)
+- Options: `--type <type>` (decision/constraint/pattern/lesson), `--limit <n>` (default 10)
+- Calls `qdrant.search(query, orgId, type, limit)` directly
+- Formatted terminal output with `picocolors`:
+  - Each result: type badge (colored), summary, author, date, confidence
+  - Detail text (truncated to 200 chars)
+- Handles offline: "Qdrant unavailable. Try again later."
+
+- [ ] **Step 2: Test manually**
+
+```bash
+node dist/bin/teamind.js search "authentication" --type decision --limit 5
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: add teamind search CLI command"
+```
+
+---
+
+### Task 6.5: teamind serve
+
+**Files:**
+- Create: `packages/cli/src/commands/serve.ts`
+
+- [ ] **Step 1: Implement serve command**
+
+`packages/cli/src/commands/serve.ts`:
+- Loads config
+- Runs startup sweep (Task 4.4) — includes offline queue flush
+- Ensures Qdrant collection exists (no-op if already created)
+- Starts MCP server (Task 3.1) on stdio
+- Starts file watcher (Task 4.2) in background
+- Starts stop hook handler (Task 4.3) in background
+- Handles SIGINT/SIGTERM: stops all, flushes pending
+
+- [ ] **Step 2: Test with MCP Inspector or echo pipe**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: add teamind serve command (MCP + watcher + hook)"
+```
+
+---
+
+### Task 6.6: teamind status
+
+**Files:**
+- Create: `packages/cli/src/commands/status.ts`
+
+- [ ] **Step 1: Implement status command**
+
+`packages/cli/src/commands/status.ts`:
+- Checks:
+  - Config exists → org name, member name
+  - Supabase reachable → green/red
+  - Qdrant reachable → green/red
+  - Decision count (from Postgres)
+  - Qdrant point count (from Qdrant scroll) — compare with Postgres count, show sync status
+  - Pending queue count (from `pending.jsonl`)
+  - Configured IDEs (from manifest)
+- Color-coded output with `picocolors` (green = OK, yellow = degraded, red = broken)
+
+- [ ] **Step 2: Test manually**
+
+```bash
+node dist/bin/teamind.js status
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: add teamind status command"
+```
+
+---
+
+### Task 6.7: teamind dashboard
+
+**Files:**
+- Create: `packages/cli/src/commands/dashboard.ts`
+
+- [ ] **Step 1: Implement dashboard command**
+
+`packages/cli/src/commands/dashboard.ts`:
+- Queries Postgres for:
+  - Total decisions
+  - Count by type (decision/constraint/pattern/lesson/pending)
+  - Count by author
+  - Count last 7d / 30d
+  - 10 most recent decisions (type, summary, author, date)
+- Formatted table output with `picocolors`
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add teamind dashboard command"
+```
+
+---
+
+### Task 6.8: teamind export
+
+**Files:**
+- Create: `packages/cli/src/commands/export-cmd.ts`
+
+- [ ] **Step 1: Implement export command**
+
+`packages/cli/src/commands/export-cmd.ts`:
+- `--json` (default) — array of Decision objects from Postgres
+- `--markdown` — grouped by type, formatted
+- `--output <file>` — write to file instead of stdout
+- Queries all decisions for org from Postgres (source of truth)
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add teamind export command (json + markdown)"
+```
+
+---
+
+### Task 6.9: teamind uninstall
+
+**Files:**
+- Create: `packages/cli/src/commands/uninstall.ts`
+
+- [ ] **Step 1: Implement uninstall command**
+
+`packages/cli/src/commands/uninstall.ts`:
+- Loads manifest
+- Confirmation prompt: "This will remove all local Teamind configs. Cloud data is preserved."
+- For each entry in manifest:
+  - Files created → delete
+  - Files modified → remove teamind markers (between `<!-- teamind:start -->` / `<!-- teamind:end -->`)
+  - MCP configs → remove teamind entry
+- Removes `~/.teamind/` directory
+- Print: "Uninstalled. Cloud data preserved."
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add teamind uninstall command"
+```
+
+---
+
+### Task 6.10: teamind config
+
+**Files:**
+- Create: `packages/cli/src/commands/config-cmd.ts`
+
+- [ ] **Step 1: Implement config command**
+
+`packages/cli/src/commands/config-cmd.ts`:
+- `teamind config get <key>` — print value
+- `teamind config set <key> <value>` — update value
+- `teamind config rotate-key` — call rotate-key Edge Function, update local config
+- Supported keys: `org_name`, `member_name`, `supabase_url`, `qdrant_url`
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add teamind config command (get, set, rotate-key)"
+```
+
+---
+
+## Chunk 7: IDE Setup + Polish (Week 6-7)
+
+### Task 7.1: IDE detection
+
+**Files:**
+- Create: `packages/cli/src/ide/detect.ts`
+
+- [ ] **Step 1: Implement IDE detection**
+
+`packages/cli/src/ide/detect.ts`:
+- `detectIDEs(): IDE[]` — returns list of detected IDEs
+- Claude Code: check `~/.claude/` exists
+- Codex: check `~/.codex/` or `codex` command exists
+- Returns `[{ name, configPath, type }]`
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "feat: add IDE detection (Claude Code, Codex)"
+```
+
+---
+
+### Task 7.2: IDE configuration
+
+**Files:**
+- Create: `packages/cli/src/ide/claude-code.ts`
+- Create: `packages/cli/src/ide/codex.ts`
+
+- [ ] **Step 1: Implement Claude Code configurator**
+
+`packages/cli/src/ide/claude-code.ts`:
+- `configureClaudeCode(config, manifest)`:
+  1. Add MCP server to `~/.claude/settings.json` (or project-level)
+  2. Add stop hook to Claude Code hooks config
+  3. Set `cleanupPeriodDays` to 90 in Claude Code settings (prevent transcript deletion)
+  4. **Auto-allow Teamind tools** in `permissions.allow`:
+     ```json
+     {
+       "permissions": {
+         "allow": [
+           "mcp__teamind__teamind_store",
+           "mcp__teamind__teamind_search",
+           "mcp__teamind__teamind_context"
+         ]
+       }
+     }
+     ```
+     This prevents permission prompts from blocking the agent when calling Teamind tools.
+  5. Inject teamind block into CLAUDE.md (markers from spec Section 4)
+  6. Track all changes in manifest
+- CLAUDE.md handling rules from spec:
+  - No CLAUDE.md → create project-level
+  - Exists in project → append between markers
+  - Exists in parent only → create NEW project-level
+  - Markers exist → replace between markers (idempotent)
+
+- [ ] **Step 2: Implement Codex configurator**
+
+`packages/cli/src/ide/codex.ts`:
+- `configureCodex(config, manifest)`:
+  1. Add MCP server to Codex MCP config
+  2. Inject teamind block into AGENTS.md (same markers pattern)
+  3. Track in manifest
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: add IDE configuration (Claude Code + Codex)"
+```
+
+---
+
+### Task 7.3: Create AGENTS.md for Teamind repo
+
+- [ ] **Step 1: Create AGENTS.md at repo root**
+
+Teamind eats its own dogfood. Create `AGENTS.md` with project conventions:
+- TypeScript strict mode, ESM modules
+- Vitest for testing, TDD approach
+- Supabase for Postgres, Qdrant for search
+- Dual write pattern — every decision goes to both stores
+- No LLM dependencies in production code
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "docs: add AGENTS.md (teamind eats its own dogfood)"
+```
+
+---
+
+### Task 7.4: Error messages integration
+
+- [ ] **Step 1: Review all error paths in codebase**
+
+Ensure every error thrown uses constants from `src/errors.ts`. Check:
+- Dual write failures
+- Offline queue
+- Config loading
+- Edge Function calls
+- Qdrant client
+- Secret detection
+
+- [ ] **Step 2: Fix any error paths that don't use standard messages**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "fix: standardize all error messages per spec Section 13"
+```
+
+---
+
+## Chunk 8: Integration + Beta (Week 7-8)
+
+### Task 8.1: End-to-end test
+
+- [ ] **Step 1: Manual E2E test — full flow**
+
+```bash
+# 1. Install globally
+npm link
+
+# 2. Create org
+teamind init
+
+# 3. Store decision via MCP
+echo '{"text":"Chose PostgreSQL because...","type":"decision","summary":"Use Postgres","affects":["database"]}' | teamind-mcp-test store
+
+# 4. Search
+teamind search "database"
+
+# 5. Dashboard
+teamind dashboard
+
+# 6. Export
+teamind export --json
+
+# 7. Status
+teamind status
+
+# 8. Join from another machine (or different config dir)
+teamind init --join <CODE>
+
+# 9. Verify cross-machine search works
+teamind search "database"
+
+# 10. Uninstall
+teamind uninstall
+```
+
+- [ ] **Step 2: Fix any issues found**
+
+- [ ] **Step 3: Commit fixes**
+
+---
+
+### Task 8.2: Acceptance criteria verification
+
+Verify each of the 13 acceptance criteria from spec Section 12:
+
+- [ ] 1. `npm install -g teamind` succeeds on macOS (ARM64 + Intel)
+- [ ] 2. `teamind init` creates org + seeds + configures IDEs in <3 minutes
+- [ ] 3. Dev A stores → Dev B finds via search
+- [ ] 4. Seed-on-init extracts 15+ decisions
+- [ ] 5. Structured store (type, summary, affects) stores in both Postgres and Qdrant
+- [ ] 6. `teamind search "authentication"` finds relevant decision
+- [ ] 7. `teamind dashboard` shows team activity
+- [ ] 8. `teamind export --json` produces valid export
+- [ ] 9. `teamind uninstall` removes cleanly
+- [ ] 10. Offline store queues, offline search returns empty
+- [ ] 11. Secret detection blocks known patterns
+- [ ] 12. Auto-captured raw text findable via hybrid search
+- [ ] 13. Beta teams (after deploy)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "chore: verify all acceptance criteria"
+```
+
+---
+
+### Task 8.3: npm publish prep
+
+- [ ] **Step 1: Update package.json metadata**
+
+Add: `repository`, `homepage`, `keywords`, `author`
+
+- [ ] **Step 2: Verify `npm pack` produces clean package**
+
+```bash
+cd packages/cli && npm pack --dry-run
+```
+
+Check: no test files, no source maps in production, bin entry works.
+
+- [ ] **Step 3: Create README.md**
+
+Minimal README with: install, quickstart (init, join), how it works, license.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "chore: prepare for npm publish"
+```
+
+---
+
+### Task 8.4: Beta deployment
+
+- [ ] **Step 1: Dogfood on own team**
+
+Install Teamind in 2-3 of your own projects. Use for 1 week.
+
+- [ ] **Step 2: Install for 3-5 consulting clients**
+
+Provide invite codes, monitor usage via dashboard.
+
+- [ ] **Step 3: Collect feedback, iterate**
+
+Track bugs and feature requests. Fix critical issues.
+
+- [ ] **Step 4: Publish to npm**
+
+```bash
+cd packages/cli && npm publish
+```
