@@ -43,6 +43,14 @@ shell:
 stop:
 	docker stop $(CONTAINER_NAME) 2>/dev/null; docker rm $(CONTAINER_NAME) 2>/dev/null; echo "Stopped"
 
+## Run claude with full flags inside the container
+claude:
+	@if docker ps -q -f name=^$(CONTAINER_NAME)$$ 2>/dev/null | grep -q .; then \
+		docker exec -it $(CONTAINER_NAME) $(CLAUDE_CMD); \
+	else \
+		echo "Not running. Use: make start"; \
+	fi
+
 ## Show container status
 status:
 	@docker ps -f name=^$(CONTAINER_NAME)$$ --format "{{.Status}}" 2>/dev/null || echo "Not running"
