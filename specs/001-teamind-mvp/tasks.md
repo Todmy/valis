@@ -25,9 +25,9 @@
 
 **Purpose**: Monorepo scaffold, both packages compiling
 
-- [ ] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore (include .env*), LICENSE (Apache 2.0) at repo root
-- [ ] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
-- [ ] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts). All tests use mocked Supabase/Qdrant clients — no cloud credentials needed for pnpm test
+- [x] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore (include .env*), LICENSE (Apache 2.0) at repo root
+- [x] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
+- [x] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts). All tests use mocked Supabase/Qdrant clients — no cloud credentials needed for pnpm test
 
 ---
 
@@ -37,18 +37,18 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Define shared types (Decision, RawDecision, TeamindConfig, API types) in packages/cli/src/types.ts per data-model.md
-- [ ] T005 [P] Define 7 error message constants (cloud_unreachable, org_not_found, invite_invalid, free_tier_limit, secret_detected, qdrant_unreachable, dual_write_partial) in packages/cli/src/errors.ts
-- [ ] T006 [P] Implement config store (loadConfig, saveConfig, updateConfig with 0600 permissions) in packages/cli/src/config/store.ts
-- [ ] T007 [P] Implement manifest tracker (loadManifest, saveManifest, trackFile for uninstall) in packages/cli/src/config/manifest.ts
-- [ ] T008 Create Supabase project config (supabase/config.toml) and Postgres schema (orgs, members, decisions, rate_limits tables with indexes, RLS policies, composite PK on rate_limits) in supabase/migrations/001_init.sql per data-model.md
-- [ ] T009 [P] Implement Edge Function create-org (Deno runtime, import supabase-js via esm.sh, generate UUID, API key tm_ + 32 hex, invite code XXXX-XXXX, INSERT org + member in transaction, use service_role key) in supabase/functions/create-org/index.ts per edge-functions contract
-- [ ] T010 [P] Implement Edge Function join-org (Deno runtime, validate invite code, check member limit, INSERT member, use service_role key) in supabase/functions/join-org/index.ts per edge-functions contract
-- [ ] T012 Implement Supabase client (service_role key auth, set_config('app.org_id') for RLS, storeDecision, searchDecisions via RPC, getDashboardStats, healthCheck, batchStore for seed — all connections HTTPS enforced) in packages/cli/src/cloud/supabase.ts
-- [ ] T013 [P] Implement Qdrant client (ensureCollection: create-if-not-exists with 384d cosine vectors + sparse BM25, upsertDecision, hybridSearch with org_id filter, getDashboardStats — all connections HTTPS enforced) in packages/cli/src/cloud/qdrant.ts
-- [ ] T014 [P] Implement secret detection (10 regex patterns: AWS, Anthropic, OpenAI, GitHub, private key, JWT, DB URL, Slack, Stripe, generic) in packages/cli/src/security/secrets.ts
-- [ ] T015 [P] Implement offline queue (appendToQueue, readQueue, flushQueue, getCount using pending.jsonl) in packages/cli/src/offline/queue.ts
-- [ ] T016 [P] Implement content dedup (contentHash via SHA-256 of normalized text, isDuplicate with LRU cache 1000 entries, session_id awareness) in packages/cli/src/capture/dedup.ts
+- [x] T004 Define shared types (Decision, RawDecision, TeamindConfig, API types) in packages/cli/src/types.ts per data-model.md
+- [x] T005 [P] Define 7 error message constants (cloud_unreachable, org_not_found, invite_invalid, free_tier_limit, secret_detected, qdrant_unreachable, dual_write_partial) in packages/cli/src/errors.ts
+- [x] T006 [P] Implement config store (loadConfig, saveConfig, updateConfig with 0600 permissions) in packages/cli/src/config/store.ts
+- [x] T007 [P] Implement manifest tracker (loadManifest, saveManifest, trackFile for uninstall) in packages/cli/src/config/manifest.ts
+- [x] T008 Create Supabase project config (supabase/config.toml) and Postgres schema (orgs, members, decisions, rate_limits tables with indexes, RLS policies, composite PK on rate_limits) in supabase/migrations/001_init.sql per data-model.md
+- [x] T009 [P] Implement Edge Function create-org (Deno runtime, import supabase-js via esm.sh, generate UUID, API key tm_ + 32 hex, invite code XXXX-XXXX, INSERT org + member in transaction, use service_role key) in supabase/functions/create-org/index.ts per edge-functions contract
+- [x] T010 [P] Implement Edge Function join-org (Deno runtime, validate invite code, check member limit, INSERT member, use service_role key) in supabase/functions/join-org/index.ts per edge-functions contract
+- [x] T012 Implement Supabase client (service_role key auth, set_config('app.org_id') for RLS, storeDecision, searchDecisions via RPC, getDashboardStats, healthCheck, batchStore for seed — all connections HTTPS enforced) in packages/cli/src/cloud/supabase.ts
+- [x] T013 [P] Implement Qdrant client (ensureCollection: create-if-not-exists with 384d cosine vectors + sparse BM25, upsertDecision, hybridSearch with org_id filter, getDashboardStats — all connections HTTPS enforced) in packages/cli/src/cloud/qdrant.ts
+- [x] T014 [P] Implement secret detection (10 regex patterns: AWS, Anthropic, OpenAI, GitHub, private key, JWT, DB URL, Slack, Stripe, generic) in packages/cli/src/security/secrets.ts
+- [x] T015 [P] Implement offline queue (appendToQueue, readQueue, flushQueue, getCount using pending.jsonl) in packages/cli/src/offline/queue.ts
+- [x] T016 [P] Implement content dedup (contentHash via SHA-256 of normalized text, isDuplicate with LRU cache 1000 entries, session_id awareness) in packages/cli/src/capture/dedup.ts
 
 **Checkpoint**: Foundation ready — types compile, cloud clients connect, schema deployed, cross-cutting modules work
 
@@ -62,16 +62,16 @@
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] Implement IDE detection (check for ~/.claude/, .codex/ directories, return list with config paths) in packages/cli/src/ide/detect.ts
-- [ ] T018 [P] [US1] Implement Claude Code MCP config writer (JSON merge into settings.json, stop hook config, cleanupPeriodDays: 99999) in packages/cli/src/ide/claude-code.ts
-- [ ] T019 [P] [US1] Implement Codex MCP config writer (write to .codex/ mcp config) in packages/cli/src/ide/codex.ts
-- [ ] T020 [P] [US1] Implement CLAUDE.md/AGENTS.md marker injection (create if missing, append between <!-- teamind:start/end --> markers, idempotent, never modify parent-level) in packages/cli/src/ide/claude-code.ts (extend)
-- [ ] T021 [P] [US1] Implement seed parser: extract decisions from CLAUDE.md in packages/cli/src/seed/parse-claude-md.ts (reference: docs/validation/seed-claude-md.js)
-- [ ] T022 [P] [US1] Implement seed parser: extract decisions from AGENTS.md in packages/cli/src/seed/parse-agents-md.ts
-- [ ] T023 [P] [US1] Implement seed parser: extract decisions from git log (recent meaningful commits) in packages/cli/src/seed/parse-git-log.ts (reference: docs/validation/seed-git-log.js)
-- [ ] T024 [US1] Implement seed orchestrator (run all parsers, batch store to Supabase + Qdrant, report count) in packages/cli/src/seed/index.ts
-- [ ] T025 [US1] Implement init command (interactive prompts, create/join org via Edge Functions, save config, detect IDEs, configure MCP + --dangerously-load-development-channels flag, inject markers, run seed, verify round-trip, print invite code) in packages/cli/src/commands/init.ts
-- [ ] T026 [US1] Implement CLI entry point with commander (register init + version + help) in packages/cli/bin/teamind.ts
+- [x] T017 [US1] Implement IDE detection (check for ~/.claude/, .codex/ directories, return list with config paths) in packages/cli/src/ide/detect.ts
+- [x] T018 [P] [US1] Implement Claude Code MCP config writer (JSON merge into settings.json, stop hook config, cleanupPeriodDays: 99999) in packages/cli/src/ide/claude-code.ts
+- [x] T019 [P] [US1] Implement Codex MCP config writer (write to .codex/ mcp config) in packages/cli/src/ide/codex.ts
+- [x] T020 [P] [US1] Implement CLAUDE.md/AGENTS.md marker injection (create if missing, append between <!-- teamind:start/end --> markers, idempotent, never modify parent-level) in packages/cli/src/ide/claude-code.ts (extend)
+- [x] T021 [P] [US1] Implement seed parser: extract decisions from CLAUDE.md in packages/cli/src/seed/parse-claude-md.ts (reference: docs/validation/seed-claude-md.js)
+- [x] T022 [P] [US1] Implement seed parser: extract decisions from AGENTS.md in packages/cli/src/seed/parse-agents-md.ts
+- [x] T023 [P] [US1] Implement seed parser: extract decisions from git log (recent meaningful commits) in packages/cli/src/seed/parse-git-log.ts (reference: docs/validation/seed-git-log.js)
+- [x] T024 [US1] Implement seed orchestrator (run all parsers, batch store to Supabase + Qdrant, report count) in packages/cli/src/seed/index.ts
+- [x] T025 [US1] Implement init command (interactive prompts, create/join org via Edge Functions, save config, detect IDEs, configure MCP + --dangerously-load-development-channels flag, inject markers, run seed, verify round-trip, print invite code) in packages/cli/src/commands/init.ts
+- [x] T026 [US1] Implement CLI entry point with commander (register init + version + help) in packages/cli/bin/teamind.ts
 
 **Checkpoint**: `teamind init` works end-to-end. Org created, IDEs configured, decisions seeded.
 
@@ -85,13 +85,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts (reference: docs/validation/mcp-prototype.js, contracts/channel-events.md § Implementation Constraints)
-- [ ] T028 [US2] Implement teamind_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
-- [ ] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity → if channels available: push capture reminder, if not: log activity for startup sweep. Channels are enhancement, not hard dependency) in packages/cli/src/capture/watcher.ts
-- [ ] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.teamind/hook-port) in packages/cli/src/capture/hook-handler.ts
-- [ ] T031 [US2] Implement startup sweep (scan ~/.claude/projects/ for unprocessed JSONL since last timestamp, extract and store raw decisions as type:pending, flush offline queue) in packages/cli/src/capture/startup-sweep.ts
-- [ ] T032 [US2] Implement serve command (load config → startup sweep async → start watcher → start hook handler → start MCP server blocking → on exit save state) in packages/cli/src/commands/serve.ts
-- [ ] T033 [US2] Register serve command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts (reference: docs/validation/mcp-prototype.js, contracts/channel-events.md § Implementation Constraints)
+- [x] T028 [US2] Implement teamind_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
+- [x] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity → if channels available: push capture reminder, if not: log activity for startup sweep. Channels are enhancement, not hard dependency) in packages/cli/src/capture/watcher.ts
+- [x] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.teamind/hook-port) in packages/cli/src/capture/hook-handler.ts
+- [x] T031 [US2] Implement startup sweep (scan ~/.claude/projects/ for unprocessed JSONL since last timestamp, extract and store raw decisions as type:pending, flush offline queue) in packages/cli/src/capture/startup-sweep.ts
+- [x] T032 [US2] Implement serve command (load config → startup sweep async → start watcher → start hook handler → start MCP server blocking → on exit save state) in packages/cli/src/commands/serve.ts
+- [x] T033 [US2] Register serve command in CLI entry point in packages/cli/bin/teamind.ts (extend)
 
 **Checkpoint**: `teamind serve` runs all 3 capture layers + MCP store tool. Auto-capture works.
 
@@ -105,10 +105,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T034 [US3] Implement teamind_search handler (validate → Qdrant hybrid search with org_id filter + optional type filter → return ranked results → offline: empty results) in packages/cli/src/mcp/tools/search.ts per mcp-tools contract
-- [ ] T035 [US3] Implement teamind_context handler (build query from task_description + files → Qdrant search → group by type → first-call orientation note → offline: empty) in packages/cli/src/mcp/tools/context.ts per mcp-tools contract
-- [ ] T036 [US3] Implement CLI search command (teamind search <query> --type --limit, call Qdrant directly, format colored table output) in packages/cli/src/commands/search-cmd.ts
-- [ ] T037 [US3] Register search command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T034 [US3] Implement teamind_search handler (validate → Qdrant hybrid search with org_id filter + optional type filter → return ranked results → offline: empty results) in packages/cli/src/mcp/tools/search.ts per mcp-tools contract
+- [x] T035 [US3] Implement teamind_context handler (build query from task_description + files → Qdrant search → group by type → first-call orientation note → offline: empty) in packages/cli/src/mcp/tools/context.ts per mcp-tools contract
+- [x] T036 [US3] Implement CLI search command (teamind search <query> --type --limit, call Qdrant directly, format colored table output) in packages/cli/src/commands/search-cmd.ts
+- [x] T037 [US3] Register search command in CLI entry point in packages/cli/bin/teamind.ts (extend)
 
 **Checkpoint**: MCP search + context tools work. CLI search works.
 
@@ -122,8 +122,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T038 [US4] Implement channel push emitter (emit notifications/claude/channel with new_decision event containing author, type, summary) in packages/cli/src/channel/push.ts per channel-events contract
-- [ ] T039 [US4] Integrate channel push into teamind_store pipeline (after successful dual write, push to local channel; cross-session push scoped for later) in packages/cli/src/mcp/tools/store.ts (extend)
+- [x] T038 [US4] Implement channel push emitter (emit notifications/claude/channel with new_decision event containing author, type, summary) in packages/cli/src/channel/push.ts per channel-events contract
+- [x] T039 [US4] Integrate channel push into teamind_store pipeline (after successful dual write, push to local channel; cross-session push scoped for later) in packages/cli/src/mcp/tools/store.ts (extend)
 
 **Checkpoint**: Store → channel push works for local session. Cross-session push deferred.
 
@@ -137,8 +137,8 @@
 
 ### Implementation for User Story 5
 
-- [ ] T040 [US5] Add comprehensive test data for all 10 secret patterns (real examples, false negatives, false positives) and verify blocking across MCP store path in packages/cli/test/security/secrets.test.ts
-- [ ] T041 [US5] Verify Supabase RLS policies enforce tenant isolation (org_id filter on decisions, members queries) and add RLS integration smoke test in packages/cli/test/cloud/supabase.test.ts
+- [x] T040 [US5] Add comprehensive test data for all 10 secret patterns (real examples, false negatives, false positives) and verify blocking across MCP store path in packages/cli/test/security/secrets.test.ts
+- [x] T041 [US5] Verify Supabase RLS policies enforce tenant isolation (org_id filter on decisions, members queries) and add RLS integration smoke test in packages/cli/test/cloud/supabase.test.ts
 
 **Checkpoint**: All 10 secret patterns blocked. Cross-org queries return empty.
 
@@ -152,11 +152,11 @@
 
 ### Implementation for User Story 6
 
-- [ ] T042 [US6] Implement status command (healthCheck both backends, show org name, decision count, pending queue, configured IDEs, color-coded output) in packages/cli/src/commands/status.ts per cli-commands contract
-- [ ] T043 [P] [US6] Implement dashboard command (call getDashboardStats from Supabase, format colored table: totals by type/author, recent 5, pending count) in packages/cli/src/commands/dashboard.ts per cli-commands contract
-- [ ] T044 [P] [US6] Implement export command (--json: fetch all decisions → write JSON, --markdown: group by type → write MD, --output flag or stdout) in packages/cli/src/commands/export-cmd.ts per cli-commands contract
-- [ ] T045 [P] [US6] Implement config command (set/get for api-key with masking, author-name, org-id read-only) in packages/cli/src/commands/config-cmd.ts per cli-commands contract
-- [ ] T046 [US6] Register status, dashboard, export, config commands in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T042 [US6] Implement status command (healthCheck both backends, show org name, decision count, pending queue, configured IDEs, color-coded output) in packages/cli/src/commands/status.ts per cli-commands contract
+- [x] T043 [P] [US6] Implement dashboard command (call getDashboardStats from Supabase, format colored table: totals by type/author, recent 5, pending count) in packages/cli/src/commands/dashboard.ts per cli-commands contract
+- [x] T044 [P] [US6] Implement export command (--json: fetch all decisions → write JSON, --markdown: group by type → write MD, --output flag or stdout) in packages/cli/src/commands/export-cmd.ts per cli-commands contract
+- [x] T045 [P] [US6] Implement config command (set/get for api-key with masking, author-name, org-id read-only) in packages/cli/src/commands/config-cmd.ts per cli-commands contract
+- [x] T046 [US6] Register status, dashboard, export, config commands in CLI entry point in packages/cli/bin/teamind.ts (extend)
 
 **Checkpoint**: All management commands work from terminal.
 
@@ -170,8 +170,8 @@
 
 ### Implementation for User Story 7
 
-- [ ] T047 [US7] Integrate offline queue flush into serve startup and periodic check (attempt flush on every successful cloud connection, update pending count) in packages/cli/src/capture/startup-sweep.ts (extend)
-- [ ] T048 [US7] Add partial failure handling for dual write (Postgres succeeds/Qdrant fails → retry Qdrant, Qdrant succeeds/Postgres fails → retry Postgres) in packages/cli/src/mcp/tools/store.ts (extend)
+- [x] T047 [US7] Integrate offline queue flush into serve startup and periodic check (attempt flush on every successful cloud connection, update pending count) in packages/cli/src/capture/startup-sweep.ts (extend)
+- [x] T048 [US7] Add partial failure handling for dual write (Postgres succeeds/Qdrant fails → retry Qdrant, Qdrant succeeds/Postgres fails → retry Postgres) in packages/cli/src/mcp/tools/store.ts (extend)
 
 **Checkpoint**: Offline store/search works. Queue flushes. Partial failures handled.
 
@@ -185,9 +185,9 @@
 
 ### Implementation for User Story 8
 
-- [ ] T049 [US8] Implement uninstall command (read manifest, remove MCP configs from IDEs via surgical JSON edit, remove CLAUDE.md markers, remove hook configs, delete ~/.teamind/, print cloud data warning) in packages/cli/src/commands/uninstall.ts per cli-commands contract
-- [ ] T050 [US8] Register uninstall command in CLI entry point in packages/cli/bin/teamind.ts (extend)
-- [ ] T051 [US8] Verify all 7 error message constants produce actionable output (what happened, why, how to fix) across all command paths in packages/cli/src/errors.ts (review and extend if gaps)
+- [x] T049 [US8] Implement uninstall command (read manifest, remove MCP configs from IDEs via surgical JSON edit, remove CLAUDE.md markers, remove hook configs, delete ~/.teamind/, print cloud data warning) in packages/cli/src/commands/uninstall.ts per cli-commands contract
+- [x] T050 [US8] Register uninstall command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T051 [US8] Verify all 7 error message constants produce actionable output (what happened, why, how to fix) across all command paths in packages/cli/src/errors.ts (review and extend if gaps)
 
 **Checkpoint**: Uninstall removes all artifacts. Error messages are actionable.
 
@@ -197,11 +197,11 @@
 
 **Purpose**: End-to-end validation, documentation, publish
 
-- [ ] T052 End-to-end flow test: init → serve → store → search → dashboard → export → uninstall (manual validation per quickstart.md)
-- [ ] T053 [P] Write README.md (install, quickstart 30s, features, how it works, pricing link) at repo root
-- [ ] T054 [P] Write AGENTS.md (Teamind instructions for AI agents — dogfooding) at repo root
-- [ ] T055 Build and dry-run npm publish from packages/cli (verify package contents, bin entry, zero native deps)
-- [ ] T056 Tag v0.1.0 and prepare for beta distribution
+- [x] T052 End-to-end flow test: init → serve → store → search → dashboard → export → uninstall (manual validation per quickstart.md)
+- [x] T053 [P] Write README.md (install, quickstart 30s, features, how it works, pricing link) at repo root
+- [x] T054 [P] Write AGENTS.md (Teamind instructions for AI agents — dogfooding) at repo root
+- [x] T055 Build and dry-run npm publish from packages/cli (verify package contents, bin entry, zero native deps)
+- [x] T056 Tag v0.1.0 and prepare for beta distribution
 
 ---
 

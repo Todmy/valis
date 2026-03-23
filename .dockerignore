@@ -1,6 +1,12 @@
-node_modules
-dist
+node_modules/
+.git/
+dist/
+build/
+Dockerfile*
+.dockerignore
+*.log*
 .env*
-*.log
+coverage/
 .DS_Store
-.git
+docs/
+specs/
