@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kb-index:*)",
+      "mcp__qdrant__qdrant-find",
+      "mcp__tavily-search__tavily_search",
+      "mcp__brave-search__brave_web_search",
+      "WebFetch(domain:qdrant.tech)",
+      "mcp__tavily-search__tavily_extract",
+      "WebFetch(domain:ironcorelabs.com)",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:www.emergentmind.com)",
+      "mcp__qdrant__qdrant-store",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh \"@docs/\" --json --short-name \"teamind-mvp\" \"Teamind MVP — shared decision intelligence for AI-augmented engineering teams\")",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json --paths-only)",
+      "Bash(.specify/scripts/bash/setup-plan.sh --json)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh claude:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
+      "Bash(/Users/todmy/github/teamind/packages/cli/.env:*)",
+      "Bash(python3 -c \"import json; json.load\\(open\\(''/Users/todmy/.claude/backups/.claude.json.backup.1774255037226''\\)\\)\")",
+      "Bash(node:*)",
+      "Bash(ls -lt /home/claude/.claude/backups/.claude.json.backup.*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(python3:*)",
+      "Bash(docker exec:*)"
+    ]
+  }
+}

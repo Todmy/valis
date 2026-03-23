@@ -1,21 +1,33 @@
 <!--
 Sync Impact Report
 ====================
-Version change: N/A → 1.0.0 (initial ratification)
-Modified principles: N/A (new document)
+Version change: 1.0.0 → 1.1.0 (MINOR)
+Modified principles:
+  - IV. No LLM Dependency (MVP) → IV. No LLM Dependency for Core Ops
+    (removed MVP scope, made permanent — enrichment MAY use LLM optionally)
+  - VIII. Push + Pull (Hybrid Server) → expanded to mandate cross-session
+    push via Supabase Realtime; local push remains baseline
+Security & Data Integrity:
+  - Added per-member API key requirement
+  - Added custom JWT requirement (replacing service_role for client auth)
+  - Added key rotation requirement
+  - Added audit trail requirement
+Development Workflow:
+  - Added unit economics instrumentation requirement
+  - Added backward-compatible migration strategy requirement
 Added sections:
-  - Core Principles (8 principles derived from design-spec-v5.md § 2)
-  - Security & Data Integrity
-  - Development Workflow
-  - Governance
-Removed sections: N/A
+  - Principle IX. Decision Lifecycle (status transitions, relationships,
+    contradiction detection)
+  - Principle X. Identity-First Access Control (per-member auth, RBAC,
+    key rotation, audit trail)
+Removed sections: none
 Templates requiring updates:
   - .specify/templates/plan-template.md — ✅ compatible (Constitution Check
-    section already uses generic gates; principles below provide concrete gates)
-  - .specify/templates/spec-template.md — ✅ compatible (no constitution-specific
-    references; user stories + requirements structure aligns)
-  - .specify/templates/tasks-template.md — ✅ compatible (phase-based structure
-    accommodates security, offline, and dual-storage tasks naturally)
+    section uses generic gates; 10 principles provide concrete gates)
+  - .specify/templates/spec-template.md — ✅ compatible (user stories +
+    requirements structure accommodates RBAC, lifecycle, and realtime stories)
+  - .specify/templates/tasks-template.md — ✅ compatible (phase-based
+    structure accommodates auth, lifecycle, and realtime tasks naturally)
 Follow-up TODOs: none
 -->
 
@@ -56,16 +68,20 @@ primary workflow.
 disrupts their work. Graceful degradation (empty search results,
 offline queue) is always preferable to errors that halt the session.
 
-### IV. No LLM Dependency (MVP)
+### IV. No LLM Dependency for Core Ops
 
-The MVP MUST NOT require LLM calls for core functionality (store,
-search, context). The agent running in the user's session classifies
-decisions at store time. Auto-captured raw text is stored as
-`type: 'pending'` without enrichment.
+Core operations (store, search, context) MUST NOT require LLM calls.
+The agent running in the user's session classifies decisions at store
+time. Auto-captured raw text is stored as `type: 'pending'` without
+enrichment. Enrichment features (e.g., auto-classification of pending
+decisions) MAY use LLM optionally but MUST degrade gracefully without
+it — never blocking core flows.
 
 **Rationale:** LLM enrichment adds cost, API key requirements, and
 a hard external dependency. The agent already has full session context
 and produces higher-quality classification than post-hoc extraction.
+Optional enrichment can enhance quality without compromising
+reliability.
 
 ### V. Zero Native Dependencies
 
@@ -80,13 +96,16 @@ eliminates the need for local SQLite.
 ### VI. Auto-Capture by Default
 
 Decision capture MUST happen automatically without manual developer
-action. Three capture layers — channel-driven reminders (primary),
-CLAUDE.md keyword triggers + explicit `teamind_store` (secondary),
-and startup sweep (catch-up) — run in a single process.
+action. Three capture layers — CLAUDE.md keyword triggers + explicit
+`teamind_store` (baseline), channel-driven reminders (enhancement),
+and startup sweep (catch-up) — run in a single process. The baseline
+MUST work without channels. Channels improve capture rate (~80% vs
+~30-50%) but MUST NOT be a hard dependency.
 
-**Rationale:** Manual capture has <20% compliance. The channel-driven
-approach leverages the agent's full session context to produce
-high-quality classified decisions at zero additional LLM cost.
+**Rationale:** Manual capture has <20% compliance. Channels are
+research preview and may change — the system must degrade gracefully.
+CLAUDE.md triggers are the stable foundation; channels enhance when
+available.
 
 ### VII. Dual Storage
 
@@ -107,10 +126,61 @@ tools (`teamind_store`, `teamind_search`, `teamind_context`) handle
 on-demand access. Channel push delivers real-time team notifications
 (new decisions, contradiction alerts) to active sessions.
 
+Cross-session push (Dev A stores → Dev B receives) MUST be supported
+via Supabase Realtime subscriptions. Local-session push remains the
+baseline; cross-session push MUST degrade gracefully if Realtime is
+unavailable (pull still works). Push is supplementary — never required.
+
 **Rationale:** Pull-only means the agent must explicitly search to
 discover new team decisions. Push closes the awareness gap for active
-sessions. Sessions without channel support still work via pull —
-push is supplementary, never required.
+sessions. Cross-session push transforms Teamind from a shared database
+into a real-time team awareness tool — the core differentiator for
+retention.
+
+### IX. Decision Lifecycle
+
+Decisions are living artifacts, not immutable records. The system MUST
+support:
+
+- **Status transitions**: `active → deprecated`, `active → superseded`,
+  `proposed → active`. Every transition MUST record who changed it
+  and why.
+- **Relationships**: `depends_on` and `replaces` links between
+  decisions. When a decision is stored with `replaces: <id>`, the
+  replaced decision MUST transition to `superseded` automatically.
+- **Contradiction detection**: When a new decision conflicts with an
+  existing active decision (same `affects` areas, opposing content),
+  the system MUST flag the contradiction to the storing user. Both
+  decisions remain `active` until explicitly resolved.
+
+**Rationale:** Without lifecycle management, the team brain accumulates
+stale and contradictory decisions. Trust degrades as developers
+encounter outdated guidance. Lifecycle support is the difference
+between a knowledge dump and a living knowledge base.
+
+### X. Identity-First Access Control
+
+Every mutation (store, status change, key rotation) MUST be
+attributable to a specific member via per-member credentials.
+
+- **Per-member API keys**: Each member MUST have their own API key
+  issued at join time. Individual keys enable revocation without
+  disrupting other members and provide a complete audit trail.
+- **RBAC**: Admin role MUST gate destructive operations (key rotation,
+  member removal, org settings). Member role can store, search, and
+  change decision status.
+- **Key rotation**: Admins MUST be able to rotate org-level and
+  member-level API keys. Rotation MUST invalidate the old key
+  immediately.
+- **JWT enforcement**: Client authentication MUST use custom JWTs
+  (not `service_role` key) so that Postgres RLS is enforced by
+  Supabase natively — not via application-level `set_config` calls.
+
+**Rationale:** Org-level API keys cannot distinguish who did what,
+cannot be revoked per-member, and bypass Supabase's native RLS
+enforcement. Enterprise customers require auditability and
+least-privilege access. `service_role` key in client code is a
+security anti-pattern that blocks enterprise adoption.
 
 ## Security & Data Integrity
 
@@ -118,13 +188,17 @@ push is supplementary, never required.
   the 10 defined patterns match, the entire record MUST be blocked
   (not redacted, not stored). Applies to all capture layers.
 - Tenant isolation MUST be enforced at every layer: Qdrant queries
-  filter by `org_id`, Postgres uses Row Level Security, API keys
-  map to a single org.
+  filter by `org_id`, Postgres RLS enforced via JWT claims (not
+  `set_config`), per-member API keys map to a single org.
 - API keys and config files MUST be stored with restrictive
   permissions (`0600`). Secrets MUST NOT be committed to version
   control.
 - All data in transit MUST use HTTPS. No plaintext connections to
   Supabase or Qdrant Cloud.
+- Every state-changing operation MUST be attributable to a specific
+  member. Audit trail (who, what, when) MUST be queryable.
+- Key rotation MUST be available for compromise response. Rotated
+  keys MUST be invalidated immediately — no grace period.
 
 ## Development Workflow
 
@@ -142,6 +216,14 @@ push is supplementary, never required.
   duplicate decisions across all capture layers.
 - **Idempotent configuration:** `teamind init` and IDE config
   operations MUST be safe to re-run without duplicating entries.
+- **Backward-compatible migrations:** Schema changes MUST be
+  additive (new columns, new tables). Destructive changes (column
+  removal, type changes) MUST go through a deprecation cycle:
+  add new → migrate data → remove old.
+- **Unit economics instrumentation:** Track from launch: COGS per
+  org (Supabase + Qdrant usage), activation rate (init → first
+  store), conversion rate (free → paid), churn (monthly org
+  activity). The `rate_limits` table provides the foundation.
 
 ## Governance
 
@@ -158,10 +240,10 @@ implementation when there is a conflict.
   proceeding to design. Violations MUST be justified in the
   Complexity Tracking table.
 - **Review:** Principles SHOULD be reviewed when the product scope
-  changes significantly (e.g., Phase 2 features, new storage
-  backends, new IDE integrations).
+  changes significantly (e.g., new storage backends, new IDE
+  integrations, new pricing tiers).
 - **Runtime guidance:** For day-to-day development patterns, refer
   to `AGENTS.md` and `CLAUDE.md` in the project root. This
   constitution governs *architecture*; those files govern *workflow*.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-22 | **Last Amended**: 2026-03-22
+**Version**: 1.1.0 | **Ratified**: 2026-03-22 | **Last Amended**: 2026-03-23
