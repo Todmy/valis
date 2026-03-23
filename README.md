@@ -40,13 +40,25 @@ teamind init --join ACME-7X3K
 | Command | Description |
 |---------|-------------|
 | `teamind init` | Create or join an organization |
-| `teamind serve` | Start MCP + Channel server |
-| `teamind status` | Show system health |
-| `teamind dashboard` | Show team activity |
-| `teamind search <query>` | Search decisions |
+| `teamind serve` | Start MCP + Channel server (with realtime push) |
+| `teamind status` | Show system health, realtime status, auth mode |
+| `teamind dashboard` | Show team activity, lifecycle stats, dependency warnings |
+| `teamind search <query>` | Search decisions (ranks active above deprecated) |
 | `teamind export --json` | Export all decisions |
 | `teamind config set/get` | Manage configuration |
+| `teamind migrate-auth` | Migrate from org-level to per-member JWT auth |
+| `teamind admin metrics` | Platform-wide observability metrics |
+| `teamind admin audit` | View audit trail for an org |
 | `teamind uninstall` | Clean removal |
+
+## Phase 2 Features
+
+- **Decision lifecycle**: Deprecate outdated decisions, promote proposed ones to active, supersede with replacements. Full status history via `teamind_lifecycle`.
+- **Cross-session push**: Real-time notifications via Supabase Realtime when teammates store or deprecate decisions. Dedup suppresses echoes from the local session.
+- **Per-member auth**: JWT-based authentication with per-member API keys (`tmm_` prefix). Migrate from org-level keys via `teamind migrate-auth`. Key rotation and revocation via Edge Functions.
+- **Contradiction detection**: Two-tier detection (area overlap + Qdrant cosine similarity) flags conflicting active decisions on store. Contradictions auto-resolve when decisions are deprecated/superseded.
+- **Platform metrics**: Operator dashboard with activation funnel, per-org COGS, churn/at-risk tracking, and active member counts via `teamind admin metrics`.
+- **Audit trail**: Full audit log of decision stores, status changes, key rotations, and member events via `teamind admin audit`.
 
 ## How It Works
 
