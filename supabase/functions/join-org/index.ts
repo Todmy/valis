@@ -12,6 +12,14 @@ const MEMBER_LIMITS: Record<string, number> = {
   enterprise: 500,
 };
 
+/** Generate a per-member API key: tmm_ + 32 hex chars. */
+function generateMemberKey(): string {
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `tmm_${hex}`;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -81,11 +89,13 @@ serve(async (req: Request) => {
       });
     }
 
-    // Insert member
+    // Insert member with per-member API key
+    const memberKey = generateMemberKey();
     const { error: insertError } = await supabase.from("members").insert({
       org_id: org.id,
       author_name: author_name.trim(),
       role: "member",
+      api_key: memberKey,
     });
 
     if (insertError) {
@@ -106,6 +116,7 @@ serve(async (req: Request) => {
         org_id: org.id,
         org_name: org.name,
         api_key: org.api_key,
+        member_key: memberKey,
         member_count: (memberCount || 0) + 1,
         decision_count: decisionCount || 0,
         role: "member",
