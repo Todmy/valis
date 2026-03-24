@@ -316,6 +316,30 @@ export async function getAllDecisions(
   return (data || []) as Decision[];
 }
 
+// ---------------------------------------------------------------------------
+// Proposed decisions (Phase 3 — US1, T014)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch all proposed decisions for an org, ordered by creation date (newest first).
+ * Used by the dashboard to display the "Proposed (N)" section.
+ */
+export async function getProposedDecisions(
+  supabase: SupabaseClient,
+  orgId: string,
+): Promise<Decision[]> {
+  await setOrgContext(supabase, orgId);
+  const { data, error } = await supabase
+    .from('decisions')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('status', 'proposed')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Failed to fetch proposed decisions: ${error.message}`);
+  return (data || []) as Decision[];
+}
+
 export async function getOrgInfo(
   supabase: SupabaseClient,
   orgId: string,

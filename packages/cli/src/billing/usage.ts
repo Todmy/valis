@@ -1,0 +1,119 @@
+/**
+ * Usage check helper for CLI store/search operations.
+ *
+ * Calls the `check-usage` Edge Function before each operation.
+ * Implements the fail-open guarantee (FR-018): if the check fails for
+ * any reason (network error, timeout, Edge Function error), the operation
+ * proceeds as if allowed.
+ *
+ * @module billing/usage
+ */
+
+import { getToken } from '../auth/jwt.js';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface UsageCheckResult {
+  /** Whether the operation is allowed. */
+  allowed: boolean;
+  /** Human-readable message when denied. */
+  message?: string;
+  /** Upgrade info when denied (free tier limit reached). */
+  upgrade?: {
+    message: string;
+    checkout_url: string | null;
+  };
+  /** Current plan name. */
+  plan?: string;
+  /** Whether this operation incurs overage charges. */
+  overage?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Timeout for usage check requests (3 seconds). */
+const USAGE_CHECK_TIMEOUT_MS = 3_000;
+
+// ---------------------------------------------------------------------------
+// Main function
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether the current org can perform a store or search operation.
+ *
+ * **Fail-open guarantee**: On ANY error (network, timeout, HTTP error,
+ * parse error, missing config), returns `{ allowed: true }`. Billing
+ * failures must never block core operations.
+ *
+ * @param supabaseUrl - Supabase project URL
+ * @param apiKey - API key (org-level or per-member) for JWT exchange
+ * @param orgId - Organization ID
+ * @param operation - 'store' or 'search'
+ * @returns UsageCheckResult — check `allowed` to decide whether to proceed
+ */
+export async function checkUsageOrProceed(
+  supabaseUrl: string,
+  apiKey: string,
+  orgId: string,
+  operation: 'store' | 'search',
+): Promise<UsageCheckResult> {
+  try {
+    // Get JWT token for authenticated Edge Function call
+    const tokenCache = await getToken(supabaseUrl, apiKey);
+    const jwt = tokenCache?.jwt.token;
+
+    // No token available — fail-open (offline / auth issue)
+    if (!jwt) {
+      return { allowed: true };
+    }
+
+    const url = `${supabaseUrl}/functions/v1/check-usage`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ org_id: orgId, operation }),
+      signal: AbortSignal.timeout(USAGE_CHECK_TIMEOUT_MS),
+    });
+
+    // HTTP error from Edge Function — fail-open
+    if (!response.ok) {
+      return { allowed: true };
+    }
+
+    const data = await response.json() as {
+      allowed: boolean;
+      plan?: string;
+      reason?: string;
+      overage?: boolean;
+      overage_rate?: string;
+      upgrade?: { message: string; checkout_url: string | null };
+    };
+
+    if (data.allowed === false) {
+      return {
+        allowed: false,
+        message: data.reason ?? 'Usage limit reached.',
+        upgrade: data.upgrade,
+        plan: data.plan,
+      };
+    }
+
+    return {
+      allowed: true,
+      plan: data.plan,
+      overage: data.overage ?? false,
+    };
+  } catch {
+    // Network error, timeout, JSON parse error, etc.
+    // NEVER block the operation — fail-open guarantee (FR-018)
+    return { allowed: true };
+  }
+}

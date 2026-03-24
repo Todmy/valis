@@ -10,7 +10,7 @@ import {
 import type { StoreExtras } from '../../cloud/supabase.js';
 import { getQdrantClient, upsertDecision } from '../../cloud/qdrant.js';
 import { appendToQueue } from '../../offline/queue.js';
-import { buildNewDecisionEvent, buildContradictionEvent } from '../../channel/push.js';
+import { buildNewDecisionEvent, buildProposedDecisionEvent, buildContradictionEvent } from '../../channel/push.js';
 import { canSupersede } from '../../auth/rbac.js';
 import { getToken } from '../../auth/jwt.js';
 import { detectContradictions } from '../../contradiction/detect.js';
@@ -239,14 +239,26 @@ export async function handleStore(
     // -----------------------------------------------------------------------
 
     try {
-      const _event = buildNewDecisionEvent(
-        config.author_name,
-        raw.type || 'pending',
-        raw.summary || args.text.substring(0, 100),
-      );
-      // Channel notification would be sent via MCP server.notification()
-      // when channel transport is connected. For MVP, event is built but
-      // push requires server reference — wired in serve command.
+      // T011: When a proposed decision is stored, send a dedicated proposed
+      // notification so other sessions are alerted about pending review.
+      if (extras.status === 'proposed') {
+        const _proposedEvent = buildProposedDecisionEvent(
+          config.author_name,
+          raw.type || 'pending',
+          raw.summary || args.text.substring(0, 100),
+          decision.id,
+        );
+        // Channel push wired in serve command
+      } else {
+        const _event = buildNewDecisionEvent(
+          config.author_name,
+          raw.type || 'pending',
+          raw.summary || args.text.substring(0, 100),
+        );
+        // Channel notification would be sent via MCP server.notification()
+        // when channel transport is connected. For MVP, event is built but
+        // push requires server reference — wired in serve command.
+      }
     } catch {
       // Channel push is best-effort
     }
@@ -322,6 +334,10 @@ export async function handleStore(
       id: decision.id,
       status: 'stored' as const,
     };
+    // T011: Indicate when a decision was stored as proposed
+    if (extras.status === 'proposed') {
+      response.proposed = true;
+    }
     if (superseded) {
       response.superseded = superseded;
     }

@@ -1,6 +1,6 @@
 import pc from 'picocolors';
 import { loadConfig } from '../config/store.js';
-import { getSupabaseClient, getDashboardStats } from '../cloud/supabase.js';
+import { getSupabaseClient, getDashboardStats, getProposedDecisions } from '../cloud/supabase.js';
 
 export async function dashboardCommand(): Promise<void> {
   const config = await loadConfig();
@@ -19,11 +19,24 @@ export async function dashboardCommand(): Promise<void> {
 
     // Lifecycle stats
     if (stats.by_status) {
+      const proposedCount = stats.by_status.proposed || 0;
       console.log(pc.cyan('\n  Lifecycle:'));
       console.log(`    Active:     ${pc.green(String(stats.by_status.active || 0))}`);
-      console.log(`    Proposed:   ${pc.blue(String(stats.by_status.proposed || 0))}`);
+      console.log(`    Proposed:   ${pc.blue(String(proposedCount))}`);
       console.log(`    Deprecated: ${pc.yellow(String(stats.by_status.deprecated || 0))}`);
       console.log(`    Superseded: ${pc.dim(String(stats.by_status.superseded || 0))}`);
+    }
+
+    // T014: Proposed decisions section — list decisions awaiting review
+    const proposedDecisions = await getProposedDecisions(supabase, config.org_id);
+    if (proposedDecisions.length > 0) {
+      console.log(pc.magenta(`\n  Proposed (${proposedDecisions.length}):`));
+      for (const d of proposedDecisions) {
+        const summary = d.summary || d.detail.substring(0, 60);
+        console.log(
+          `    ${pc.blue('[proposed]')} ${summary} — ${pc.dim(d.author)} — ${pc.dim(d.created_at)}`,
+        );
+      }
     }
 
     // By type
@@ -43,7 +56,9 @@ export async function dashboardCommand(): Promise<void> {
       console.log(pc.cyan('\n  Recent:'));
       for (const d of stats.recent) {
         const summary = d.summary || d.detail.substring(0, 60);
-        console.log(`    ${summary} — ${pc.dim(d.author)} — ${pc.dim(d.created_at)}`);
+        // T014: Show proposed label on recent decisions that are proposed
+        const statusTag = d.status === 'proposed' ? `${pc.blue('[proposed]')} ` : '';
+        console.log(`    ${statusTag}${summary} — ${pc.dim(d.author)} — ${pc.dim(d.created_at)}`);
       }
     }
 

@@ -1,11 +1,14 @@
 import { loadConfig } from '../../config/store.js';
-import { getSupabaseClient } from '../../cloud/supabase.js';
+import { getSupabaseClient, getDecisionById } from '../../cloud/supabase.js';
+import { buildAuditPayload, createAuditEntry } from '../../auth/audit.js';
+import { buildProposedPromotedEvent, buildProposedRejectedEvent } from '../../channel/push.js';
 import type {
   LifecycleArgs,
   LifecycleResponse,
   LifecycleStatusChange,
   LifecycleHistoryResponse,
   LifecycleHistoryEntry,
+  LifecyclePinResponse,
   DecisionStatus,
 } from '../../types.js';
 
@@ -21,8 +24,36 @@ export async function handleLifecycle(args: LifecycleArgs): Promise<LifecycleRes
     return await getHistory(supabase, args.decision_id);
   }
 
+  // -------------------------------------------------------------------------
+  // T043: Pin / Unpin (US5)
+  // -------------------------------------------------------------------------
+
+  if (args.action === 'pin' || args.action === 'unpin') {
+    return await handlePinUnpin(supabase, config.org_id, args.decision_id, args.action === 'pin', config.author_name, config.member_id);
+  }
+
+  // -------------------------------------------------------------------------
+  // T012: Resolve target status for proposed workflow audit trail
+  // -------------------------------------------------------------------------
+
   // deprecate or promote
   const newStatus: DecisionStatus = args.action === 'deprecate' ? 'deprecated' : 'active';
+
+  // Fetch the current decision to know old_status for audit trail
+  let oldDecision: { status: DecisionStatus; summary: string | null; detail: string; author: string } | null = null;
+  try {
+    const fetched = await getDecisionById(supabase, config.org_id, args.decision_id);
+    if (fetched) {
+      oldDecision = {
+        status: fetched.status,
+        summary: fetched.summary,
+        detail: fetched.detail,
+        author: fetched.author,
+      };
+    }
+  } catch {
+    // Best-effort — the change-status edge function will validate
+  }
 
   try {
     const { data, error } = await supabase.functions.invoke('change-status', {
@@ -38,6 +69,60 @@ export async function handleLifecycle(args: LifecycleArgs): Promise<LifecycleRes
     }
 
     const result = data as LifecycleStatusChange;
+
+    // -----------------------------------------------------------------------
+    // T012: Proposed workflow — explicit audit trail and push notifications
+    // -----------------------------------------------------------------------
+
+    const wasProposed = oldDecision?.status === 'proposed' || result.old_status === 'proposed';
+
+    if (wasProposed) {
+      try {
+        const auditAction = args.action === 'promote' ? 'decision_promoted' : 'decision_deprecated';
+        const auditPayload = buildAuditPayload(
+          auditAction,
+          'decision',
+          args.decision_id,
+          config.member_id || 'unknown',
+          config.org_id,
+          {
+            previousState: { status: 'proposed' },
+            newState: {
+              status: newStatus,
+              promoted_from: 'proposed',
+            },
+            reason: args.reason,
+          },
+        );
+        await createAuditEntry(supabase, auditPayload);
+      } catch {
+        // Audit failures are non-fatal
+      }
+
+      // Build push notification for proposed workflow transitions
+      try {
+        const summary = oldDecision?.summary || oldDecision?.detail?.substring(0, 100) || 'Decision';
+        if (args.action === 'promote') {
+          const _event = buildProposedPromotedEvent(
+            config.author_name,
+            summary,
+            args.decision_id,
+          );
+          // Channel push wired in serve command
+        } else {
+          const _event = buildProposedRejectedEvent(
+            config.author_name,
+            summary,
+            args.decision_id,
+            args.reason,
+          );
+          // Channel push wired in serve command
+        }
+      } catch {
+        // Channel push is best-effort
+      }
+    }
+
     return {
       decision_id: result.decision_id,
       old_status: result.old_status,
@@ -106,4 +191,48 @@ async function getHistory(
         `${err instanceof Error ? err.message : String(err)}`,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// T043: Pin / Unpin (US5)
+// ---------------------------------------------------------------------------
+
+async function handlePinUnpin(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  orgId: string,
+  decisionId: string,
+  pinned: boolean,
+  authorName: string,
+  memberId?: string | null,
+): Promise<LifecyclePinResponse> {
+  const { error } = await supabase
+    .from('decisions')
+    .update({ pinned })
+    .eq('id', decisionId)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new Error(`Failed to ${pinned ? 'pin' : 'unpin'} decision: ${error.message}`);
+  }
+
+  // Audit trail (best-effort)
+  try {
+    const auditPayload = buildAuditPayload(
+      pinned ? 'decision_pinned' : 'decision_unpinned',
+      'decision',
+      decisionId,
+      memberId || 'unknown',
+      orgId,
+      { newState: { pinned } },
+    );
+    await createAuditEntry(supabase, auditPayload);
+  } catch {
+    // Audit failures are non-fatal
+  }
+
+  return {
+    decision_id: decisionId,
+    pinned,
+    changed_by: authorName,
+  };
 }

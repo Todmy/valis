@@ -16,6 +16,14 @@ const STATUS_PRIORITY: Record<DecisionStatus, number> = {
   superseded: 3,
 };
 
+/** Human-readable status labels for search results (T013). */
+const STATUS_LABELS: Record<DecisionStatus, string> = {
+  active: 'active',
+  proposed: 'proposed',
+  deprecated: 'deprecated',
+  superseded: 'superseded',
+};
+
 /**
  * Sort results so that active/proposed decisions rank above deprecated/superseded
  * when scores are equal (or very close). A tolerance of 0.01 treats scores within
@@ -69,21 +77,28 @@ export async function handleSearch(args: SearchArgs): Promise<SearchResponse> {
       rawResults as Array<SearchResult & { replaces?: string | null }>,
     );
 
-    // Enrich each result with status and replaced_by
-    const enriched: SearchResult[] = rawResults.map((r) => ({
-      id: r.id,
-      score: r.score,
-      type: r.type,
-      summary: r.summary,
-      detail: r.detail,
-      author: r.author,
-      affects: r.affects,
-      created_at: r.created_at,
-      status: r.status || 'active',
-      replaced_by: replacedByMap.get(r.id) ?? null,
-    }));
+    // T013: Enrich each result with status and status_label.
+    // Proposed decisions are included in default search results — not filtered
+    // out. The status_label field provides a human-readable label for display.
+    const enriched: SearchResult[] = rawResults.map((r) => {
+      const status = r.status || 'active';
+      return {
+        id: r.id,
+        score: r.score,
+        type: r.type,
+        summary: r.summary,
+        detail: r.detail,
+        author: r.author,
+        affects: r.affects,
+        created_at: r.created_at,
+        status,
+        status_label: STATUS_LABELS[status] || status,
+        replaced_by: replacedByMap.get(r.id) ?? null,
+      };
+    });
 
     // Rank active decisions above deprecated/superseded at equal relevance
+    // Proposed decisions rank just below active but above deprecated/superseded
     const ranked = rankByStatus(enriched);
 
     return { results: ranked };
