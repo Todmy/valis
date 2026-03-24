@@ -166,42 +166,139 @@ serve(async (req: Request) => {
     }
 
     // ------------------------------------------------------------------
-    // 4. Mint JWT (HS256, 1h TTL)
+    // 4. Parse optional project_id from request body (T008 — Phase 4)
+    // ------------------------------------------------------------------
+    let projectId: string | undefined;
+    let projectName: string | undefined;
+    let projectRole: string | undefined;
+
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      // Empty body is fine — project_id is optional
+    }
+
+    if (body.project_id && typeof body.project_id === "string") {
+      const requestedProjectId = body.project_id;
+
+      // 4a. Verify project exists and belongs to member's org
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("id, org_id, name")
+        .eq("id", requestedProjectId)
+        .single();
+
+      if (projectError || !project) {
+        return new Response(
+          JSON.stringify({ error: "no_project_access" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (project.org_id !== orgId) {
+        return new Response(
+          JSON.stringify({ error: "no_project_access" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      // 4b. Verify member is in project_members OR is org admin
+      if (memberRole !== "admin") {
+        const { data: pm, error: pmError } = await supabase
+          .from("project_members")
+          .select("role")
+          .eq("project_id", requestedProjectId)
+          .eq("member_id", memberId)
+          .single();
+
+        if (pmError || !pm) {
+          return new Response(
+            JSON.stringify({ error: "no_project_access" }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        projectRole = pm.role;
+      } else {
+        // Org admin — check if they have an explicit project_members entry
+        const { data: pm } = await supabase
+          .from("project_members")
+          .select("role")
+          .eq("project_id", requestedProjectId)
+          .eq("member_id", memberId)
+          .single();
+
+        projectRole = pm?.role ?? "project_admin"; // org admin defaults to project_admin
+      }
+
+      projectId = project.id;
+      projectName = project.name;
+    }
+
+    // ------------------------------------------------------------------
+    // 5. Mint JWT (HS256, 1h TTL)
     // ------------------------------------------------------------------
     const now = Math.floor(Date.now() / 1000);
     const exp = now + 3600; // 1 hour
 
     const secret = new TextEncoder().encode(jwtSecret);
 
-    const token = await new SignJWT({
+    const jwtClaims: Record<string, unknown> = {
       sub: memberId,
       role: "authenticated",
       iss: "teamind",
       org_id: orgId,
       member_role: memberRole,
       author_name: authorName,
-    })
+    };
+
+    // Add project claims when project_id was provided
+    if (projectId) {
+      jwtClaims.project_id = projectId;
+      jwtClaims.project_role = projectRole;
+    }
+
+    const token = await new SignJWT(jwtClaims)
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setIssuedAt(now)
       .setExpirationTime(exp)
       .sign(secret);
 
     // ------------------------------------------------------------------
-    // 5. Return response per contract
+    // 6. Return response per contract
     // ------------------------------------------------------------------
     const expiresAt = new Date(exp * 1000).toISOString();
 
+    const responseBody: Record<string, unknown> = {
+      token,
+      expires_at: expiresAt,
+      member_id: memberId,
+      org_id: orgId,
+      org_name: orgName,
+      role: memberRole,
+      author_name: authorName,
+      auth_mode: "jwt",
+    };
+
+    // Include project metadata when project_id was provided
+    if (projectId) {
+      responseBody.project_id = projectId;
+      responseBody.project_name = projectName;
+      responseBody.project_role = projectRole;
+    }
+
     return new Response(
-      JSON.stringify({
-        token,
-        expires_at: expiresAt,
-        member_id: memberId,
-        org_id: orgId,
-        org_name: orgName,
-        role: memberRole,
-        author_name: authorName,
-        auth_mode: "jwt",
-      }),
+      JSON.stringify(responseBody),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

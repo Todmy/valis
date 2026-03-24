@@ -46,6 +46,15 @@ function unauthorized(): Response {
   return jsonResponse({ error: "unauthorized" }, 401);
 }
 
+/** Decode JWT payload without verification (verification done by Supabase gateway). */
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Invalid JWT format");
+  const payload = parts[1];
+  const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+  return JSON.parse(decoded);
+}
+
 serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
@@ -54,22 +63,15 @@ serve(async (req: Request) => {
 
   try {
     // ------------------------------------------------------------------
-    // 1. Authenticate via Bearer token (same pattern as exchange-token)
+    // 1. Authenticate via Bearer token (API key or JWT)
     // ------------------------------------------------------------------
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.toLowerCase().startsWith("bearer ")) {
       return unauthorized();
     }
 
-    const apiKey = authHeader.slice(7).trim();
-    if (!apiKey || apiKey.length < 4) {
-      return unauthorized();
-    }
-
-    const isPerMemberKey = apiKey.startsWith("tmm_");
-    const isOrgKey = apiKey.startsWith("tm_") && !isPerMemberKey;
-
-    if (!isPerMemberKey && !isOrgKey) {
+    const bearerToken = authHeader.slice(7).trim();
+    if (!bearerToken || bearerToken.length < 4) {
       return unauthorized();
     }
 
@@ -84,62 +86,96 @@ serve(async (req: Request) => {
     let orgId: string;
     let memberRole: string;
     let authorName: string;
+    // T015: Project-scoped fields from JWT claims
+    let projectId: string | undefined;
+    let projectRole: string | undefined;
 
-    if (isPerMemberKey) {
-      // Per-member key: look up member + org
-      const { data: member, error: memberError } = await supabase
-        .from("members")
-        .select("id, org_id, author_name, role, api_key, revoked_at")
-        .eq("api_key", apiKey)
-        .is("revoked_at", null)
-        .single();
+    // ------------------------------------------------------------------
+    // 2a. Check if the bearer token is a JWT (contains dots) or API key
+    // ------------------------------------------------------------------
+    const isJwt = bearerToken.split(".").length === 3 &&
+      !bearerToken.startsWith("tm_") &&
+      !bearerToken.startsWith("tmm_");
 
-      if (memberError || !member) {
+    if (isJwt) {
+      // JWT auth path — extract claims
+      const claims = decodeJwtPayload(bearerToken);
+      memberId = claims.sub as string;
+      orgId = claims.org_id as string;
+      memberRole = claims.member_role as string;
+      authorName = claims.author_name as string;
+      projectId = claims.project_id as string | undefined;
+      projectRole = claims.project_role as string | undefined;
+
+      if (!memberId || !orgId || !memberRole || !authorName) {
         return unauthorized();
       }
-
-      if (!timingSafeEqual(member.api_key, apiKey)) {
-        return unauthorized();
-      }
-
-      memberId = member.id;
-      orgId = member.org_id;
-      memberRole = member.role;
-      authorName = member.author_name;
     } else {
-      // Org-level key: look up org, then first admin member
-      const { data: org, error: orgError } = await supabase
-        .from("orgs")
-        .select("id, name, api_key")
-        .eq("api_key", apiKey)
-        .single();
+      // API key auth path (legacy)
+      const apiKey = bearerToken;
+      const isPerMemberKey = apiKey.startsWith("tmm_");
+      const isOrgKey = apiKey.startsWith("tm_") && !isPerMemberKey;
 
-      if (orgError || !org) {
+      if (!isPerMemberKey && !isOrgKey) {
         return unauthorized();
       }
 
-      if (!timingSafeEqual(org.api_key, apiKey)) {
-        return unauthorized();
+      if (isPerMemberKey) {
+        // Per-member key: look up member + org
+        const { data: member, error: memberError } = await supabase
+          .from("members")
+          .select("id, org_id, author_name, role, api_key, revoked_at")
+          .eq("api_key", apiKey)
+          .is("revoked_at", null)
+          .single();
+
+        if (memberError || !member) {
+          return unauthorized();
+        }
+
+        if (!timingSafeEqual(member.api_key, apiKey)) {
+          return unauthorized();
+        }
+
+        memberId = member.id;
+        orgId = member.org_id;
+        memberRole = member.role;
+        authorName = member.author_name;
+      } else {
+        // Org-level key: look up org, then first admin member
+        const { data: org, error: orgError } = await supabase
+          .from("orgs")
+          .select("id, name, api_key")
+          .eq("api_key", apiKey)
+          .single();
+
+        if (orgError || !org) {
+          return unauthorized();
+        }
+
+        if (!timingSafeEqual(org.api_key, apiKey)) {
+          return unauthorized();
+        }
+
+        const { data: admin, error: adminError } = await supabase
+          .from("members")
+          .select("id, author_name, role")
+          .eq("org_id", org.id)
+          .eq("role", "admin")
+          .is("revoked_at", null)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .single();
+
+        if (adminError || !admin) {
+          return unauthorized();
+        }
+
+        memberId = admin.id;
+        orgId = org.id;
+        memberRole = admin.role;
+        authorName = admin.author_name;
       }
-
-      const { data: admin, error: adminError } = await supabase
-        .from("members")
-        .select("id, author_name, role")
-        .eq("org_id", org.id)
-        .eq("role", "admin")
-        .is("revoked_at", null)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .single();
-
-      if (adminError || !admin) {
-        return unauthorized();
-      }
-
-      memberId = admin.id;
-      orgId = org.id;
-      memberRole = admin.role;
-      authorName = admin.author_name;
     }
 
     // ------------------------------------------------------------------
@@ -163,7 +199,7 @@ serve(async (req: Request) => {
     // ------------------------------------------------------------------
     const { data: decision, error: decisionError } = await supabase
       .from("decisions")
-      .select("id, org_id, status, author_name")
+      .select("id, org_id, project_id, status, author_name")
       .eq("id", decision_id)
       .single();
 
@@ -173,6 +209,13 @@ serve(async (req: Request) => {
 
     if (decision.org_id !== orgId) {
       return jsonResponse({ error: "decision_not_found" }, 404);
+    }
+
+    // ------------------------------------------------------------------
+    // 4a. T015: Verify decision belongs to JWT's project_id
+    // ------------------------------------------------------------------
+    if (projectId && decision.project_id && decision.project_id !== projectId) {
+      return jsonResponse({ error: "wrong_project" }, 403);
     }
 
     // ------------------------------------------------------------------
@@ -186,12 +229,16 @@ serve(async (req: Request) => {
     }
 
     // ------------------------------------------------------------------
-    // 6. Permission check: active -> superseded requires admin or original author
+    // 6. Permission check using project_role when available (T015)
+    //    - project_member: can deprecate, promote
+    //    - project_admin or org admin: can also supersede
     // ------------------------------------------------------------------
     if (new_status === "superseded") {
-      const isAdmin = memberRole === "admin";
+      const isOrgAdmin = memberRole === "admin";
+      const isProjectAdmin = projectRole === "project_admin";
       const isOriginalAuthor = authorName === decision.author_name;
-      if (!isAdmin && !isOriginalAuthor) {
+
+      if (!isOrgAdmin && !isProjectAdmin && !isOriginalAuthor) {
         return jsonResponse({ error: "insufficient_permissions" }, 403);
       }
     }
@@ -253,7 +300,7 @@ serve(async (req: Request) => {
     }
 
     // ------------------------------------------------------------------
-    // 10. Create audit entry
+    // 10. Create audit entry (T015: includes project_id)
     // ------------------------------------------------------------------
     const auditAction = AUDIT_ACTIONS[new_status];
 
@@ -266,6 +313,7 @@ serve(async (req: Request) => {
       previous_state: { status: oldStatus },
       new_state: { status: new_status },
       reason: reason || null,
+      ...(projectId ? { project_id: projectId } : {}),
     });
 
     // ------------------------------------------------------------------

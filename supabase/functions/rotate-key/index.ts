@@ -88,13 +88,17 @@ serve(async (req: Request) => {
     }
 
     // 2. Parse body
-    const { rotate, target_member_id } = await req.json();
+    const { rotate, target_member_id, project_id } = await req.json();
 
-    if (!rotate || !["api_key", "invite_code", "member_key"].includes(rotate)) {
+    if (!rotate || !["api_key", "invite_code", "member_key", "project_invite_code"].includes(rotate)) {
       return badRequest("invalid_rotate_target");
     }
 
     if (rotate === "member_key" && !target_member_id) {
+      return badRequest("invalid_rotate_target");
+    }
+
+    if (rotate === "project_invite_code" && !project_id) {
       return badRequest("invalid_rotate_target");
     }
 
@@ -153,8 +157,24 @@ serve(async (req: Request) => {
       return unauthorized();
     }
 
-    // 5. Verify admin
-    if (callerRole !== "admin") {
+    // 5. Verify permissions
+    //    - project_invite_code: project_admin or org admin (T016)
+    //    - all others: org admin only
+    if (rotate === "project_invite_code") {
+      // Check if caller is org admin or project_admin for the target project
+      if (callerRole !== "admin") {
+        const { data: pm, error: pmError } = await supabase
+          .from("project_members")
+          .select("role")
+          .eq("project_id", project_id)
+          .eq("member_id", callerId)
+          .single();
+
+        if (pmError || !pm || pm.role !== "project_admin") {
+          return forbidden("admin_required");
+        }
+      }
+    } else if (callerRole !== "admin") {
       return forbidden("admin_required");
     }
 
@@ -217,6 +237,41 @@ serve(async (req: Request) => {
       auditAction = "key_rotated";
       auditTargetType = "org";
       auditTargetId = callerOrgId;
+    } else if (rotate === "project_invite_code") {
+      // T016: Rotate project invite code
+      const { data: proj, error: projError } = await supabase
+        .from("projects")
+        .select("id, org_id, invite_code")
+        .eq("id", project_id)
+        .single();
+
+      if (projError || !proj) {
+        return notFound("project_not_found");
+      }
+
+      // Verify project belongs to caller's org
+      if (proj.org_id !== callerOrgId) {
+        return notFound("project_not_found");
+      }
+
+      previousState = { invite_code: proj.invite_code ?? null };
+      newValue = generateInviteCode();
+
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({ invite_code: newValue })
+        .eq("id", project_id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: "rotation_failed", message: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      auditAction = "key_rotated";
+      auditTargetType = "project";
+      auditTargetId = project_id;
     } else {
       // rotate === "member_key"
       const { data: targetMember, error: targetError } = await supabase
@@ -256,7 +311,7 @@ serve(async (req: Request) => {
       auditTargetId = target_member_id;
     }
 
-    // 7. Create audit entry
+    // 7. Create audit entry (T016: includes project_id for project rotations)
     await supabase.from("audit_log").insert({
       org_id: callerOrgId,
       member_id: callerId,
@@ -265,6 +320,9 @@ serve(async (req: Request) => {
       target_id: auditTargetId,
       previous_state: previousState,
       new_state: { rotated: rotate },
+      ...(rotate === "project_invite_code" && project_id
+        ? { project_id }
+        : {}),
     });
 
     // 8. Return
@@ -273,6 +331,9 @@ serve(async (req: Request) => {
         rotated: rotate,
         new_value: newValue,
         target_member_id: returnTargetMemberId,
+        ...(rotate === "project_invite_code" && project_id
+          ? { project_id }
+          : {}),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
