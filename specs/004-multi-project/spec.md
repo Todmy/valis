@@ -38,8 +38,9 @@ appear. Switch to A, search — decision appears.
    runs, **Then** the user sees a list of existing projects and can
    choose one or create new.
 4. **Given** a project created, **When** the config is saved, **Then**
-   `project_id` and `project_name` are stored in
-   `~/.teamind/config.json` alongside `org_id`.
+   a `.teamind.json` file is created in the project root with
+   `project_id` and `project_name`. Org credentials remain in the
+   global `~/.teamind/config.json`.
 5. **Given** two projects in the same org, **When** decisions are
    stored in project A, **Then** searching from project B returns
    zero results by default.
@@ -294,11 +295,18 @@ Verify search still works.
 - **InviteCode** (modified): Invite codes become project-scoped.
   A project has its own invite code separate from the org.
 
+## Clarifications
+
+### Session 2026-03-24
+
+- Q: How is the active project resolved — global config, per-directory file, or manual switch? → A: Per-directory `.teamind.json` in the project root stores `project_id` and `project_name`. Global `~/.teamind/config.json` stores org credentials (shared across all projects). Auto-switching happens when `cd`-ing between repos.
+
 ## Assumptions
 
-- Per-directory config is stored in a project-level config file
-  (e.g., `.teamind.json` in the project root or a mapping in
-  `~/.teamind/projects.json`).
+- Per-directory config: `.teamind.json` in the project root stores
+  `project_id` and `project_name`. Global `~/.teamind/config.json`
+  stores org credentials shared across all projects. CLI resolves
+  active project by walking up from cwd to find `.teamind.json`.
 - The Qdrant `decisions` collection adds `project_id` as a payload
   filter field alongside `org_id`.
 - Existing `org_id` filtering in all queries is replaced with
