@@ -250,7 +250,13 @@ serve(async (req: Request) => {
       .eq("project_id", project.id);
 
     // ------------------------------------------------------------------
-    // 10. Return org + project metadata + credentials
+    // 10. Read public URLs from Deno env
+    // ------------------------------------------------------------------
+    const publicSupabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const publicQdrantUrl = Deno.env.get("QDRANT_URL") ?? "";
+
+    // ------------------------------------------------------------------
+    // 11. Return org + project metadata + credentials + public URLs
     // ------------------------------------------------------------------
     return jsonResponse(
       {
@@ -259,7 +265,10 @@ serve(async (req: Request) => {
         project_id: project.id,
         project_name: project.name,
         api_key: org.api_key,
-        member_key: memberKey,
+        member_api_key: memberKey,
+        member_id: memberId,
+        supabase_url: publicSupabaseUrl,
+        qdrant_url: publicQdrantUrl,
         member_count: currentMemberCount + (isNewOrgMember ? 1 : 0),
         decision_count: decisionCount ?? 0,
         role: "project_member",
