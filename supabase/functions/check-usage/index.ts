@@ -78,15 +78,17 @@ serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Extract org_id from JWT or request body
+    // 1. Extract org_id and project_id from JWT or request body (T017)
     const authHeader = req.headers.get("authorization") ?? "";
     let orgId: string | undefined;
+    let projectId: string | undefined;
 
     if (authHeader.toLowerCase().startsWith("bearer ")) {
       const token = authHeader.slice(7).trim();
       try {
         const claims = decodeJwtPayload(token);
         orgId = claims.org_id as string | undefined;
+        projectId = claims.project_id as string | undefined;
       } catch {
         // JWT decode failed — try request body
       }
@@ -95,9 +97,12 @@ serve(async (req: Request) => {
     const body = await req.json();
     const operation: string = body.operation;
 
-    // Allow org_id from body as fallback (for service-to-service calls)
+    // Allow org_id and project_id from body as fallback (for service-to-service calls)
     if (!orgId) {
       orgId = body.org_id;
+    }
+    if (!projectId) {
+      projectId = body.project_id;
     }
 
     if (!orgId || !operation) {
@@ -273,7 +278,22 @@ serve(async (req: Request) => {
       );
     }
 
-    // 7. Within limits — allowed
+    // 7. T017: Track per-project usage for analytics (non-blocking)
+    //    Limits are enforced at org level; project_id is tracked for
+    //    per-project analytics (e.g., `teamind admin metrics --project`).
+    if (projectId) {
+      try {
+        await supabase.rpc("track_project_usage", {
+          p_org_id: orgId,
+          p_project_id: projectId,
+          p_operation: operation,
+        });
+      } catch {
+        // Per-project tracking failure — never block the operation
+      }
+    }
+
+    // 8. Within limits — allowed
     return jsonResponse(
       {
         allowed: true,
