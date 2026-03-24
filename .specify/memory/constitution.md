@@ -1,33 +1,19 @@
 <!--
 Sync Impact Report
 ====================
-Version change: 1.0.0 → 1.1.0 (MINOR)
-Modified principles:
-  - IV. No LLM Dependency (MVP) → IV. No LLM Dependency for Core Ops
-    (removed MVP scope, made permanent — enrichment MAY use LLM optionally)
-  - VIII. Push + Pull (Hybrid Server) → expanded to mandate cross-session
-    push via Supabase Realtime; local push remains baseline
-Security & Data Integrity:
-  - Added per-member API key requirement
-  - Added custom JWT requirement (replacing service_role for client auth)
-  - Added key rotation requirement
-  - Added audit trail requirement
-Development Workflow:
-  - Added unit economics instrumentation requirement
-  - Added backward-compatible migration strategy requirement
-Added sections:
-  - Principle IX. Decision Lifecycle (status transitions, relationships,
-    contradiction detection)
-  - Principle X. Identity-First Access Control (per-member auth, RBAC,
-    key rotation, audit trail)
+Version change: 1.1.0 -> 1.2.0 (MINOR)
+Added principles:
+  - XI. Project-Scoped Isolation (organizations contain multiple
+    projects, decisions scoped to project, per-project access control,
+    search project-scoped by default with cross-project flag)
+Modified sections:
+  - Security & Data Integrity: tenant isolation updated to project-level
+  - X. Identity-First Access Control: RBAC expanded with per-project roles
 Removed sections: none
 Templates requiring updates:
-  - .specify/templates/plan-template.md — ✅ compatible (Constitution Check
-    section uses generic gates; 10 principles provide concrete gates)
-  - .specify/templates/spec-template.md — ✅ compatible (user stories +
-    requirements structure accommodates RBAC, lifecycle, and realtime stories)
-  - .specify/templates/tasks-template.md — ✅ compatible (phase-based
-    structure accommodates auth, lifecycle, and realtime tasks naturally)
+  - .specify/templates/plan-template.md -- compatible (generic gates)
+  - .specify/templates/spec-template.md -- compatible
+  - .specify/templates/tasks-template.md -- compatible
 Follow-up TODOs: none
 -->
 
@@ -126,7 +112,7 @@ tools (`teamind_store`, `teamind_search`, `teamind_context`) handle
 on-demand access. Channel push delivers real-time team notifications
 (new decisions, contradiction alerts) to active sessions.
 
-Cross-session push (Dev A stores → Dev B receives) MUST be supported
+Cross-session push (Dev A stores -> Dev B receives) MUST be supported
 via Supabase Realtime subscriptions. Local-session push remains the
 baseline; cross-session push MUST degrade gracefully if Realtime is
 unavailable (pull still works). Push is supplementary — never required.
@@ -142,8 +128,8 @@ retention.
 Decisions are living artifacts, not immutable records. The system MUST
 support:
 
-- **Status transitions**: `active → deprecated`, `active → superseded`,
-  `proposed → active`. Every transition MUST record who changed it
+- **Status transitions**: `active -> deprecated`, `active -> superseded`,
+  `proposed -> active`. Every transition MUST record who changed it
   and why.
 - **Relationships**: `depends_on` and `replaces` links between
   decisions. When a decision is stored with `replaces: <id>`, the
@@ -166,21 +152,55 @@ attributable to a specific member via per-member credentials.
 - **Per-member API keys**: Each member MUST have their own API key
   issued at join time. Individual keys enable revocation without
   disrupting other members and provide a complete audit trail.
-- **RBAC**: Admin role MUST gate destructive operations (key rotation,
-  member removal, org settings). Member role can store, search, and
-  change decision status.
+- **RBAC**: Three levels of access control:
+  - **Org admin**: manages org settings, billing, member invites.
+  - **Project admin**: manages project members, key rotation within
+    the project, project settings.
+  - **Project member**: can store, search, and change decision status
+    within projects they have access to.
 - **Key rotation**: Admins MUST be able to rotate org-level and
   member-level API keys. Rotation MUST invalidate the old key
   immediately.
 - **JWT enforcement**: Client authentication MUST use custom JWTs
   (not `service_role` key) so that Postgres RLS is enforced by
   Supabase natively — not via application-level `set_config` calls.
+  JWTs MUST include both `org_id` and `project_id` claims for
+  project-scoped RLS.
 
 **Rationale:** Org-level API keys cannot distinguish who did what,
 cannot be revoked per-member, and bypass Supabase's native RLS
 enforcement. Enterprise customers require auditability and
-least-privilege access. `service_role` key in client code is a
-security anti-pattern that blocks enterprise adoption.
+least-privilege access. Per-project roles ensure developers only
+see decisions relevant to their work.
+
+### XI. Project-Scoped Isolation
+
+An organization MUST support multiple projects. Each project is an
+independent knowledge base within the org.
+
+- **Decisions belong to a project**: Every decision MUST be scoped
+  to exactly one project via `project_id`. There are no "org-level"
+  decisions — all decisions live in a project.
+- **Per-project membership**: Members MUST be granted access to
+  specific projects. Being an org member does NOT automatically grant
+  access to all projects.
+- **Search is project-scoped**: `teamind_search` and
+  `teamind_context` MUST filter by the active project by default.
+  Cross-project search is available via an explicit `--all-projects`
+  flag or MCP parameter, but MUST NOT be the default.
+- **Push is project-scoped**: Cross-session push notifications MUST
+  only be delivered to members of the same project, not the entire
+  org.
+- **Init selects a project**: `teamind init` MUST either create a
+  new project or select an existing one. The active project is stored
+  in the local config.
+
+**Rationale:** Teams work on multiple codebases. A frontend team
+should not see backend API decisions by default — it creates noise
+and reduces trust in search relevance. Project scoping provides the
+right granularity: fine enough to be relevant, broad enough to
+capture cross-cutting concerns within a codebase. Cross-project
+search remains available for architects who need the full picture.
 
 ## Security & Data Integrity
 
@@ -188,23 +208,27 @@ security anti-pattern that blocks enterprise adoption.
   the 10 defined patterns match, the entire record MUST be blocked
   (not redacted, not stored). Applies to all capture layers.
 - Tenant isolation MUST be enforced at every layer: Qdrant queries
-  filter by `org_id`, Postgres RLS enforced via JWT claims (not
-  `set_config`), per-member API keys map to a single org.
+  filter by `project_id`, Postgres RLS enforced via JWT claims
+  (`org_id` + `project_id`), per-member API keys map to specific
+  project access.
 - API keys and config files MUST be stored with restrictive
   permissions (`0600`). Secrets MUST NOT be committed to version
   control.
 - All data in transit MUST use HTTPS. No plaintext connections to
   Supabase or Qdrant Cloud.
 - Every state-changing operation MUST be attributable to a specific
-  member. Audit trail (who, what, when) MUST be queryable.
+  member. Audit trail (who, what, when, which project) MUST be
+  queryable.
 - Key rotation MUST be available for compromise response. Rotated
   keys MUST be invalidated immediately — no grace period.
+- Bulk data extraction (export) MUST NOT be available to regular
+  members. Admin-only via dashboard if needed, with audit trail.
 
 ## Development Workflow
 
-- **Monorepo structure:** pnpm workspace. Single `cli` package for
-  MVP. Cloud logic (Supabase Edge Functions) lives alongside or is
-  deployed separately.
+- **Monorepo structure:** pnpm workspace. `cli` package + `web`
+  package. Cloud logic (Supabase Edge Functions) lives alongside
+  or is deployed separately.
 - **TypeScript strict mode:** `strict: true` in tsconfig. No `any`
   types in production code without explicit justification.
 - **Error messages:** Every user-facing error MUST include: what
@@ -219,10 +243,10 @@ security anti-pattern that blocks enterprise adoption.
 - **Backward-compatible migrations:** Schema changes MUST be
   additive (new columns, new tables). Destructive changes (column
   removal, type changes) MUST go through a deprecation cycle:
-  add new → migrate data → remove old.
+  add new -> migrate data -> remove old.
 - **Unit economics instrumentation:** Track from launch: COGS per
-  org (Supabase + Qdrant usage), activation rate (init → first
-  store), conversion rate (free → paid), churn (monthly org
+  org (Supabase + Qdrant usage), activation rate (init -> first
+  store), conversion rate (free -> paid), churn (monthly org
   activity). The `rate_limits` table provides the foundation.
 
 ## Governance
@@ -246,4 +270,4 @@ implementation when there is a conflict.
   to `AGENTS.md` and `CLAUDE.md` in the project root. This
   constitution governs *architecture*; those files govern *workflow*.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-22 | **Last Amended**: 2026-03-23
+**Version**: 1.2.0 | **Ratified**: 2026-03-22 | **Last Amended**: 2026-03-24
