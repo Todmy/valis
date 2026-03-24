@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14?target=deno";
+import Stripe from "https://esm.sh/stripe@14";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +12,10 @@ const corsHeaders = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function respond(body: Record<string, unknown>, status = 200): Response {
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -20,16 +23,21 @@ function respond(body: Record<string, unknown>, status = 200): Response {
 }
 
 /**
- * Calculate period end based on billing cycle from the current date.
+ * Calculate billing period end from start + billing cycle.
+ * Monthly = +1 month, Annual = +1 year.
  */
-function calculatePeriodEnd(billingCycle: string | undefined): string {
-  const now = new Date();
+function calculatePeriodEnd(
+  billingCycle: string,
+  fromDate?: Date,
+): string {
+  const start = fromDate ?? new Date();
+  const end = new Date(start);
   if (billingCycle === "annual") {
-    now.setFullYear(now.getFullYear() + 1);
+    end.setFullYear(end.getFullYear() + 1);
   } else {
-    now.setMonth(now.getMonth() + 1);
+    end.setMonth(end.getMonth() + 1);
   }
-  return now.toISOString();
+  return end.toISOString();
 }
 
 // ---------------------------------------------------------------------------
@@ -37,6 +45,7 @@ function calculatePeriodEnd(billingCycle: string | undefined): string {
 // ---------------------------------------------------------------------------
 
 serve(async (req: Request) => {
+  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -44,36 +53,41 @@ serve(async (req: Request) => {
   try {
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!stripeSecretKey || !webhookSecret) {
-      console.error("STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET not set");
-      return respond({ error: "configuration_error" }, 500);
+      console.error("stripe-webhook: missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET");
+      return jsonResponse({ error: "misconfigured" }, 500);
     }
 
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2023-10-16",
+    });
 
-    // Verify Stripe signature
+    // 1. Verify Stripe webhook signature
     const sig = req.headers.get("stripe-signature");
     if (!sig) {
-      return respond({ error: "missing_signature" }, 400);
+      return jsonResponse({ error: "missing_signature" }, 400);
     }
 
     const body = await req.text();
+
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
     } catch (err) {
       console.error(
-        "Webhook signature verification failed:",
+        "stripe-webhook: signature verification failed:",
         (err as Error).message,
       );
-      return respond({ error: "invalid_signature" }, 400);
+      return jsonResponse({ error: "invalid_signature" }, 400);
     }
 
-    // Handle event types
+    // 2. DB setup
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // 3. Route by event type
     switch (event.type) {
       // -----------------------------------------------------------------
       // checkout.session.completed — new subscription created
@@ -82,25 +96,29 @@ serve(async (req: Request) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const orgId = session.metadata?.org_id;
         const plan = session.metadata?.plan;
-        const billingCycle = session.metadata?.billing_cycle;
+        const billingCycle = session.metadata?.billing_cycle ?? "monthly";
 
         if (!orgId || !plan) {
-          console.error("checkout.session.completed: missing org_id or plan in metadata");
+          console.error(
+            "stripe-webhook: checkout.session.completed missing metadata",
+          );
           break;
         }
 
-        // Upsert subscription
+        const now = new Date().toISOString();
+
+        // Upsert subscription record
         await supabase.from("subscriptions").upsert(
           {
             org_id: orgId,
             plan,
-            billing_cycle: billingCycle ?? "monthly",
+            billing_cycle: billingCycle,
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
             status: "active",
-            current_period_start: new Date().toISOString(),
+            current_period_start: now,
             current_period_end: calculatePeriodEnd(billingCycle),
-            updated_at: new Date().toISOString(),
+            updated_at: now,
           },
           { onConflict: "org_id" },
         );
@@ -111,13 +129,15 @@ serve(async (req: Request) => {
       }
 
       // -----------------------------------------------------------------
-      // customer.subscription.updated — plan/status change
+      // customer.subscription.updated — plan change, renewal, status sync
       // -----------------------------------------------------------------
       case "customer.subscription.updated": {
         const subscription = event.data
           .object as Stripe.Subscription;
-        const status =
-          subscription.status === "past_due" ? "past_due" : "active";
+
+        const status = subscription.status === "past_due"
+          ? "past_due"
+          : "active";
 
         await supabase
           .from("subscriptions")
@@ -136,20 +156,20 @@ serve(async (req: Request) => {
       }
 
       // -----------------------------------------------------------------
-      // customer.subscription.deleted — downgrade to free
+      // customer.subscription.deleted — cancelled, downgrade to free
       // -----------------------------------------------------------------
       case "customer.subscription.deleted": {
         const subscription = event.data
           .object as Stripe.Subscription;
 
-        // Find org_id before updating
+        // Look up org_id BEFORE updating (the record still exists)
         const { data: sub } = await supabase
           .from("subscriptions")
           .select("org_id")
           .eq("stripe_subscription_id", subscription.id)
           .single();
 
-        // Update subscription to cancelled/free
+        // Downgrade subscription record
         await supabase
           .from("subscriptions")
           .update({
@@ -161,7 +181,7 @@ serve(async (req: Request) => {
           .eq("stripe_subscription_id", subscription.id);
 
         // Downgrade org plan
-        if (sub) {
+        if (sub?.org_id) {
           await supabase
             .from("orgs")
             .update({ plan: "free" })
@@ -183,7 +203,7 @@ serve(async (req: Request) => {
           .eq("stripe_customer_id", customerId)
           .single();
 
-        if (sub) {
+        if (sub?.org_id) {
           await supabase
             .from("usage_overages")
             .update({ billed_at: new Date().toISOString() })
@@ -194,7 +214,7 @@ serve(async (req: Request) => {
       }
 
       // -----------------------------------------------------------------
-      // invoice.payment_failed — set past_due for grace period
+      // invoice.payment_failed — set past_due (grace period starts)
       // -----------------------------------------------------------------
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
@@ -211,13 +231,19 @@ serve(async (req: Request) => {
       }
 
       default:
-        // Unhandled event type — acknowledge receipt
+        // Unhandled event type — acknowledge but ignore
+        console.log(`stripe-webhook: unhandled event type ${event.type}`);
         break;
     }
 
-    return respond({ received: true });
+    // Always return 200 so Stripe does not retry handled events
+    return jsonResponse({ received: true }, 200);
   } catch (err) {
     console.error("stripe-webhook error:", (err as Error).message);
-    return respond({ error: "webhook_handler_error" }, 500);
+    // Return 500 so Stripe retries on unexpected errors
+    return jsonResponse(
+      { error: "webhook_handler_error", message: (err as Error).message },
+      500,
+    );
   }
 });

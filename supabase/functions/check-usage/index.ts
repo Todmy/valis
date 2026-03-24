@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decodeJwt } from "https://deno.land/x/jose@v5.2.0/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +8,7 @@ const corsHeaders = {
 };
 
 // ---------------------------------------------------------------------------
-// Plan limits (mirrored from packages/cli/src/billing/limits.ts)
+// Plan limits (mirrors packages/cli/src/billing/limits.ts for Deno runtime)
 // ---------------------------------------------------------------------------
 
 interface PlanLimits {
@@ -36,31 +35,32 @@ const OVERAGE_RATES = {
   search_cents: 0.2,
 } as const;
 
+const PLAN_UPGRADE_NAMES: Record<string, { next: string; price: string }> = {
+  free: { next: "Team", price: "$29/mo" },
+  team: { next: "Business", price: "$99/mo" },
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function respond(body: Record<string, unknown>, status = 200): Response {
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
-function upgradeMessage(plan: string): string {
-  if (plan === "free") {
-    return "Upgrade to Team ($29/mo) for 5,000 decisions and 1,000 searches/day.";
-  }
-  if (plan === "team") {
-    return "Upgrade to Business ($99/mo) for 25,000 decisions and 5,000 searches/day.";
-  }
-  return "Contact sales for Enterprise pricing.";
-}
-
-function nextPlan(plan: string): "team" | "business" | null {
-  if (plan === "free") return "team";
-  if (plan === "team") return "business";
-  return null;
+/** Decode JWT payload without verification (verification done by Supabase gateway). */
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Invalid JWT format");
+  const payload = parts[1];
+  const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+  return JSON.parse(decoded);
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +68,7 @@ function nextPlan(plan: string): "team" | "business" | null {
 // ---------------------------------------------------------------------------
 
 serve(async (req: Request) => {
+  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -77,40 +78,47 @@ serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Extract org_id from JWT
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.toLowerCase().startsWith("bearer ")) {
-      return respond({ error: "unauthorized" }, 401);
-    }
+    // 1. Extract org_id from JWT or request body
+    const authHeader = req.headers.get("authorization") ?? "";
+    let orgId: string | undefined;
 
-    const jwt = authHeader.slice(7).trim();
-    let orgId: string;
-    try {
-      const claims = decodeJwt(jwt);
-      orgId = claims.org_id as string;
-      if (!orgId) {
-        return respond({ error: "missing_org_id" }, 400);
+    if (authHeader.toLowerCase().startsWith("bearer ")) {
+      const token = authHeader.slice(7).trim();
+      try {
+        const claims = decodeJwtPayload(token);
+        orgId = claims.org_id as string | undefined;
+      } catch {
+        // JWT decode failed — try request body
       }
-    } catch {
-      return respond({ error: "invalid_token" }, 401);
     }
 
-    const { operation } = await req.json();
+    const body = await req.json();
+    const operation: string = body.operation;
+
+    // Allow org_id from body as fallback (for service-to-service calls)
+    if (!orgId) {
+      orgId = body.org_id;
+    }
+
+    if (!orgId || !operation) {
+      return jsonResponse({ error: "missing_parameters" }, 400);
+    }
+
     if (operation !== "store" && operation !== "search") {
-      return respond({ error: "invalid_operation" }, 400);
+      return jsonResponse({ error: "invalid_operation" }, 400);
     }
 
-    // 2. Get subscription
+    // 2. Get subscription (if any)
     const { data: sub } = await supabase
       .from("subscriptions")
       .select(
-        "plan, status, current_period_start, current_period_end, stripe_customer_id",
+        "plan, status, current_period_start, current_period_end",
       )
       .eq("org_id", orgId)
       .single();
 
     const plan = sub?.plan ?? "free";
-    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS["free"];
+    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
     // 3. Get current usage from rate_limits
     const { data: usage } = await supabase
@@ -123,140 +131,167 @@ serve(async (req: Request) => {
     const searchCount = usage?.search_count_today ?? 0;
     const memberCount = usage?.member_count ?? 0;
 
-    const usageInfo = {
-      decisions: { used: decisionCount, limit: limits.decisions },
-      searches: { used: searchCount, limit: limits.searches },
-      members: { used: memberCount, limit: limits.members },
-    };
+    // 4. Enterprise — always allowed, no limit checks
+    if (plan === "enterprise") {
+      return jsonResponse(
+        {
+          allowed: true,
+          plan,
+          usage: {
+            decisions: { used: decisionCount, limit: limits.decisions },
+            searches: { used: searchCount, limit: limits.searches },
+            members: { used: memberCount, limit: limits.members },
+          },
+        },
+        200,
+      );
+    }
 
-    // 4. Check limits based on operation
+    // 5. Check store limits
     if (operation === "store" && decisionCount >= limits.decisions) {
       if (limits.overage) {
-        // Track overage for paid plans
-        if (sub) {
+        // Paid plan — track overage, allow operation
+        try {
           await supabase.rpc("increment_usage_overage", {
             p_org_id: orgId,
-            p_period_start: sub.current_period_start,
-            p_period_end: sub.current_period_end,
+            p_period_start: sub?.current_period_start ??
+              new Date().toISOString(),
+            p_period_end: sub?.current_period_end ?? new Date().toISOString(),
             p_field: "extra_decisions",
             p_amount_cents: OVERAGE_RATES.decision_cents,
           });
-        }
-        return respond({
-          allowed: true,
-          plan,
-          overage: true,
-          overage_rate: `$${(OVERAGE_RATES.decision_cents / 100).toFixed(3)} per decision`,
-          usage: {
-            decisions: {
-              ...usageInfo.decisions,
-              overage: decisionCount - limits.decisions,
-            },
-            searches: usageInfo.searches,
-          },
-        });
-      }
-
-      // Free tier: hard block
-      const next = nextPlan(plan);
-      let checkoutUrl: string | null = null;
-      if (next) {
-        try {
-          const checkoutRes = await fetch(
-            `${supabaseUrl}/functions/v1/create-checkout`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${serviceRoleKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                org_id: orgId,
-                plan: next,
-                billing_cycle: "monthly",
-                success_url: "https://dashboard.teamind.dev/billing/success",
-                cancel_url: "https://dashboard.teamind.dev/billing/cancel",
-              }),
-            },
-          );
-          if (checkoutRes.ok) {
-            const checkoutData = await checkoutRes.json();
-            checkoutUrl = checkoutData.checkout_url ?? null;
-          }
         } catch {
-          // Best-effort checkout URL generation
+          // Overage tracking failure — never block the operation
         }
+
+        return jsonResponse(
+          {
+            allowed: true,
+            plan,
+            overage: true,
+            overage_rate: `$${(OVERAGE_RATES.decision_cents / 100).toFixed(3)} per decision`,
+            usage: {
+              decisions: {
+                used: decisionCount,
+                limit: limits.decisions,
+                overage: decisionCount - limits.decisions + 1,
+              },
+              searches: {
+                used: searchCount,
+                limit: limits.searches,
+                overage: Math.max(0, searchCount - limits.searches),
+              },
+            },
+          },
+          200,
+        );
       }
 
-      return respond({
-        allowed: false,
-        plan,
-        reason: `Free tier limit reached (${decisionCount}/${limits.decisions} decisions).`,
-        upgrade: {
-          message: upgradeMessage(plan),
-          checkout_url: checkoutUrl,
+      // Free tier — hard block
+      const upgrade = PLAN_UPGRADE_NAMES[plan];
+      return jsonResponse(
+        {
+          allowed: false,
+          plan,
+          reason:
+            `Free tier limit reached (${decisionCount}/${limits.decisions} decisions).`,
+          upgrade: {
+            message: upgrade
+              ? `Upgrade to ${upgrade.next} (${upgrade.price}) for ${PLAN_LIMITS[upgrade.next.toLowerCase()]?.decisions?.toLocaleString() ?? "more"} decisions.`
+              : "Contact sales for Enterprise.",
+            checkout_url: null,
+          },
+          usage: {
+            decisions: { used: decisionCount, limit: limits.decisions },
+            searches: { used: searchCount, limit: limits.searches },
+          },
         },
-        usage: {
-          decisions: usageInfo.decisions,
-          searches: usageInfo.searches,
-        },
-      });
+        200,
+      );
     }
 
+    // 6. Check search limits
     if (operation === "search" && searchCount >= limits.searches) {
       if (limits.overage) {
-        // Track overage for paid plans
-        if (sub) {
+        // Paid plan — track overage, allow operation
+        try {
           await supabase.rpc("increment_usage_overage", {
             p_org_id: orgId,
-            p_period_start: sub.current_period_start,
-            p_period_end: sub.current_period_end,
+            p_period_start: sub?.current_period_start ??
+              new Date().toISOString(),
+            p_period_end: sub?.current_period_end ?? new Date().toISOString(),
             p_field: "extra_searches",
             p_amount_cents: OVERAGE_RATES.search_cents,
           });
+        } catch {
+          // Overage tracking failure — never block the operation
         }
-        return respond({
-          allowed: true,
-          plan,
-          overage: true,
-          overage_rate: `$${(OVERAGE_RATES.search_cents / 100).toFixed(3)} per search`,
-          usage: {
-            decisions: usageInfo.decisions,
-            searches: {
-              ...usageInfo.searches,
-              overage: searchCount - limits.searches,
+
+        return jsonResponse(
+          {
+            allowed: true,
+            plan,
+            overage: true,
+            overage_rate: `$${(OVERAGE_RATES.search_cents / 100).toFixed(3)} per search`,
+            usage: {
+              decisions: {
+                used: decisionCount,
+                limit: limits.decisions,
+                overage: Math.max(0, decisionCount - limits.decisions),
+              },
+              searches: {
+                used: searchCount,
+                limit: limits.searches,
+                overage: searchCount - limits.searches + 1,
+              },
             },
           },
-        });
+          200,
+        );
       }
 
-      // Free tier: hard block
-      const next = nextPlan(plan);
-      return respond({
-        allowed: false,
-        plan,
-        reason: `Free tier limit reached (${searchCount}/${limits.searches} searches/day).`,
-        upgrade: {
-          message: upgradeMessage(plan),
-          checkout_url: null,
+      // Free tier — hard block
+      const upgrade = PLAN_UPGRADE_NAMES[plan];
+      return jsonResponse(
+        {
+          allowed: false,
+          plan,
+          reason:
+            `Free tier limit reached (${searchCount}/${limits.searches} searches/day).`,
+          upgrade: {
+            message: upgrade
+              ? `Upgrade to ${upgrade.next} (${upgrade.price}) for ${PLAN_LIMITS[upgrade.next.toLowerCase()]?.searches?.toLocaleString() ?? "more"} searches/day.`
+              : "Contact sales for Enterprise.",
+            checkout_url: null,
+          },
+          usage: {
+            decisions: { used: decisionCount, limit: limits.decisions },
+            searches: { used: searchCount, limit: limits.searches },
+          },
         },
-        usage: {
-          decisions: usageInfo.decisions,
-          searches: usageInfo.searches,
-        },
-      });
+        200,
+      );
     }
 
-    // 5. Within limits
-    return respond({
-      allowed: true,
-      plan,
-      usage: usageInfo,
-    });
+    // 7. Within limits — allowed
+    return jsonResponse(
+      {
+        allowed: true,
+        plan,
+        usage: {
+          decisions: { used: decisionCount, limit: limits.decisions },
+          searches: { used: searchCount, limit: limits.searches },
+          members: { used: memberCount, limit: limits.members },
+        },
+      },
+      200,
+    );
   } catch (err) {
-    // Fail-open: on any internal error, allow the operation to proceed (FR-018).
-    // Usage is still tracked in rate_limits by the store/search pipeline.
     console.error("check-usage error:", (err as Error).message);
-    return respond({ allowed: true, error: "internal_error" });
+    // Edge Function error — caller should fail-open
+    return jsonResponse(
+      { error: "internal_error", message: (err as Error).message },
+      500,
+    );
   }
 });
