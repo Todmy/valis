@@ -10,12 +10,12 @@ Teamind captures, stores, searches, and pushes team decisions across developer s
 npm install -g teamind
 ```
 
-**Prerequisites**: Node.js 20+, Supabase account, Qdrant Cloud account.
+**Prerequisites**: Node.js 20+.
 
 ## Quickstart (30 seconds)
 
 ```bash
-# 1. Create your team's brain
+# 1. Create your team's brain (no credentials needed)
 teamind init
 
 # 2. Share the invite code with teammates
@@ -25,14 +25,19 @@ teamind init --join ACME-7X3K
 # teamind_store, teamind_search, teamind_context — all automatic
 ```
 
+**Hosted mode** (recommended): Just enter your org name, project name, and your name. No API keys, no config files, no environment variables needed. The registration API handles everything.
+
+**Community mode**: Self-hosted users provide their own Supabase and Qdrant credentials.
+
 ## Features
 
+- **Zero-config onboarding**: `teamind init` registers via public API — no credentials, no `.env` files
 - **Auto-capture**: Decisions captured automatically through channel reminders, keyword triggers, and session sweep
 - **Hybrid search**: Dense + BM25 sparse search via Qdrant Cloud with server-side embeddings
 - **Dual storage**: Supabase Postgres (source of truth) + Qdrant Cloud (search)
 - **MCP tools**: `teamind_store`, `teamind_search`, `teamind_context` — works with Claude Code, Codex
 - **Offline resilient**: Decisions queued locally when offline, synced on reconnect
-- **Secure**: 10 secret detection patterns block API keys/passwords before storage
+- **Secure**: Per-member API keys (`tmm_` prefix), no service_role keys on client machines. 10 secret detection patterns block API keys/passwords before storage
 - **Zero native deps**: Pure JS/TS, installs everywhere without node-gyp
 
 ## CLI Commands
@@ -40,6 +45,7 @@ teamind init --join ACME-7X3K
 | Command | Description |
 |---------|-------------|
 | `teamind init` | Create or join an organization |
+| `teamind init --join <code>` | Join a project via invite code |
 | `teamind serve` | Start MCP + Channel server (with realtime push) |
 | `teamind status` | Show system health, realtime status, auth mode |
 | `teamind dashboard` | Show team activity, lifecycle stats, dependency warnings |
@@ -63,10 +69,11 @@ teamind init --join ACME-7X3K
 - **Contradiction detection**: Two-tier detection (area overlap + Qdrant cosine similarity) flags conflicting active decisions on store. Contradictions auto-resolve when decisions are deprecated/superseded.
 - **Platform metrics**: Operator dashboard with activation funnel, per-org COGS, churn/at-risk tracking, and active member counts via `teamind admin metrics`.
 - **Audit trail**: Full audit log of decision stores, status changes, key rotations, and member events via `teamind admin audit`.
+- **Registration API**: Public endpoint creates org + project + member atomically. No credentials needed for hosted mode onboarding.
 
 ## How It Works
 
-1. **Init**: Creates org in Supabase, configures your IDE's MCP server, seeds initial decisions from CLAUDE.md and git history
+1. **Init**: Registers with Teamind hosted (or self-hosted Supabase), configures your IDE's MCP server, seeds initial decisions from CLAUDE.md and git history
 2. **Capture**: Your AI agent calls `teamind_store` when decisions are made. Activity watcher sends reminders. Session-end hooks catch what was missed.
 3. **Search**: `teamind_search` and `teamind_context` query the team brain via hybrid search. Results ranked by relevance.
 4. **Push**: New decisions push notifications to active team sessions via channels.
@@ -79,6 +86,7 @@ Agent <-> MCP (stdio) <-> Teamind CLI <-> Supabase Postgres + Qdrant Cloud
 
 - **CLI package**: TypeScript, commander, @modelcontextprotocol/sdk
 - **Storage**: Supabase (Postgres + Edge Functions) + Qdrant Cloud
+- **Auth**: Per-member API keys via registration API, JWT tokens via exchange-token
 - **Transport**: stdio (MCP standard)
 
 ## Development
