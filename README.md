@@ -44,11 +44,15 @@ teamind init --join ACME-7X3K
 | `teamind status` | Show system health, realtime status, auth mode |
 | `teamind dashboard` | Show team activity, lifecycle stats, dependency warnings |
 | `teamind search <query>` | Search decisions (ranks active above deprecated) |
-| `teamind export --json` | Export all decisions |
 | `teamind config set/get` | Manage configuration |
+| `teamind switch --join <code>` | Switch to a different org |
 | `teamind migrate-auth` | Migrate from org-level to per-member JWT auth |
+| `teamind enrich` | Classify pending decisions via LLM (optional) |
+| `teamind upgrade` | Upgrade plan via Stripe Checkout |
 | `teamind admin metrics` | Platform-wide observability metrics |
 | `teamind admin audit` | View audit trail for an org |
+| `teamind admin cleanup` | Detect and clean duplicate/orphan decisions |
+| `teamind admin patterns` | Detect decision patterns from clusters |
 | `teamind uninstall` | Clean removal |
 
 ## Phase 2 Features

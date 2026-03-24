@@ -372,7 +372,8 @@ condition and verify the message includes action steps.
   Cross-session broadcast (Dev A → Dev B) via Supabase Realtime is
   Phase 2.
 - **FR-017**: System MUST provide CLI commands: status, dashboard,
-  export (JSON + Markdown), config, and uninstall.
+  config, and uninstall. (Note: export command removed post-Phase 2
+  for security — bulk data extraction restricted to admin dashboard.)
 - **FR-018**: System MUST deduplicate decisions across capture layers
   using content hash + session identifier.
 - **FR-019**: System MUST install via npm without native compilation on
