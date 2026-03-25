@@ -124,7 +124,6 @@ serve(async (req: Request) => {
       JSON.stringify({
         org_id: org.id,
         org_name: org.name,
-        api_key: org.api_key,
         member_api_key: memberKey,
         member_id: insertedMember?.id ?? null,
         member_count: (memberCount || 0) + 1,

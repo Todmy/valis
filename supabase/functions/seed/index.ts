@@ -39,8 +39,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const qdrantUrl = Deno.env.get("QDRANT_URL") || "";
-    const qdrantApiKey = Deno.env.get("QDRANT_API_KEY") || "";
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // -----------------------------------------------------------------------
@@ -116,6 +114,33 @@ serve(async (req) => {
         JSON.stringify({ error: "invalid_request", message: "decisions (array) and project_id required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // -----------------------------------------------------------------------
+    // 3b. Verify member has access to the requested project
+    // -----------------------------------------------------------------------
+    const { data: projectAccess } = await supabase
+      .from("project_members")
+      .select("id")
+      .eq("project_id", project_id)
+      .eq("member_id", memberId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!projectAccess) {
+      // Check if member is org admin (org admins have access to all projects)
+      const { data: member } = await supabase
+        .from("members")
+        .select("role")
+        .eq("id", memberId)
+        .single();
+
+      if (!member || member.role !== "admin") {
+        return new Response(
+          JSON.stringify({ error: "no_project_access", message: "You do not have access to this project" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Limit: max 100 decisions per seed call
