@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     const { data: org, error: orgError } = await supabase
       .from('orgs')
-      .select('id, name, api_key')
+      .select('id, name')
       .eq('id', orgId)
       .single();
 

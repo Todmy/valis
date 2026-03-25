@@ -11,8 +11,8 @@ import { jsonResponse, unauthorized } from '@/lib/api-response';
 import {
   extractBearerToken,
   authenticateApiKey,
-  decodeJwtPayload,
 } from '@/lib/api-auth';
+import { jwtVerify } from 'jose';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   proposed: ['active'],
@@ -48,15 +48,20 @@ export async function POST(request: NextRequest) {
       !bearerToken.startsWith('tmm_');
 
     if (isJwt) {
-      const claims = decodeJwtPayload(bearerToken);
-      memberId = claims.sub as string;
-      orgId = claims.org_id as string;
-      memberRole = claims.member_role as string;
-      authorName = claims.author_name as string;
-      projectId = claims.project_id as string | undefined;
-      projectRole = claims.project_role as string | undefined;
+      try {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload: claims } = await jwtVerify(bearerToken, secret);
+        memberId = claims.sub as string;
+        orgId = claims.org_id as string;
+        memberRole = claims.member_role as string;
+        authorName = claims.author_name as string;
+        projectId = claims.project_id as string | undefined;
+        projectRole = claims.project_role as string | undefined;
 
-      if (!memberId || !orgId || !memberRole || !authorName) {
+        if (!memberId || !orgId || !memberRole || !authorName) {
+          return unauthorized();
+        }
+      } catch {
         return unauthorized();
       }
     } else {

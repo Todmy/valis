@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { data: org, error: orgError } = await supabase
       .from('orgs')
-      .select('*')
+      .select('id, name, plan, invite_code')
       .eq('invite_code', invite_code.trim().toUpperCase())
       .single();
 
@@ -85,7 +85,6 @@ export async function POST(request: NextRequest) {
       {
         org_id: org.id,
         org_name: org.name,
-        api_key: org.api_key,
         invite_code: org.invite_code,
         member_id: memberData.id,
         member_api_key: memberKey,

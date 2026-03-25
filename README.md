@@ -42,7 +42,7 @@ See [community/README.md](community/README.md) for full self-hosted setup guide.
 - **Auto-capture**: Decisions captured automatically through channel reminders, keyword triggers, and session sweep
 - **Hybrid search**: Dense + BM25 sparse search via Qdrant Cloud with server-side embeddings
 - **Dual storage**: Supabase Postgres (source of truth) + Qdrant Cloud (search)
-- **MCP tools**: `teamind_store`, `teamind_search`, `teamind_context` — works with Claude Code, Codex
+- **MCP tools**: `teamind_store`, `teamind_search`, `teamind_context`, `teamind_lifecycle` — works with Claude Code, Codex, Cursor
 - **Offline resilient**: Decisions queued locally when offline, synced on reconnect
 - **Secure**: Per-member API keys (`tmm_` prefix), no service_role keys on client machines. 10 secret detection patterns block API keys/passwords before storage
 - **Zero native deps**: Pure JS/TS, installs everywhere without node-gyp

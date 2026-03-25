@@ -8,7 +8,7 @@
 import { type NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { jsonResponse, unauthorized } from '@/lib/api-response';
-import { decodeJwtPayload } from '@/lib/api-auth';
+import { jwtVerify } from 'jose';
 
 interface PlanLimits {
   decisions: number;
@@ -43,28 +43,29 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
 
-    // Extract org_id from JWT
+    // Extract org_id from verified JWT
     const authHeader = request.headers.get('authorization') ?? '';
     let orgId: string | undefined;
 
     if (authHeader.toLowerCase().startsWith('bearer ')) {
       const token = authHeader.slice(7).trim();
       try {
-        const claims = decodeJwtPayload(token);
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload: claims } = await jwtVerify(token, secret);
         orgId = claims.org_id as string | undefined;
       } catch {
-        // JWT decode failed
+        return unauthorized();
       }
+    }
+
+    if (!orgId) {
+      return unauthorized();
     }
 
     const body = await request.json();
     const operation: string = body.operation;
 
-    if (!orgId) {
-      orgId = body.org_id;
-    }
-
-    if (!orgId || !operation) {
+    if (!operation) {
       return unauthorized();
     }
 

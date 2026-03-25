@@ -15,13 +15,24 @@ Auto-generated from all feature plans. Last updated: 2026-03-24
 ## Project Structure
 
 ```text
-src/
-tests/
+packages/
+  cli/                  # CLI + MCP server (TypeScript, commander)
+    src/                # Source code
+    test/               # Tests (vitest)
+    bin/                # CLI entry point
+  web/                  # Next.js dashboard + 14 API routes (Vercel)
+    src/app/api/        # API routes replacing Supabase Edge Functions
+    src/lib/            # Shared server utilities
+supabase/
+  migrations/           # 6 SQL migrations (001-006)
+  functions/            # 13 deprecated Edge Functions (community only)
+community/              # Docker Compose for self-hosted deployments
+specs/                  # Feature specifications and backlog
 ```
 
 ## Commands
 
-npm test && npm run lint
+pnpm test && pnpm lint
 
 ## Code Style
 

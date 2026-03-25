@@ -6,8 +6,8 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { AuthSession } from './types.js';
-import { isExpiringSoon, refreshToken } from './auth.js';
+import type { AuthSession } from './types';
+import { isExpiringSoon, refreshToken } from './auth';
 
 /**
  * Create a Supabase client authenticated with the given session.

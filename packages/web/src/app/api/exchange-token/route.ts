@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
       org_id: auth.orgId,
       member_role: auth.role,
       author_name: auth.authorName,
+      hosted: true,
     };
 
     if (projectId) {

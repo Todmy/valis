@@ -16,7 +16,8 @@ import {
   forbidden,
   badRequest,
 } from '@/lib/api-response';
-import { extractBearerToken, decodeJwtPayload } from '@/lib/api-auth';
+import { extractBearerToken } from '@/lib/api-auth';
+import { jwtVerify } from 'jose';
 import { enrichDecision } from '@/lib/anthropic';
 import { updateDecisionPayload } from '@/lib/qdrant-server';
 
@@ -51,9 +52,19 @@ export async function POST(request: NextRequest) {
     return unauthorized('unauthorized');
   }
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return jsonResponse(
+      { error: 'server_misconfigured', message: 'JWT_SECRET not configured' },
+      500,
+    );
+  }
+
   let claims: Record<string, unknown>;
   try {
-    claims = decodeJwtPayload(token);
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(token, secret, { issuer: 'teamind' });
+    claims = payload as Record<string, unknown>;
   } catch {
     return unauthorized('unauthorized');
   }

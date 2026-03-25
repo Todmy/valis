@@ -349,12 +349,12 @@ describe('POST /api/create-org', () => {
     // create-org returns 200 (not 201 per original EF)
     expect(res.status).toBe(200);
     expect(json).toHaveProperty('org_id');
-    expect(json).toHaveProperty('api_key');
     expect(json).toHaveProperty('invite_code');
     expect(json).toHaveProperty('member_id');
     expect(json).toHaveProperty('member_api_key');
     expect(json.role).toBe('admin');
-    expect(json.api_key).toMatch(/^tm_/);
+    // api_key (org-level) is NOT returned for security — only member_api_key
+    expect(json).not.toHaveProperty('api_key');
     expect(json.member_api_key).toMatch(/^tmm_/);
   });
 });

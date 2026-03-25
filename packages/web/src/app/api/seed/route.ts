@@ -6,7 +6,7 @@
  * Deduplicates by content_hash.
  */
 
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { extractBearerToken } from '@/lib/api-auth';
 import { jsonResponse, badRequest, unauthorized } from '@/lib/api-response';
@@ -86,6 +86,16 @@ export async function POST(request: NextRequest) {
 
     if (!Array.isArray(decisions) || decisions.length === 0) {
       return badRequest('decisions_required');
+    }
+
+    // Verify the target project belongs to the caller's org
+    const { data: project } = await supabase
+      .from('projects')
+      .select('org_id')
+      .eq('id', project_id)
+      .single();
+    if (!project || project.org_id !== orgId) {
+      return NextResponse.json({ error: 'project_not_found' }, { status: 404 });
     }
 
     // Verify member has access to the requested project

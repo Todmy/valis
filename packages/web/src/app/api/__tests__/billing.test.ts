@@ -30,6 +30,12 @@ vi.mock('@/lib/api-auth', async (importOriginal) => {
   };
 });
 
+// Mock jose to bypass real JWT verification in tests
+const mockJwtVerify = vi.fn();
+vi.mock('jose', () => ({
+  jwtVerify: (...args: unknown[]) => mockJwtVerify(...args),
+}));
+
 // Mock stripe module
 const mockConstructEvent = vi.fn();
 const mockCheckoutSessionsCreate = vi.fn();
@@ -90,14 +96,16 @@ describe('POST /api/check-usage', () => {
     vi.clearAllMocks();
     process.env.SUPABASE_URL = 'https://test.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
+    process.env.JWT_SECRET = 'test-jwt-secret';
+
+    // Default: jwtVerify returns org_id claims for any token
+    mockJwtVerify.mockResolvedValue({
+      payload: { org_id: 'org-123', sub: 'member-1' },
+    });
   });
 
   it('should return allowed=true when within limits', async () => {
-    // Encode a fake JWT with org_id
-    const payload = Buffer.from(
-      JSON.stringify({ org_id: 'org-123', sub: 'member-1' }),
-    ).toString('base64');
-    const fakeJwt = `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.${payload}.fake-sig`;
+    const fakeJwt = 'valid-test-jwt';
 
     // subscription lookup
     const subChain = chainable({ data: { plan: 'free', status: 'active' }, error: null });
@@ -130,10 +138,7 @@ describe('POST /api/check-usage', () => {
   });
 
   it('should return allowed=false when free tier limit reached (store)', async () => {
-    const payload = Buffer.from(
-      JSON.stringify({ org_id: 'org-123', sub: 'member-1' }),
-    ).toString('base64');
-    const fakeJwt = `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.${payload}.fake-sig`;
+    const fakeJwt = 'valid-test-jwt';
 
     const subChain = chainable({ data: { plan: 'free' }, error: null });
     const usageChain = chainable({
@@ -167,10 +172,7 @@ describe('POST /api/check-usage', () => {
   });
 
   it('should return overage=true for paid plan exceeding limit', async () => {
-    const payload = Buffer.from(
-      JSON.stringify({ org_id: 'org-123', sub: 'member-1' }),
-    ).toString('base64');
-    const fakeJwt = `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.${payload}.fake-sig`;
+    const fakeJwt = 'valid-test-jwt';
 
     const subChain = chainable({
       data: { plan: 'team', current_period_start: '2026-01-01', current_period_end: '2026-02-01' },

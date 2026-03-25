@@ -82,5 +82,6 @@
 | 003 | Search Intelligence & Growth | `specs/003-search-growth/` |
 | 004 | Multi-Project — project-scoped isolation | `specs/004-multi-project/` |
 | 005 | Registration API — zero-config hosted | `specs/005-registration-api/` |
+| 006 | Vercel API Migration | `specs/006-vercel-api-migration/` |
 | — | Community Edition — Docker Compose | `community/` |
 | — | 3 Audit Rounds — 28 issues resolved | main branch |

@@ -664,6 +664,8 @@ describe('POST /api/seed', () => {
       data: { id: 'm1', org_id: 'o1', author_name: 'Alice', revoked_at: null },
       error: null,
     });
+    // Mock: project ownership check (cross-org validation)
+    const projectChain = chainable({ data: { org_id: 'o1' }, error: null });
     // Mock: project access check
     const pmChain = chainable({ data: { id: 'pm1' }, error: null });
     // Mock: decision insert
@@ -671,6 +673,7 @@ describe('POST /api/seed', () => {
 
     mockFrom.mockImplementation((table: string) => {
       if (table === 'members') return memberChain;
+      if (table === 'projects') return projectChain;
       if (table === 'project_members') return pmChain;
       if (table === 'decisions') return insertChain;
       return chainable();

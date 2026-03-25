@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
     return jsonResponse(
       {
         org_id: orgId,
-        api_key: apiKey,
         invite_code: inviteCode,
         author_name: author_name.trim(),
         role: 'admin',

@@ -7,7 +7,7 @@
  * - All queries go through Supabase with JWT — RLS enforces tenant isolation.
  */
 
-import type { AuthSession, ExchangeTokenResponse } from './types.js';
+import type { AuthSession, ExchangeTokenResponse } from './types';
 
 const API_KEY_STORAGE_KEY = 'teamind_api_key';
 

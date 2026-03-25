@@ -40,6 +40,12 @@ vi.mock('@/lib/qdrant-server', () => ({
     mockUpdateDecisionPayload(...args),
 }));
 
+// Mock jose to bypass real JWT verification in tests
+const mockJwtVerify = vi.fn();
+vi.mock('jose', () => ({
+  jwtVerify: (...args: unknown[]) => mockJwtVerify(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -54,29 +60,8 @@ const ORG_ID = 'org-test-001';
 const PROJECT_ID = 'proj-test-001';
 const MEMBER_ID = 'member-test-001';
 
-function b64url(obj: Record<string, unknown>): string {
-  return Buffer.from(JSON.stringify(obj)).toString('base64url');
-}
-
-function fakeJwt(payload: Record<string, unknown>): string {
-  const header = b64url({ alg: 'HS256', typ: 'JWT' });
-  const body = b64url(payload);
-  return `${header}.${body}.fakesig`;
-}
-
-const HOSTED_JWT = fakeJwt({
-  sub: MEMBER_ID,
-  org_id: ORG_ID,
-  project_id: PROJECT_ID,
-  hosted: true,
-});
-
-const COMMUNITY_JWT = fakeJwt({
-  sub: MEMBER_ID,
-  org_id: ORG_ID,
-  project_id: PROJECT_ID,
-  // no hosted: true
-});
+const HOSTED_JWT = 'valid.hosted.jwt';
+const COMMUNITY_JWT = 'valid.community.jwt';
 
 function makeRequest(
   body: unknown,
@@ -130,6 +115,18 @@ beforeEach(() => {
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
   process.env.QDRANT_URL = 'https://qdrant.test';
   process.env.QDRANT_API_KEY = 'test-qdrant-key';
+  process.env.JWT_SECRET = 'test-jwt-secret-for-enrich-tests';
+
+  // Default: hosted JWT verifies successfully
+  mockJwtVerify.mockImplementation(async (token: string) => {
+    if (token === HOSTED_JWT) {
+      return { payload: { sub: MEMBER_ID, org_id: ORG_ID, project_id: PROJECT_ID, hosted: true } };
+    }
+    if (token === COMMUNITY_JWT) {
+      return { payload: { sub: MEMBER_ID, org_id: ORG_ID, project_id: PROJECT_ID } };
+    }
+    throw new Error('JWSSignatureVerificationFailed');
+  });
 
   mockSupabaseRpc.mockResolvedValue({ data: null, error: null });
   mockUpdateDecisionPayload.mockResolvedValue(undefined);
@@ -161,15 +158,17 @@ describe('POST /api/enrich', () => {
   });
 
   it('returns 401 when JWT lacks org_id', async () => {
-    const jwt = fakeJwt({ sub: MEMBER_ID, hosted: true });
-    const req = makeRequest({ decision_ids: ['id-1'] }, jwt);
+    const noOrgJwt = 'no-org-jwt';
+    mockJwtVerify.mockResolvedValueOnce({ payload: { sub: MEMBER_ID, hosted: true } });
+    const req = makeRequest({ decision_ids: ['id-1'] }, noOrgJwt);
     const res = await POST(req as never);
     expect(res.status).toBe(401);
   });
 
   it('returns 401 when JWT lacks sub (member_id)', async () => {
-    const jwt = fakeJwt({ org_id: ORG_ID, hosted: true });
-    const req = makeRequest({ decision_ids: ['id-1'] }, jwt);
+    const noSubJwt = 'no-sub-jwt';
+    mockJwtVerify.mockResolvedValueOnce({ payload: { org_id: ORG_ID, hosted: true } });
+    const req = makeRequest({ decision_ids: ['id-1'] }, noSubJwt);
     const res = await POST(req as never);
     expect(res.status).toBe(401);
   });
