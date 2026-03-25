@@ -8,6 +8,8 @@ export default defineConfig({
     include: ['src/**/__tests__/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/.next/**'],
     passWithNoTests: true,
+    fileParallelism: false,
+    mockReset: true,
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

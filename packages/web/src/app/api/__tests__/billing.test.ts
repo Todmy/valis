@@ -61,14 +61,20 @@ function makeRequest(
 }
 
 function chainable(terminal: Record<string, unknown> = {}) {
+  const resolved = Promise.resolve(terminal);
+  const makeThenable = (obj: Record<string, unknown>) => {
+    obj.then = (resolved as Promise<unknown>).then.bind(resolved);
+    return obj;
+  };
   const chain: Record<string, unknown> = {};
   const methods = [
     'select', 'insert', 'update', 'delete', 'upsert',
     'eq', 'ilike', 'is', 'gte', 'limit', 'order',
-    'maybeSingle', 'single',
+    'maybeSingle', 'single', 'in',
   ];
+  const self = () => makeThenable({ ...chain });
   for (const m of methods) {
-    chain[m] = vi.fn().mockReturnValue(chain);
+    chain[m] = vi.fn().mockImplementation(self);
   }
   chain['single'] = vi.fn().mockResolvedValue(terminal);
   chain['maybeSingle'] = vi.fn().mockResolvedValue(terminal);

@@ -80,8 +80,12 @@ export async function POST(request: NextRequest) {
       project_id: string;
     };
 
-    if (!Array.isArray(decisions) || !project_id) {
+    if (!project_id) {
       return badRequest('project_id_required');
+    }
+
+    if (!Array.isArray(decisions) || decisions.length === 0) {
+      return badRequest('decisions_required');
     }
 
     // Verify member has access to the requested project

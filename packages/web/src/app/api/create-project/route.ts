@@ -6,7 +6,7 @@
 
 import { type NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
-import { extractBearerToken } from '@/lib/api-auth';
+import { extractBearerToken, authenticateApiKey } from '@/lib/api-auth';
 import { generateInviteCode } from '@/lib/api-keys';
 import { jsonResponse, badRequest, unauthorized, forbidden } from '@/lib/api-response';
 
@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
       return unauthorized();
     }
 
+    const supabase = createServerClient();
+
+    // Authenticate via shared helper
+    const auth = await authenticateApiKey(supabase, apiKey);
+    if (!auth) {
+      return unauthorized();
+    }
+
     // Parse request body
     const body = await request.json();
     const { org_id, project_name } = body as {
@@ -40,66 +48,11 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'project_name_too_long' }, 400);
     }
 
-    if (!org_id || typeof org_id !== 'string') {
-      return badRequest('org_id_required');
-    }
-
-    const supabase = createServerClient();
-
-    // Authenticate: resolve member from API key
-    const isPerMemberKey = apiKey.startsWith('tmm_');
-    const isOrgKey = apiKey.startsWith('tm_') && !isPerMemberKey;
-
-    if (!isPerMemberKey && !isOrgKey) {
-      return unauthorized();
-    }
-
-    let memberId: string;
-    let memberOrgId: string;
-
-    if (isPerMemberKey) {
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select('id, org_id, role, revoked_at')
-        .eq('api_key', apiKey)
-        .is('revoked_at', null)
-        .single();
-
-      if (memberError || !member) {
-        return unauthorized();
-      }
-      memberId = member.id;
-      memberOrgId = member.org_id;
-    } else {
-      const { data: org, error: orgError } = await supabase
-        .from('orgs')
-        .select('id, api_key')
-        .eq('api_key', apiKey)
-        .single();
-
-      if (orgError || !org) {
-        return unauthorized();
-      }
-
-      const { data: admin, error: adminError } = await supabase
-        .from('members')
-        .select('id')
-        .eq('org_id', org.id)
-        .eq('role', 'admin')
-        .is('revoked_at', null)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single();
-
-      if (adminError || !admin) {
-        return unauthorized();
-      }
-      memberId = admin.id;
-      memberOrgId = org.id;
-    }
+    // Use org_id from body or from auth
+    const effectiveOrgId = org_id || auth.orgId;
 
     // Verify member belongs to the specified org
-    if (memberOrgId !== org_id) {
+    if (auth.orgId !== effectiveOrgId) {
       return forbidden('insufficient_permissions');
     }
 
@@ -107,7 +60,7 @@ export async function POST(request: NextRequest) {
     const { data: subscription } = await supabase
       .from('subscriptions')
       .select('plan')
-      .eq('org_id', org_id)
+      .eq('org_id', effectiveOrgId)
       .eq('status', 'active')
       .limit(1)
       .single();
@@ -118,10 +71,10 @@ export async function POST(request: NextRequest) {
     const { count: projectCount } = await supabase
       .from('projects')
       .select('id', { count: 'exact', head: true })
-      .eq('org_id', org_id);
+      .eq('org_id', effectiveOrgId);
 
     if ((projectCount ?? 0) >= maxProjects) {
-      return forbidden('plan_limit_reached');
+      return forbidden('project_limit_reached');
     }
 
     // Check project_name uniqueness within org
@@ -130,7 +83,7 @@ export async function POST(request: NextRequest) {
     const { data: existingProject } = await supabase
       .from('projects')
       .select('id')
-      .eq('org_id', org_id)
+      .eq('org_id', effectiveOrgId)
       .ilike('name', trimmedName)
       .limit(1)
       .single();
@@ -145,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const { error: insertError } = await supabase.from('projects').insert({
       id: projectId,
-      org_id,
+      org_id: effectiveOrgId,
       name: trimmedName,
       invite_code: inviteCode,
     });
@@ -158,7 +111,7 @@ export async function POST(request: NextRequest) {
     // Add creator as project_admin
     const { error: memberInsertError } = await supabase.from('project_members').insert({
       project_id: projectId,
-      member_id: memberId,
+      member_id: auth.memberId,
       role: 'project_admin',
     });
 
@@ -170,8 +123,8 @@ export async function POST(request: NextRequest) {
 
     // Audit entry
     await supabase.from('audit_entries').insert({
-      org_id,
-      member_id: memberId,
+      org_id: effectiveOrgId,
+      member_id: auth.memberId,
       action: 'project_created',
       target_type: 'project',
       target_id: projectId,
@@ -182,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse({
       project_id: projectId,
-      org_id,
+      org_id: effectiveOrgId,
       project_name: trimmedName,
       invite_code: inviteCode,
       role: 'project_admin',
