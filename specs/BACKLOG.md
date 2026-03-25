@@ -12,7 +12,7 @@
 | 6 | npm link + rebuild + test `teamind init` e2e | Not started | |
 | 7 | **Dog fooding** (several weeks) | Not started | Owner: Todmy. Real project testing. |
 
-**Domain**: `teamind.krukket.co` (subdomain of main domain)
+**Domain**: `teamind.krukit.co` (subdomain of main domain)
 
 ## Blockers Found During Review
 
@@ -27,7 +27,7 @@
 | # | Feature | Effort | Notes |
 |---|---------|--------|-------|
 | 11 | Billing integration (Stripe) | 3-5 days | Code exists, deploy after dog fooding |
-| 12 | Pricing page at teamind.krukket.co | 3-5 days | |
+| 12 | Pricing page at teamind.krukit.co | 3-5 days | |
 | 13 | Annual prepay discount (20%) | 1-2 days | Depends on Stripe |
 | 14 | Device Authorization Grant (RFC 8628) | 2-3 days | Better dashboard auth UX |
 | 15 | Deploy web dashboard to Vercel | 1 day | packages/web ready |
