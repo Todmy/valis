@@ -336,6 +336,7 @@ describe('POST /api/create-checkout', () => {
 describe('POST /api/stripe-webhook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     process.env.STRIPE_SECRET_KEY = 'sk_test_123';
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
     process.env.SUPABASE_URL = 'https://test.supabase.co';

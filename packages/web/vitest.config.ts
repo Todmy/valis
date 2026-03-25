@@ -9,7 +9,6 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.next/**'],
     passWithNoTests: true,
     fileParallelism: false,
-    mockReset: true,
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
