@@ -27,7 +27,14 @@ teamind init --join ACME-7X3K
 
 **Hosted mode** (recommended): Just enter your org name, project name, and your name. No API keys, no config files, no environment variables needed. The registration API handles everything.
 
-**Community mode**: Self-hosted users provide their own Supabase and Qdrant credentials.
+**Community mode** (self-hosted): Your data stays on your infrastructure.
+
+```bash
+cd community && docker compose up -d   # Start Postgres + Qdrant locally
+teamind init                            # Choose Community, enter localhost URLs
+```
+
+See [community/README.md](community/README.md) for full self-hosted setup guide.
 
 ## Features
 
