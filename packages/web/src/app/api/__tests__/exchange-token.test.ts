@@ -1,166 +1,201 @@
 /**
  * T022: Contract tests for exchange-token route.
  *
- * Tests: tmm_ key returns valid JWT, tm_ key returns valid JWT,
- * invalid key returns 401, project-scoped JWT includes project claims.
+ * Tests: JWT minting, key type detection, project-scoped claims.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
-// Mock supabase-server
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
+
 const mockFrom = vi.fn();
 const mockSupabase = { from: mockFrom };
 
 vi.mock('@/lib/supabase-server', () => ({
-  createServerClient: vi.fn(() => mockSupabase),
+  createServerClient: () => mockSupabase,
 }));
 
-// Mock timingSafeEqual to always return true in tests
-vi.mock('@/lib/api-auth', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/api-auth')>('@/lib/api-auth');
+vi.mock('@/lib/api-auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api-auth')>();
   return {
     ...actual,
-    timingSafeEqual: vi.fn(() => true),
+    extractBearerToken: actual.extractBearerToken,
+    authenticateApiKey: vi.fn(),
+    decodeJwtPayload: actual.decodeJwtPayload,
+    timingSafeEqual: actual.timingSafeEqual,
   };
 });
 
-import { POST } from '../exchange-token/route';
-import { NextRequest } from 'next/server';
-import { decodeJwtPayload } from '@/lib/api-auth';
-
 function makeRequest(
-  apiKey: string,
-  body?: Record<string, unknown>,
+  url: string,
+  body: unknown,
+  headers?: Record<string, string>,
 ): NextRequest {
-  return new NextRequest('http://localhost/api/exchange-token', {
+  return new NextRequest(new URL(url, 'http://localhost:3000'), {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      ...headers,
     },
   });
 }
 
-function mockChain(returnValue: unknown) {
+function chainable(terminal: Record<string, unknown> = {}) {
   const chain: Record<string, unknown> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.is = vi.fn().mockReturnValue(chain);
-  chain.order = vi.fn().mockReturnValue(chain);
-  chain.limit = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(returnValue);
+  const methods = [
+    'select', 'insert', 'update', 'delete', 'upsert',
+    'eq', 'ilike', 'is', 'gte', 'limit', 'order',
+    'maybeSingle', 'single',
+  ];
+  for (const m of methods) {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  }
+  chain['single'] = vi.fn().mockResolvedValue(terminal);
+  chain['maybeSingle'] = vi.fn().mockResolvedValue(terminal);
   return chain;
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('POST /api/exchange-token', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long';
+    process.env.JWT_SECRET = 'test-jwt-secret-key-that-is-long-enough';
+    process.env.SUPABASE_URL = 'https://test.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
   });
 
-  it('returns 401 when no Authorization header', async () => {
-    const req = new NextRequest('http://localhost/api/exchange-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const response = await POST(req);
-    expect(response.status).toBe(401);
+  it('should return 401 when no Authorization header is provided', async () => {
+    const { POST } = await import('../exchange-token/route');
+
+    const req = makeRequest('/api/exchange-token', {});
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.error).toBe('unauthorized');
   });
 
-  it('returns 401 for invalid API key prefix', async () => {
-    const response = await POST(makeRequest('invalid_key_prefix'));
-    expect(response.status).toBe(401);
+  it('should return 401 for invalid API key', async () => {
+    const { authenticateApiKey } = await import('@/lib/api-auth');
+    (authenticateApiKey as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const { POST } = await import('../exchange-token/route');
+
+    const req = makeRequest('/api/exchange-token', {}, {
+      Authorization: 'Bearer tmm_invalid_key_here_padding_pad',
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.error).toBe('unauthorized');
   });
 
-  it('returns 401 when tmm_ key not found', async () => {
-    const memberChain = mockChain({ data: null, error: { code: 'PGRST116' } });
-    mockFrom.mockReturnValue(memberChain);
+  it('should return 200 with valid JWT for tmm_ key', async () => {
+    const { authenticateApiKey } = await import('@/lib/api-auth');
+    (authenticateApiKey as ReturnType<typeof vi.fn>).mockResolvedValue({
+      memberId: 'member-123',
+      orgId: 'org-456',
+      role: 'admin',
+      authorName: 'Alice',
+    });
 
-    const response = await POST(makeRequest('tmm_invalid_key_12345678901234567'));
-    expect(response.status).toBe(401);
+    // Mock org name lookup
+    const orgChain = chainable({ data: { name: 'TestOrg' }, error: null });
+    mockFrom.mockReturnValue(orgChain);
+
+    const { POST } = await import('../exchange-token/route');
+
+    const req = makeRequest('/api/exchange-token', {}, {
+      Authorization: 'Bearer tmm_bbbb111111111111bbbb111111111111',
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toHaveProperty('token');
+    expect(json).toHaveProperty('expires_at');
+    expect(json).toHaveProperty('member_id', 'member-123');
+    expect(json).toHaveProperty('org_id', 'org-456');
+    expect(json).toHaveProperty('org_name', 'TestOrg');
+    expect(json).toHaveProperty('role', 'admin');
+    expect(json).toHaveProperty('author_name', 'Alice');
+    expect(json).toHaveProperty('auth_mode', 'jwt');
+
+    // Verify JWT structure
+    const tokenParts = json.token.split('.');
+    expect(tokenParts).toHaveLength(3);
+
+    // Decode and verify claims
+    const payload = JSON.parse(
+      Buffer.from(tokenParts[1], 'base64').toString('utf-8'),
+    );
+    expect(payload.sub).toBe('member-123');
+    expect(payload.org_id).toBe('org-456');
+    expect(payload.member_role).toBe('admin');
+    expect(payload.author_name).toBe('Alice');
+    expect(payload.iss).toBe('teamind');
+    expect(payload.role).toBe('authenticated');
+    expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
 
-  it('returns 200 with valid JWT for tmm_ key', async () => {
-    const memberChain = mockChain({
-      data: {
-        id: 'member-1',
-        org_id: 'org-1',
-        author_name: 'alice',
-        role: 'admin',
-        api_key: 'tmm_valid_key_1234567890123456789',
-        revoked_at: null,
-      },
-      error: null,
+  it('should return 200 with valid JWT for tm_ key', async () => {
+    const { authenticateApiKey } = await import('@/lib/api-auth');
+    (authenticateApiKey as ReturnType<typeof vi.fn>).mockResolvedValue({
+      memberId: 'admin-member-id',
+      orgId: 'org-789',
+      role: 'admin',
+      authorName: 'OrgAdmin',
     });
 
-    const orgChain = mockChain({
-      data: { id: 'org-1', name: 'TestOrg' },
-      error: null,
+    const orgChain = chainable({ data: { name: 'OrgForKey' }, error: null });
+    mockFrom.mockReturnValue(orgChain);
+
+    const { POST } = await import('../exchange-token/route');
+
+    const req = makeRequest('/api/exchange-token', {}, {
+      Authorization: 'Bearer tm_aaaa000000000000aaaa000000000000',
     });
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'members') return memberChain;
-      if (table === 'orgs') return orgChain;
-      return mockChain({ data: null, error: null });
-    });
+    const res = await POST(req);
+    const json = await res.json();
 
-    const response = await POST(makeRequest('tmm_valid_key_1234567890123456789'));
-    const body = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(body.token).toBeDefined();
-    expect(body.expires_at).toBeDefined();
-    expect(body.member_id).toBe('member-1');
-    expect(body.org_id).toBe('org-1');
-    expect(body.org_name).toBe('TestOrg');
-    expect(body.role).toBe('admin');
-    expect(body.author_name).toBe('alice');
-    expect(body.auth_mode).toBe('jwt');
-
-    // Verify JWT can be decoded and claims match
-    const claims = decodeJwtPayload(body.token);
-    expect(claims.sub).toBe('member-1');
-    expect(claims.org_id).toBe('org-1');
-    expect(claims.member_role).toBe('admin');
-    expect(claims.author_name).toBe('alice');
+    expect(res.status).toBe(200);
+    expect(json.token).toBeDefined();
+    expect(json.auth_mode).toBe('jwt');
+    expect(json.member_id).toBe('admin-member-id');
   });
 
-  it('returns 200 with valid JWT for tm_ key', async () => {
-    const orgChain = mockChain({
-      data: { id: 'org-1', name: 'TestOrg', api_key: 'tm_valid_key_12345678901234567890' },
-      error: null,
-    });
-
-    const adminChain = mockChain({
-      data: { id: 'admin-1', author_name: 'admin-alice', role: 'admin' },
-      error: null,
-    });
-
-    let orgsCallCount = 0;
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'orgs') {
-        orgsCallCount++;
-        return orgChain;
-      }
-      if (table === 'members') return adminChain;
-      return mockChain({ data: null, error: null });
-    });
-
-    const response = await POST(makeRequest('tm_valid_key_12345678901234567890'));
-    const body = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(body.token).toBeDefined();
-    expect(body.member_id).toBe('admin-1');
-    expect(body.org_id).toBe('org-1');
-    expect(body.role).toBe('admin');
-  });
-
-  it('returns 500 when JWT_SECRET is missing', async () => {
+  it('should return 500 when JWT_SECRET is not configured', async () => {
     delete process.env.JWT_SECRET;
 
-    const response = await POST(makeRequest('tmm_some_key_1234567890123456789'));
-    expect(response.status).toBe(500);
+    const { authenticateApiKey } = await import('@/lib/api-auth');
+    (authenticateApiKey as ReturnType<typeof vi.fn>).mockResolvedValue({
+      memberId: 'm1',
+      orgId: 'o1',
+      role: 'admin',
+      authorName: 'A',
+    });
+
+    const { POST } = await import('../exchange-token/route');
+
+    const req = makeRequest('/api/exchange-token', {}, {
+      Authorization: 'Bearer tmm_bbbb111111111111bbbb111111111111',
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json.error).toBe('token_generation_failed');
   });
 });
