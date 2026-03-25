@@ -11,6 +11,7 @@ import { loadConfig } from '../config/store.js';
 import { getToken } from '../auth/jwt.js';
 import { PLAN_LIMITS, PLAN_PRICES } from '../billing/limits.js';
 import type { PlanTier } from '../types.js';
+import { isHostedMode, resolveApiUrl, resolveApiPath } from '../cloud/api-url.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,7 +94,9 @@ export async function upgradeCommand(options: UpgradeOptions): Promise<void> {
   }
 
   try {
-    const url = `${config.supabase_url}/functions/v1/create-checkout`;
+    const hosted = isHostedMode(config);
+    const apiBase = resolveApiUrl(config.supabase_url, hosted);
+    const url = resolveApiPath(apiBase, 'create-checkout');
 
     const response = await fetch(url, {
       method: 'POST',

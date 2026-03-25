@@ -90,11 +90,13 @@ See [community/README.md](community/README.md) for full self-hosted setup guide.
 ## Architecture
 
 ```
-Agent <-> MCP (stdio) <-> Teamind CLI <-> Supabase Postgres + Qdrant Cloud
+Agent <-> MCP (stdio) <-> Teamind CLI <-> Vercel API Routes / Supabase Postgres + Qdrant Cloud
 ```
 
 - **CLI package**: TypeScript, commander, @modelcontextprotocol/sdk
-- **Storage**: Supabase (Postgres + Edge Functions) + Qdrant Cloud
+- **Web package**: Next.js on Vercel — API routes (`/api/*`) replace Supabase Edge Functions for hosted mode
+- **Storage**: Supabase (Postgres) + Qdrant Cloud (search)
+- **API**: Hosted mode routes through Vercel API routes (`https://teamind.krukit.co/api/*`). Community/self-hosted mode continues using Supabase Edge Functions (`/functions/v1/*`).
 - **Auth**: Per-member API keys via registration API, JWT tokens via exchange-token
 - **Transport**: stdio (MCP standard)
 

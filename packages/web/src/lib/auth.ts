@@ -25,12 +25,10 @@ export class AuthError extends Error {
  * Exchange a member API key (tmm_...) or org API key (tm_...) for a JWT session.
  */
 export async function exchangeToken(apiKey: string): Promise<AuthSession> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new AuthError('NEXT_PUBLIC_SUPABASE_URL is not configured');
-  }
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/exchange-token`, {
+  // T037b: Use co-located Vercel API route instead of Supabase Edge Function.
+  // The web dashboard is deployed to Vercel, so /api/exchange-token is same-origin.
+  // No NEXT_PUBLIC_SUPABASE_URL needed — the route is co-located.
+  const response = await fetch(`/api/exchange-token`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
