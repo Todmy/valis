@@ -39,6 +39,8 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const qdrantUrl = Deno.env.get("QDRANT_URL") || "";
+    const qdrantApiKey = Deno.env.get("QDRANT_API_KEY") || "";
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // -----------------------------------------------------------------------
@@ -165,18 +167,22 @@ serve(async (req) => {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
+      const decisionId = crypto.randomUUID();
+      const decisionType = d.type || "pending";
+      const affects = d.affects || [];
+
       const { error: insertErr } = await supabase.from("decisions").insert({
-        id: crypto.randomUUID(),
+        id: decisionId,
         org_id: orgId,
         project_id: project_id,
-        type: d.type || "pending",
+        type: decisionType,
         summary: d.summary || null,
         detail: d.text,
         status: "active",
         author: authorName,
         source: "seed",
         content_hash: hash,
-        affects: d.affects || [],
+        affects,
         pinned: false,
       });
 
@@ -185,6 +191,41 @@ serve(async (req) => {
         skipped++;
       } else {
         stored++;
+
+        // Upsert to Qdrant for search indexing (best-effort)
+        if (qdrantUrl && qdrantApiKey) {
+          try {
+            await fetch(`${qdrantUrl}/collections/decisions/points`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "api-key": qdrantApiKey,
+              },
+              body: JSON.stringify({
+                points: [{
+                  id: decisionId,
+                  vector: new Array(384).fill(0), // zero vector — server-side embeddings generate actual
+                  payload: {
+                    org_id: orgId,
+                    project_id: project_id,
+                    type: decisionType,
+                    summary: d.summary || "",
+                    detail: d.text,
+                    author: authorName,
+                    source: "seed",
+                    affects,
+                    status: "active",
+                    pinned: false,
+                    confidence: null,
+                    created_at: new Date().toISOString(),
+                  },
+                }],
+              }),
+            });
+          } catch {
+            // Qdrant failure non-critical during seed
+          }
+        }
       }
     }
 
