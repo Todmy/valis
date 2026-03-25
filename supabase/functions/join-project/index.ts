@@ -268,6 +268,7 @@ serve(async (req: Request) => {
         member_id: memberId,
         supabase_url: publicSupabaseUrl,
         qdrant_url: publicQdrantUrl,
+        qdrant_api_key: Deno.env.get("QDRANT_API_KEY") || "",
         member_count: currentMemberCount + (isNewOrgMember ? 1 : 0),
         decision_count: decisionCount ?? 0,
         role: "project_member",

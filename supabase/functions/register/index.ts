@@ -316,6 +316,7 @@ serve(async (req: Request) => {
         member_api_key: memberApiKey,
         supabase_url: publicSupabaseUrl,
         qdrant_url: qdrantUrl,
+        qdrant_api_key: Deno.env.get("QDRANT_API_KEY") || "",
         org_id: orgId,
         org_name: trimmedOrgName,
         project_id: projectId,
