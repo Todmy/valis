@@ -12,10 +12,10 @@ const corsHeaders = {
 // ---------------------------------------------------------------------------
 
 const PLAN_MEMBER_LIMITS: Record<string, number> = {
-  free: 3,
+  free: 5,
   team: 25,
-  business: 100,
-  enterprise: Infinity,
+  business: 50,
+  enterprise: 500,
 };
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ serve(async (req: Request) => {
       .single();
 
     const plan = subscription?.plan ?? "free";
-    const maxMembers = PLAN_MEMBER_LIMITS[plan] ?? 3;
+    const maxMembers = PLAN_MEMBER_LIMITS[plan] ?? 5;
 
     const { count: memberCount } = await supabase
       .from("members")

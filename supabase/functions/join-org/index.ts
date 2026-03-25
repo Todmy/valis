@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 const MEMBER_LIMITS: Record<string, number> = {
-  free: 3,
-  pro: 50,
+  free: 5,
+  team: 25,
+  business: 50,
   enterprise: 500,
 };
 
@@ -66,7 +67,7 @@ serve(async (req: Request) => {
       .select("*", { count: "exact", head: true })
       .eq("org_id", org.id);
 
-    const limit = MEMBER_LIMITS[org.plan] || 3;
+    const limit = MEMBER_LIMITS[org.plan] || 5;
     if ((memberCount || 0) >= limit) {
       return new Response(JSON.stringify({ error: "member_limit_reached" }), {
         status: 403,

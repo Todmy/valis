@@ -320,7 +320,7 @@ serve(async (req: Request) => {
         org_name: trimmedOrgName,
         project_id: projectId,
         project_name: trimmedProjectName,
-        invite_code: orgInviteCode,
+        invite_code: projectInviteCode,
         member_id: memberId,
       },
       201,
