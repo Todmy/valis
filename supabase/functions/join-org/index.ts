@@ -112,12 +112,21 @@ serve(async (req: Request) => {
       .select("*", { count: "exact", head: true })
       .eq("org_id", org.id);
 
+    // Retrieve the newly-created member ID
+    const { data: insertedMember } = await supabase
+      .from("members")
+      .select("id")
+      .eq("org_id", org.id)
+      .eq("author_name", author_name.trim())
+      .single();
+
     return new Response(
       JSON.stringify({
         org_id: org.id,
         org_name: org.name,
         api_key: org.api_key,
-        member_key: memberKey,
+        member_api_key: memberKey,
+        member_id: insertedMember?.id ?? null,
         member_count: (memberCount || 0) + 1,
         decision_count: decisionCount || 0,
         role: "member",

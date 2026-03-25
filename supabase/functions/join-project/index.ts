@@ -264,7 +264,6 @@ serve(async (req: Request) => {
         org_name: org.name,
         project_id: project.id,
         project_name: project.name,
-        api_key: org.api_key,
         member_api_key: memberKey,
         member_id: memberId,
         supabase_url: publicSupabaseUrl,

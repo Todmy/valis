@@ -13,6 +13,13 @@ function generateApiKey(): string {
   return `tm_${hex}`;
 }
 
+function generateMemberKey(): string {
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `tmm_${hex}`;
+}
+
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const part = (len: number) =>
@@ -67,18 +74,20 @@ serve(async (req: Request) => {
       );
     }
 
-    // Insert admin member
-    const { error: memberError } = await supabase.from("members").insert({
+    // Insert admin member with per-member API key
+    const memberKey = generateMemberKey();
+    const { data: memberData, error: memberError } = await supabase.from("members").insert({
       org_id,
       author_name: author_name.trim(),
       role: "admin",
-    });
+      api_key: memberKey,
+    }).select("id").single();
 
-    if (memberError) {
+    if (memberError || !memberData) {
       // Rollback org on member failure
       await supabase.from("orgs").delete().eq("id", org_id);
       return new Response(
-        JSON.stringify({ error: "creation_failed", message: memberError.message }),
+        JSON.stringify({ error: "creation_failed", message: memberError?.message ?? "member insert failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -90,6 +99,8 @@ serve(async (req: Request) => {
         invite_code,
         author_name: author_name.trim(),
         role: "admin",
+        member_api_key: memberKey,
+        member_id: memberData.id,
       }),
       { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
