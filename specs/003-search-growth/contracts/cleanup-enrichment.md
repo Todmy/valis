@@ -29,9 +29,9 @@ packages/cli/src/
 │   ├── patterns.ts           # Pattern detection algorithm
 │   └── runner.ts             # CLI command orchestration
 └── commands/
-    ├── admin-cleanup.ts      # `teamind admin cleanup` command
-    ├── admin-patterns.ts     # `teamind admin patterns` command
-    └── enrich.ts             # `teamind enrich` command
+    ├── admin-cleanup.ts      # `valis admin cleanup` command
+    ├── admin-patterns.ts     # `valis admin patterns` command
+    └── enrich.ts             # `valis enrich` command
 ```
 
 ---
@@ -41,7 +41,7 @@ packages/cli/src/
 ### CLI Interface
 
 ```
-teamind admin cleanup [--dry-run | --apply] [--org <org_id>]
+valis admin cleanup [--dry-run | --apply] [--org <org_id>]
 ```
 
 - `--dry-run` (default): Report what would be cleaned. No mutations.
@@ -203,7 +203,7 @@ For each auto-deprecated exact duplicate:
 ### CLI Interface
 
 ```
-teamind enrich [--dry-run] [--provider <anthropic|openai>] [--ceiling <dollars>]
+valis enrich [--dry-run] [--provider <anthropic|openai>] [--ceiling <dollars>]
 ```
 
 - `--dry-run`: Show what would be enriched. No mutations, no LLM calls.
@@ -396,7 +396,7 @@ async function runEnrichment(options: EnrichOptions): Promise<EnrichmentReport> 
 ### No-LLM Guarantee (FR-013)
 
 The enrichment module is completely isolated. It is imported only by
-the `teamind enrich` command. No core operation (store, search,
+the `valis enrich` command. No core operation (store, search,
 context, lifecycle) imports or calls any enrichment code. The
 `EnrichmentProvider` interface is never referenced in the search or
 store pipeline.
@@ -408,7 +408,7 @@ store pipeline.
 ### CLI Interface
 
 ```
-teamind admin patterns [--window <days>] [--min-cluster <n>] [--dry-run]
+valis admin patterns [--window <days>] [--min-cluster <n>] [--dry-run]
 ```
 
 - `--window`: Time window for clustering. Default: 30 days.

@@ -10,9 +10,9 @@
  *   Agent <-> stdio JSON-RPC <-> this server <-> SQLite (single file)
  *
  * Tools:
- *   teamind_store   -- store a decision (raw text + optional metadata)
- *   teamind_search  -- search decisions via FTS5
- *   teamind_context -- get relevant decisions for a task description
+ *   valis_store   -- store a decision (raw text + optional metadata)
+ *   valis_search  -- search decisions via FTS5
+ *   valis_context -- get relevant decisions for a task description
  *
  * Run with MCP SDK:
  *   npm install @modelcontextprotocol/sdk better-sqlite3 zod
@@ -26,7 +26,7 @@
  *   npx @modelcontextprotocol/inspector node mcp-prototype.js
  *
  * Add to Claude Code:
- *   claude mcp add teamind -- node /path/to/mcp-prototype.js
+ *   claude mcp add valis -- node /path/to/mcp-prototype.js
  */
 
 var path = require('path');
@@ -35,7 +35,7 @@ var os = require('os');
 var fs = require('fs');
 
 // --- Config ---
-var DB_PATH = process.env.TEAMIND_DB_PATH || path.join(os.homedir(), '.teamind', 'decisions.db');
+var DB_PATH = process.env.VALIS_DB_PATH || path.join(os.homedir(), '.valis', 'decisions.db');
 var DB_DIR = path.dirname(DB_PATH);
 
 // --- Ensure DB directory exists ---
@@ -343,13 +343,13 @@ function startWithSDK() {
   var z = require('zod');
 
   var server = new McpServer({
-    name: 'teamind',
+    name: 'valis',
     version: '0.1.0',
   });
 
-  // Tool: teamind_store
+  // Tool: valis_store
   server.tool(
-    'teamind_store',
+    'valis_store',
     'Store a decision, constraint, pattern, or lesson. Call this whenever you make or encounter an important technical decision.',
     {
       text: z.string().describe('The decision text. Can be raw text.'),
@@ -363,9 +363,9 @@ function startWithSDK() {
     }
   );
 
-  // Tool: teamind_search
+  // Tool: valis_search
   server.tool(
-    'teamind_search',
+    'valis_search',
     'Search team decisions. Use before making architectural decisions to check what the team already decided.',
     {
       query: z.string().describe('Search query. Supports: "exact phrase", word1 OR word2, prefix*'),
@@ -378,9 +378,9 @@ function startWithSDK() {
     }
   );
 
-  // Tool: teamind_context
+  // Tool: valis_context
   server.tool(
-    'teamind_context',
+    'valis_context',
     'Get relevant team knowledge for your current task. Call at the start of a new task.',
     {
       task_description: z.string().describe('What you are working on'),
@@ -394,17 +394,17 @@ function startWithSDK() {
 
   var transport = new StdioServerTransport();
   server.connect(transport).then(function() {
-    process.stderr.write('Teamind MCP server running (SDK mode, DB: ' + DB_PATH + ')\n');
+    process.stderr.write('Valis MCP server running (SDK mode, DB: ' + DB_PATH + ')\n');
   });
 }
 
 // Approach 2: Raw JSON-RPC 2.0 over stdio (no SDK dependency)
 function startWithRawStdio() {
-  process.stderr.write('Teamind MCP server running (raw stdio mode, DB: ' + DB_PATH + ')\n');
+  process.stderr.write('Valis MCP server running (raw stdio mode, DB: ' + DB_PATH + ')\n');
 
   var TOOLS = [
     {
-      name: 'teamind_store',
+      name: 'valis_store',
       description: 'Store a decision, constraint, pattern, or lesson.',
       inputSchema: {
         type: 'object',
@@ -418,7 +418,7 @@ function startWithRawStdio() {
       },
     },
     {
-      name: 'teamind_search',
+      name: 'valis_search',
       description: 'Search team decisions, constraints, patterns, and lessons.',
       inputSchema: {
         type: 'object',
@@ -431,7 +431,7 @@ function startWithRawStdio() {
       },
     },
     {
-      name: 'teamind_context',
+      name: 'valis_context',
       description: 'Get relevant team knowledge for your current task.',
       inputSchema: {
         type: 'object',
@@ -445,7 +445,7 @@ function startWithRawStdio() {
   ];
 
   var SERVER_INFO = {
-    name: 'teamind',
+    name: 'valis',
     version: '0.1.0',
   };
 
@@ -492,11 +492,11 @@ function startWithRawStdio() {
       var result;
 
       try {
-        if (toolName === 'teamind_store') {
+        if (toolName === 'valis_store') {
           result = toolStore(toolArgs);
-        } else if (toolName === 'teamind_search') {
+        } else if (toolName === 'valis_search') {
           result = toolSearch(toolArgs);
-        } else if (toolName === 'teamind_context') {
+        } else if (toolName === 'valis_context') {
           result = toolContext(toolArgs);
         } else {
           sendError(msg.id, -32601, 'Unknown tool: ' + toolName);

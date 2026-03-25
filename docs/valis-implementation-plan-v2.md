@@ -1,14 +1,14 @@
-# Teamind MVP Implementation Plan v2
+# Valis MVP Implementation Plan v2
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build Teamind MVP — shared decision intelligence for AI-augmented engineering teams. Cloud-first, three-layer auto-capture, zero native deps.
+**Goal:** Build Valis MVP — shared decision intelligence for AI-augmented engineering teams. Cloud-first, three-layer auto-capture, zero native deps.
 
 **Architecture:** Two packages: `cli` (MCP server + file watcher + stop hook + CLI commands + local enrichment) and `cloud` (Cloudflare Workers API + D1 + Qdrant Cloud + Cron + Queue). Three capture layers in one process. Haiku enrichment runs locally.
 
 **Tech Stack:** Node.js + TypeScript, pnpm workspace, Hono (Cloudflare Workers), Cloudflare D1/KV/Queues, Qdrant Cloud, Claude Haiku, @modelcontextprotocol/sdk, chokidar
 
-**Spec:** `/Users/todmy/PBaaS/research/decision-intelligence-platform/teamind-design-spec-v3-final.md` (v4 in header)
+**Spec:** `/Users/todmy/PBaaS/research/decision-intelligence-platform/valis-design-spec-v3-final.md` (v4 in header)
 
 **License:** Apache 2.0
 
@@ -19,28 +19,28 @@
 ## File Structure
 
 ```
-teamind/
+valis/
 ├── packages/
 │   ├── cli/
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── bin/
-│   │   │   └── teamind.ts                 # CLI entry (#!/usr/bin/env node)
+│   │   │   └── valis.ts                 # CLI entry (#!/usr/bin/env node)
 │   │   ├── src/
 │   │   │   ├── commands/
-│   │   │   │   ├── init.ts                # teamind init + init --join
-│   │   │   │   ├── serve.ts               # teamind serve (launches unified process)
-│   │   │   │   ├── status.ts              # teamind status
-│   │   │   │   ├── dashboard.ts           # teamind dashboard
-│   │   │   │   ├── export-cmd.ts          # teamind export
-│   │   │   │   ├── uninstall.ts           # teamind uninstall
-│   │   │   │   └── config-cmd.ts          # teamind config set/get
+│   │   │   │   ├── init.ts                # valis init + init --join
+│   │   │   │   ├── serve.ts               # valis serve (launches unified process)
+│   │   │   │   ├── status.ts              # valis status
+│   │   │   │   ├── dashboard.ts           # valis dashboard
+│   │   │   │   ├── export-cmd.ts          # valis export
+│   │   │   │   ├── uninstall.ts           # valis uninstall
+│   │   │   │   └── config-cmd.ts          # valis config set/get
 │   │   │   ├── mcp/
 │   │   │   │   ├── server.ts              # MCP server setup + tool registration
 │   │   │   │   └── tools/
-│   │   │   │       ├── store.ts           # teamind_store handler
-│   │   │   │       ├── search.ts          # teamind_search handler
-│   │   │   │       └── context.ts         # teamind_context handler
+│   │   │   │       ├── store.ts           # valis_store handler
+│   │   │   │       ├── search.ts          # valis_search handler
+│   │   │   │       └── context.ts         # valis_context handler
 │   │   │   ├── capture/
 │   │   │   │   ├── watcher.ts             # JSONL file watcher (primary capture)
 │   │   │   │   ├── hook-handler.ts        # Stop hook HTTP handler (secondary)
@@ -50,7 +50,7 @@ teamind/
 │   │   │   ├── enrichment/
 │   │   │   │   └── haiku.ts               # Haiku client: classify + keywords
 │   │   │   ├── cloud/
-│   │   │   │   └── client.ts              # HTTP client for Teamind Cloud API
+│   │   │   │   └── client.ts              # HTTP client for Valis Cloud API
 │   │   │   ├── seed/
 │   │   │   │   ├── index.ts               # Seed orchestrator
 │   │   │   │   ├── parse-claude-md.ts     # Extract from CLAUDE.md
@@ -67,7 +67,7 @@ teamind/
 │   │   │   ├── offline/
 │   │   │   │   └── queue.ts               # pending.jsonl read/write/flush
 │   │   │   ├── config/
-│   │   │   │   ├── store.ts               # ~/.teamind/config.json CRUD
+│   │   │   │   ├── store.ts               # ~/.valis/config.json CRUD
 │   │   │   │   └── manifest.ts            # Track what init created
 │   │   │   ├── types.ts                   # Decision interface, API types
 │   │   │   └── errors.ts                  # Error message constants
@@ -154,9 +154,9 @@ teamind/
 
 **Files:** packages/cli/package.json, tsconfig.json, src/types.ts, src/errors.ts
 
-- [ ] CLI package.json (teamind, bin entry, deps: @modelcontextprotocol/sdk, @anthropic-ai/sdk, commander, chokidar, picocolors, zod)
+- [ ] CLI package.json (valis, bin entry, deps: @modelcontextprotocol/sdk, @anthropic-ai/sdk, commander, chokidar, picocolors, zod)
 - [ ] CLI tsconfig.json (extends base)
-- [ ] src/types.ts — Decision interface, RawDecision, EnrichmentResult, API response types, TeamindConfig
+- [ ] src/types.ts — Decision interface, RawDecision, EnrichmentResult, API response types, ValisConfig
 - [ ] src/errors.ts — All 7 error message constants from spec Section 13
 - [ ] pnpm install + build + commit
 
@@ -216,7 +216,7 @@ teamind/
 
 **Files:** src/cron/orphan-enrichment.ts, src/services/haiku.ts, src/queue/seed-consumer.ts
 
-- [ ] Haiku client for cloud (Teamind's own key) — enrichDecision()
+- [ ] Haiku client for cloud (Valis's own key) — enrichDecision()
 - [ ] Cron handler — query pending records older than 2 min, enrich, update
 - [ ] Queue consumer — process seed batch messages, enrich each decision
 - [ ] Wire into index.ts (scheduled + queue handlers)
@@ -231,7 +231,7 @@ teamind/
 
 **Files:** src/cloud/client.ts
 
-- [ ] TeamindCloudClient class — storeDecision, updateDecision, searchDecisions, batchStore, getDashboard, healthCheck
+- [ ] ValisCloudClient class — storeDecision, updateDecision, searchDecisions, batchStore, getDashboard, healthCheck
 - [ ] 5s timeout on all requests
 - [ ] Commit
 
@@ -241,9 +241,9 @@ teamind/
 
 - [ ] Secret detection — 10 regex patterns, returns pattern name or null
 - [ ] Offline queue — appendFileSync to pending.jsonl, read/clear/count helpers
-- [ ] teamind_store — validate → secret check → store to cloud (or queue offline) → async enrich → return
-- [ ] teamind_search — call cloud API → format results → return
-- [ ] teamind_context — search by task description + file names → format grouped by type → return
+- [ ] valis_store — validate → secret check → store to cloud (or queue offline) → async enrich → return
+- [ ] valis_search — call cloud API → format results → return
+- [ ] valis_context — search by task description + file names → format grouped by type → return
 - [ ] MCP server entry — register 3 tools with descriptions from spec, stdio transport
 - [ ] Test with MCP Inspector
 - [ ] Commit
@@ -279,7 +279,7 @@ This is the core differentiator — three capture layers in one process.
 
 **Files:** src/capture/watcher.ts
 
-- [ ] WatcherState — track byte offset per file in ~/.teamind/watcher-state.json
+- [ ] WatcherState — track byte offset per file in ~/.valis/watcher-state.json
 - [ ] startWatcher() — chokidar.watch('~/.claude/projects/**/*.jsonl', {depth: 2, awaitWriteFinish: {stabilityThreshold: 300}})
 - [ ] On file change: read from last offset → split by \n → skip incomplete last line → parse each → extract candidates → dedup → store to cloud → enrich async → update offset
 - [ ] Handle: partial lines (buffer incomplete), non-conversation lines (skip), subagent files
@@ -296,7 +296,7 @@ This is the core differentiator — three capture layers in one process.
 - [ ] Read transcript file → parse all lines → extract decision candidates → dedup → batch store to cloud → enrich
 - [ ] If transcript_path is stale (mtime > 5 min old): find newest .jsonl by mtime as fallback
 - [ ] Return 200 quickly (process async via setImmediate)
-- [ ] Register port in ~/.teamind/hook-port for init to configure
+- [ ] Register port in ~/.valis/hook-port for init to configure
 - [ ] Test: POST fake hook payload → verify extraction
 - [ ] Commit
 
@@ -348,15 +348,15 @@ This is the core differentiator — three capture layers in one process.
 
 **Files:** src/config/store.ts, src/config/manifest.ts
 
-- [ ] loadConfig/saveConfig/updateConfig — ~/.teamind/config.json with 0600 permissions
-- [ ] loadManifest/saveManifest/trackFile — ~/.teamind/manifest.json tracks all modified files
+- [ ] loadConfig/saveConfig/updateConfig — ~/.valis/config.json with 0600 permissions
+- [ ] loadManifest/saveManifest/trackFile — ~/.valis/manifest.json tracks all modified files
 - [ ] Commit
 
 ---
 
 ## Chunk 6: CLI Commands (Weeks 6-7)
 
-### Task 6.1: teamind init
+### Task 6.1: valis init
 
 **Files:** src/commands/init.ts, src/ide/detect.ts, src/ide/claude-code.ts, src/ide/cursor.ts, src/ide/codex.ts, src/seed/index.ts, src/seed/parse-*.ts
 
@@ -366,18 +366,18 @@ This is the core differentiator — three capture layers in one process.
 - [ ] Detect installed IDEs
 - [ ] Configure MCP for each IDE (JSON merge, atomic writes)
 - [ ] Configure Claude Code stop hook (write to settings.json hooks section)
-- [ ] Inject CLAUDE.md instructions (<!-- teamind:start/end --> markers)
+- [ ] Inject CLAUDE.md instructions (<!-- valis:start/end --> markers)
 - [ ] Set cleanupPeriodDays: 99999 in Claude Code settings
 - [ ] Seed: parse CLAUDE.md + AGENTS.md + .cursorrules + git log → batch store to cloud
 - [ ] Verification: store test decision → search → confirm
 - [ ] Print invite code + next steps
 - [ ] Commit
 
-### Task 6.2: teamind serve
+### Task 6.2: valis serve
 
 Already built in Chunk 4.6 — verify it works end-to-end.
 
-### Task 6.3: teamind status
+### Task 6.3: valis status
 
 **Files:** src/commands/status.ts
 
@@ -388,7 +388,7 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 - [ ] Show watcher status (watching N files, last activity)
 - [ ] Commit
 
-### Task 6.4: teamind dashboard
+### Task 6.4: valis dashboard
 
 **Files:** src/commands/dashboard.ts
 
@@ -397,15 +397,15 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 - [ ] Show: total decisions, by type, by status, top contributors, recent 5, pending enrichment
 - [ ] Commit
 
-### Task 6.5: teamind export
+### Task 6.5: valis export
 
 **Files:** src/commands/export-cmd.ts
 
-- [ ] --json: fetch all decisions → write teamind-export-{date}.json
-- [ ] --markdown: fetch all → group by type → write teamind-export-{date}.md
+- [ ] --json: fetch all decisions → write valis-export-{date}.json
+- [ ] --markdown: fetch all → group by type → write valis-export-{date}.md
 - [ ] Commit
 
-### Task 6.6: teamind uninstall
+### Task 6.6: valis uninstall
 
 **Files:** src/commands/uninstall.ts
 
@@ -413,25 +413,25 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 - [ ] Remove MCP configs from each IDE (surgical JSON edit)
 - [ ] Remove CLAUDE.md markers
 - [ ] Remove hook configs
-- [ ] Print: "Cloud data remains in org. Run teamind org leave to remove."
-- [ ] Delete ~/.teamind/ directory
+- [ ] Print: "Cloud data remains in org. Run valis org leave to remove."
+- [ ] Delete ~/.valis/ directory
 - [ ] Commit
 
-### Task 6.7: teamind config
+### Task 6.7: valis config
 
 **Files:** src/commands/config-cmd.ts
 
-- [ ] teamind config set api-key <key> → validate → save
-- [ ] teamind config get api-key → print (masked)
-- [ ] teamind config set author-name <name>
+- [ ] valis config set api-key <key> → validate → save
+- [ ] valis config get api-key → print (masked)
+- [ ] valis config set author-name <name>
 - [ ] Commit
 
 ### Task 6.8: CLI entry point
 
-**Files:** bin/teamind.ts
+**Files:** bin/valis.ts
 
 - [ ] Commander setup with all commands
-- [ ] Build + test: teamind --version, teamind --help, teamind serve --help
+- [ ] Build + test: valis --version, valis --help, valis serve --help
 - [ ] Commit
 
 ---
@@ -457,8 +457,8 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 
 ### Task 7.4: CLAUDE.md marker injection
 
-- [ ] No CLAUDE.md → create with teamind block
-- [ ] Exists in project → append between <!-- teamind:start/end -->
+- [ ] No CLAUDE.md → create with valis block
+- [ ] Exists in project → append between <!-- valis:start/end -->
 - [ ] Exists in parent only → create new project-level
 - [ ] Markers exist → replace content between them
 
@@ -476,18 +476,18 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 
 - [ ] Deploy cloud to Cloudflare
 - [ ] npm install -g from packages/cli
-- [ ] teamind init → create org → seed
+- [ ] valis init → create org → seed
 - [ ] Open Claude Code → file watcher captures decisions
-- [ ] Test teamind_store, teamind_search, teamind_context
+- [ ] Test valis_store, valis_search, valis_context
 - [ ] Test stop hook fires on session end
-- [ ] teamind dashboard → verify stats
-- [ ] teamind export --json → verify output
-- [ ] teamind uninstall → verify clean removal
+- [ ] valis dashboard → verify stats
+- [ ] valis export --json → verify output
+- [ ] valis uninstall → verify clean removal
 
 ### Task 8.2: Verify acceptance criteria
 
 - [ ] AC1: npm install succeeds on macOS ARM64/Intel, Linux x64 — zero native compilation
-- [ ] AC2: teamind init creates org + seeds + configures in <3 minutes
+- [ ] AC2: valis init creates org + seeds + configures in <3 minutes
 - [ ] AC3: Dev A stores → Dev B on different machine finds it
 - [ ] AC4: Seed extracts 15+ decisions, init returns <10s (enrichment async)
 - [ ] AC5: Haiku enrichment produces type + keywords for >80% within 5 min
@@ -502,7 +502,7 @@ Already built in Chunk 4.6 — verify it works end-to-end.
 ### Task 8.3: README + AGENTS.md + npm publish
 
 - [ ] README.md — install, quickstart (30 seconds), features, how it works, pricing link
-- [ ] AGENTS.md — Teamind eats its own dogfood
+- [ ] AGENTS.md — Valis eats its own dogfood
 - [ ] npm publish from packages/cli
 - [ ] Commit + tag v0.1.0
 

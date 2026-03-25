@@ -1,4 +1,4 @@
-# Teamind — Design Specification v2 (Final)
+# Valis — Design Specification v2 (Final)
 
 **Date:** 2026-03-17
 **Status:** Final — approved for implementation after 3 iterations of review
@@ -8,7 +8,7 @@
 
 ## 1. Product Overview
 
-**Teamind** — shared decision intelligence for AI-augmented engineering teams.
+**Valis** — shared decision intelligence for AI-augmented engineering teams.
 
 **One-liner:** Your team's AI agents share one brain. Decisions made in one session are available in every session, for every developer.
 
@@ -16,7 +16,7 @@
 
 **Target:** Engineering Manager / Tech Lead / CTO. Teams 15-50 devs, 50%+ using AI agents daily.
 
-**Differentiator vs memctl:** memctl = flat text memory. Teamind = typed decision objects (decision/constraint/pattern/lesson) with relationships, Haiku classification, keyword-enriched search.
+**Differentiator vs memctl:** memctl = flat text memory. Valis = typed decision objects (decision/constraint/pattern/lesson) with relationships, Haiku classification, keyword-enriched search.
 
 ---
 
@@ -26,8 +26,8 @@
 
 - Cloud backend from Day 1 (team sync, org management, shared storage)
 - Pure MCP — no proxy, no BASE_URL redirect, no stream interception
-- If Teamind process fails → IDE works normally
-- `teamind uninstall` → zero residue
+- If Valis process fails → IDE works normally
+- `valis uninstall` → zero residue
 
 ### System Diagram
 
@@ -37,14 +37,14 @@
 │     (Claude Code, Cursor, Codex)            │
 │                                              │
 │  CLAUDE.md / AGENTS.md / .cursorrules       │
-│  "Store decisions via teamind tools"        │
+│  "Store decisions via valis tools"        │
 └──────────┬──────────────────┬───────────────┘
            │ MCP (stdio)      │ MCP (stdio)
       write/store         read/search
            │                  │
 ┌──────────▼──────────────────▼───────────────┐
-│         Teamind MCP Server                   │
-│         (`teamind serve`)                    │
+│         Valis MCP Server                   │
+│         (`valis serve`)                    │
 │         Per-session process (~200ms start)   │
 │                                              │
 │  ┌──────────┐  ┌────────────────────────┐   │
@@ -57,7 +57,7 @@
 │  └────┬─────┘  └───────────┬────────────┘   │
 │       │                    │                │
 │  ┌────▼────────────────────▼────────────┐   │
-│  │     Teamind Cloud API                │   │
+│  │     Valis Cloud API                │   │
 │  │     (Qdrant Cloud + Auth + Org)      │   │
 │  │                                      │   │
 │  │  • Org/team management              │   │
@@ -72,14 +72,14 @@
 
 | Tool | What | Latency | Cost |
 |------|------|---------|------|
-| `teamind_store` | Store raw text → return {id, status: "stored"} → async Haiku enrichment | <50ms (store) + 3s async (Haiku, invisible to agent) | ~$0.001 |
-| `teamind_search` | FTS5 + BM25 over Haiku-enriched keywords | <100ms | $0 |
-| `teamind_context` | Auto-find relevant decisions for current task | <200ms | $0 |
+| `valis_store` | Store raw text → return {id, status: "stored"} → async Haiku enrichment | <50ms (store) + 3s async (Haiku, invisible to agent) | ~$0.001 |
+| `valis_search` | FTS5 + BM25 over Haiku-enriched keywords | <100ms | $0 |
+| `valis_context` | Auto-find relevant decisions for current task | <200ms | $0 |
 
 ### Store-Then-Enrich Pattern
 
 ```
-Agent calls teamind_store({text: "We decided to use Redis for caching"})
+Agent calls valis_store({text: "We decided to use Redis for caching"})
   │
   ├─ SYNC (agent waits):
   │   → Store raw text to Qdrant Cloud (<50ms)
@@ -173,11 +173,11 @@ POST   /orgs/:id/search         # Search decisions (proxy to Qdrant)
 ## 4. Setup Flow
 
 ```bash
-$ npm install -g teamind
+$ npm install -g valis
 
-$ teamind init
+$ valis init
 
-  Welcome to Teamind — shared brain for your AI team.
+  Welcome to Valis — shared brain for your AI team.
 
   [1] Create new organization
   [2] Join existing organization (invite code)
@@ -204,28 +204,28 @@ $ teamind init
   Configuring IDEs...
   ✅ Added MCP server to Claude Code
   ✅ Added MCP server to Cursor
-  <!-- teamind:start -->
+  <!-- valis:start -->
   ✅ Added instructions to CLAUDE.md
-  <!-- teamind:end -->
+  <!-- valis:end -->
   ✅ Added instructions to .cursorrules
 
   Verification...
   ✅ Stored test decision
   ✅ Search found test decision
-  ✅ Teamind is working!
+  ✅ Valis is working!
 
   Next steps:
   • Share invite code ACME-7X3K with your team
   • Start coding — your AI agent now remembers team decisions
-  • Run `teamind status` anytime to check health
-  • Run `teamind dashboard` for a summary
+  • Run `valis status` anytime to check health
+  • Run `valis dashboard` for a summary
 ```
 
 ### For team members joining:
 
 ```bash
-$ npm install -g teamind
-$ teamind init --join ACME-7X3K
+$ npm install -g valis
+$ valis init --join ACME-7X3K
   ✅ Joined org "acme-eng"
   ✅ 22 team decisions already available
   ... (same IDE configuration)
@@ -239,18 +239,18 @@ $ teamind init --join ACME-7X3K
 
 | Component | Details |
 |-----------|---------|
-| `teamind` CLI | init, init --join, status, dashboard, export, uninstall |
-| `teamind serve` | MCP server (3 tools: store, search, context) |
+| `valis` CLI | init, init --join, status, dashboard, export, uninstall |
+| `valis serve` | MCP server (3 tools: store, search, context) |
 | Cloud API | 5 endpoints (org create/join, store, search, members) |
 | Haiku enrichment | Async store-then-enrich (classification + keywords) |
 | Seed-on-init | CLAUDE.md + AGENTS.md + .cursorrules + git log parsing |
 | Qdrant Cloud storage | Per-org collection, server-side embeddings |
 | IDE auto-setup | Claude Code + Cursor + Codex MCP configs |
-| CLAUDE.md injection | Delimited markers `<!-- teamind:start/end -->` |
-| `teamind status` | Health check (API key, cloud connectivity, decisions count) |
-| `teamind dashboard` | CLI report (pulls from cloud: team decisions, counts, recent activity) |
-| `teamind export` | JSON + Markdown export of all decisions |
-| `teamind uninstall` | Clean removal via manifest.json tracking |
+| CLAUDE.md injection | Delimited markers `<!-- valis:start/end -->` |
+| `valis status` | Health check (API key, cloud connectivity, decisions count) |
+| `valis dashboard` | CLI report (pulls from cloud: team decisions, counts, recent activity) |
+| `valis export` | JSON + Markdown export of all decisions |
+| `valis uninstall` | Clean removal via manifest.json tracking |
 | Error handling | 3s Haiku timeout → store raw, retry later. Offline → queue locally. |
 | Input validation | Min 10 chars before Haiku. Secret detection (regex). |
 
@@ -316,12 +316,12 @@ Free tier limits enforced server-side by cloud API. No local enforcement needed.
 ### Repo Structure (2 packages)
 
 ```
-teamind/
+valis/
 ├── packages/
-│   ├── cli/                # teamind init/serve/status/dashboard/export/uninstall
+│   ├── cli/                # valis init/serve/status/dashboard/export/uninstall
 │   └── cloud/              # Cloudflare Workers API (5 endpoints)
 ├── LICENSE                 # BSL 1.1
-├── AGENTS.md               # Teamind eats its own dogfood
+├── AGENTS.md               # Valis eats its own dogfood
 ├── package.json            # pnpm workspace
 └── README.md
 ```
@@ -330,7 +330,7 @@ teamind/
 
 ## 9. Competitive Positioning
 
-| | memctl | Grov | ByteRover | **Teamind** |
+| | memctl | Grov | ByteRover | **Valis** |
 |---|---|---|---|---|
 | Architecture | Pure MCP | Proxy + MCP | MCP daemon | **Pure MCP + Cloud** |
 | Storage | Turso (cloud) | Supabase | Local markdown | **Qdrant Cloud** |
@@ -387,12 +387,12 @@ teamind/
 
 ## 12. Acceptance Criteria (MVP)
 
-1. `npm install -g teamind && teamind init` works in <3 minutes
+1. `npm install -g valis && valis init` works in <3 minutes
 2. Dev A stores decision → Dev B on different machine searches and FINDS it
 3. Seed-on-init extracts 15+ decisions from existing project files
 4. Haiku enrichment produces type + keywords for >80% of stores
-5. `teamind search "authentication"` finds a decision about JWT (via keywords)
-6. `teamind dashboard` shows team activity (decisions count, recent, by author)
-7. `teamind export --json` produces valid, complete export
-8. `teamind uninstall` removes all configs cleanly
+5. `valis search "authentication"` finds a decision about JWT (via keywords)
+6. `valis dashboard` shows team activity (decisions count, recent, by author)
+7. `valis export --json` produces valid, complete export
+8. `valis uninstall` removes all configs cleanly
 9. 3 private beta teams use it for 1 week without critical bugs

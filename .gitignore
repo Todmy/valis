@@ -30,5 +30,5 @@ coverage/
 *.tmp
 *.swp
 
-# Teamind local config (per-directory, not shared)
-.teamind.json
+# Valis local config (per-directory, not shared)
+.valis.json

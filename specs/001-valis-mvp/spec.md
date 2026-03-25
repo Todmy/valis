@@ -1,6 +1,6 @@
-# Feature Specification: Teamind MVP
+# Feature Specification: Valis MVP
 
-**Feature Branch**: `001-teamind-mvp`
+**Feature Branch**: `001-valis-mvp`
 **Created**: 2026-03-22
 **Status**: Draft
 **Input**: Design specifications, implementation plans, and user stories from `docs/`
@@ -11,7 +11,7 @@
 
 A Tech Lead runs a single command to create a shared team brain.
 The command creates an organization, auto-detects installed AI coding
-tools (Claude Code, Codex), configures them to use Teamind, injects
+tools (Claude Code, Codex), configures them to use Valis, injects
 instructions that tell agents to store and search decisions, and seeds
 the brain with existing knowledge extracted from project files and git
 history. The Tech Lead receives an invite code and shares it with their
@@ -30,10 +30,10 @@ invite code, join from a second machine, verify shared access.
 **Acceptance Scenarios**:
 
 1. **Given** a developer with Claude Code installed, **When** they run
-   `teamind init`, **Then** an organization is created, IDE is
+   `valis init`, **Then** an organization is created, IDE is
    configured, and an invite code is displayed — all in under 3 minutes.
 2. **Given** an existing org with invite code `ACME-7X3K`, **When** a
-   teammate runs `teamind init --join ACME-7X3K`, **Then** they join
+   teammate runs `valis init --join ACME-7X3K`, **Then** they join
    the org and see "47 decisions already available."
 3. **Given** a project with CLAUDE.md, AGENTS.md, and git history,
    **When** init runs seed extraction, **Then** 15-30 decisions are
@@ -48,7 +48,7 @@ invite code, join from a second machine, verify shared access.
 
 ### User Story 2 - Decision Capture (Priority: P2)
 
-Developers work with their AI agents as usual. Teamind automatically
+Developers work with their AI agents as usual. Valis automatically
 captures decisions through multiple layers without manual effort:
 
 1. **CLAUDE.md keyword triggers + explicit store (baseline)**: Agent
@@ -56,11 +56,11 @@ captures decisions through multiple layers without manual effort:
    when the user says "запам'ятай", "збережи", "remember this", or
    "store this". Works without any channel support. ~30-50% capture.
 2. **Channel reminders (enhancement)**: If channels are available,
-   Teamind monitors transcript activity. After significant work
+   Valis monitors transcript activity. After significant work
    (15+ min of activity, or session end), it sends a reminder to the
    agent. The agent summarizes and stores classified decisions. ~80%+
    capture. Graceful fallback to baseline if channels unavailable.
-3. **Startup sweep (catch-up)**: On every Teamind launch, unprocessed
+3. **Startup sweep (catch-up)**: On every Valis launch, unprocessed
    transcript content is scanned and stored.
 
 All captured decisions include type (decision/constraint/pattern/lesson),
@@ -70,26 +70,26 @@ summary, and affected areas when the agent provides them.
 is empty. Auto-capture removes the biggest adoption barrier — manual
 effort.
 
-**Independent Test**: Start a coding session with Teamind running. Make
+**Independent Test**: Start a coding session with Valis running. Make
 architectural decisions during the session. After the session, verify
 that decisions were captured automatically without any manual action.
 
 **Acceptance Scenarios**:
 
-1. **Given** Teamind is running and the developer is coding, **When**
+1. **Given** Valis is running and the developer is coding, **When**
    15+ minutes of activity occur, **Then** the agent receives a capture
    reminder and stores classified decisions.
 2. **Given** a running session, **When** the user says "запам'ятай: ми
    вирішили використовувати PostgreSQL", **Then** the agent stores this
-   as a decision via `teamind_store`.
+   as a decision via `valis_store`.
 3. **Given** the agent makes a technical decision, **When** it calls
-   `teamind_store` with text, type, summary, and affects, **Then** the
+   `valis_store` with text, type, summary, and affects, **Then** the
    decision is stored and confirmed within 200ms.
 4. **Given** a session ends via stop hook, **When** the hook fires,
    **Then** the agent receives a final capture reminder to store
    remaining decisions.
-5. **Given** a developer had sessions while Teamind was not running,
-   **When** Teamind starts, **Then** startup sweep processes missed
+5. **Given** a developer had sessions while Valis was not running,
+   **When** Valis starts, **Then** startup sweep processes missed
    transcripts and stores extracted decisions.
 6. **Given** content that matches a secret pattern (API keys, tokens),
    **When** a store is attempted, **Then** the entire record is blocked
@@ -120,27 +120,27 @@ PostgreSQL decision.
 **Acceptance Scenarios**:
 
 1. **Given** stored decisions about auth, **When** the agent calls
-   `teamind_search({query: "authentication"})`, **Then** relevant auth
+   `valis_search({query: "authentication"})`, **Then** relevant auth
    decisions are returned ranked by relevance.
 2. **Given** a new task about payments, **When** the agent calls
-   `teamind_context({task_description: "implement payment flow"})`,
+   `valis_context({task_description: "implement payment flow"})`,
    **Then** relevant constraints and decisions about payments are
    returned grouped by type.
 3. **Given** a first-ever context call in a session, **When** the agent
-   calls `teamind_context`, **Then** the response includes "N total
+   calls `valis_context`, **Then** the response includes "N total
    decisions in team brain" as an orientation note.
 4. **Given** the user says "знайди рішення про базу даних", **When**
    the agent recognizes the keyword trigger, **Then** it auto-calls
-   `teamind_search` and presents results.
+   `valis_search` and presents results.
 5. **Given** an Eng Manager in a terminal, **When** they run
-   `teamind search "authentication" --type decision`, **Then** matching
+   `valis search "authentication" --type decision`, **Then** matching
    decisions are displayed with type, summary, author, and date.
 
 ---
 
 ### User Story 4 - Real-Time Team Awareness (Priority: P4)
 
-When Dev A stores a decision, all other active Teamind sessions receive
+When Dev A stores a decision, all other active Valis sessions receive
 a push notification. Dev B's agent sees the new decision in context
 without calling search. This creates real-time team awareness — no one
 works in a silo.
@@ -169,7 +169,7 @@ without searching.
 
 ### User Story 5 - Security (Priority: P5)
 
-Teamind blocks storage of any text containing secrets (API keys, tokens,
+Valis blocks storage of any text containing secrets (API keys, tokens,
 passwords, private keys). Tenants are fully isolated — one organization
 cannot see another's decisions through any operation (store, search,
 export).
@@ -211,28 +211,28 @@ from the terminal.
 Export enables external analysis and reporting. Status enables
 troubleshooting.
 
-**Independent Test**: Run `teamind status` and verify connectivity
-checks. Run `teamind dashboard` and verify aggregated stats. Run
-`teamind export --json` and verify valid output.
+**Independent Test**: Run `valis status` and verify connectivity
+checks. Run `valis dashboard` and verify aggregated stats. Run
+`valis export --json` and verify valid output.
 
 **Acceptance Scenarios**:
 
-1. **Given** a configured Teamind installation, **When** the user runs
-   `teamind status`, **Then** they see: cloud connectivity (OK/degraded/
+1. **Given** a configured Valis installation, **When** the user runs
+   `valis status`, **Then** they see: cloud connectivity (OK/degraded/
    broken), org name, decision count, pending queue count, and
    configured IDEs — in under 2 seconds.
 2. **Given** an org with 50+ decisions, **When** the user runs
-   `teamind dashboard`, **Then** they see: total count, breakdown by
+   `valis dashboard`, **Then** they see: total count, breakdown by
    type, by author, recent decisions, and pending enrichments.
 3. **Given** an org with decisions, **When** the user runs
-   `teamind export --json`, **Then** a valid JSON file is produced
+   `valis export --json`, **Then** a valid JSON file is produced
    with all decision fields (type, summary, detail, author, date,
    affects).
 4. **Given** an org with decisions, **When** the user runs
-   `teamind export --markdown`, **Then** a Markdown file is produced
+   `valis export --markdown`, **Then** a Markdown file is produced
    with decisions grouped by type.
 5. **Given** the user wants to change their API key, **When** they run
-   `teamind config set api-key <key>`, **Then** the key is validated
+   `valis config set api-key <key>`, **Then** the key is validated
    and saved.
 
 ---
@@ -254,24 +254,24 @@ online — verify queued decisions sync.
 **Acceptance Scenarios**:
 
 1. **Given** no internet connection, **When** the agent calls
-   `teamind_store`, **Then** the decision is queued to local storage
+   `valis_store`, **Then** the decision is queued to local storage
    and the agent receives `{stored: true, synced: false}`.
 2. **Given** no internet connection, **When** the agent calls
-   `teamind_search`, **Then** it receives `{results: [], offline: true}`
+   `valis_search`, **Then** it receives `{results: [], offline: true}`
    — no error thrown.
 3. **Given** queued offline decisions, **When** connectivity returns,
    **Then** the queue is flushed and all decisions are synced to cloud.
 4. **Given** a partial failure (one storage backend succeeds, one fails),
    **When** the successful write completes, **Then** the failed write is
    retried — no data is lost.
-5. **Given** offline state, **When** the user runs `teamind status`,
+5. **Given** offline state, **When** the user runs `valis status`,
    **Then** the pending queue count is shown.
 
 ---
 
 ### User Story 8 - Clean Uninstall & Error Messages (Priority: P8)
 
-A developer can cleanly remove all Teamind local configuration with a
+A developer can cleanly remove all Valis local configuration with a
 single command. Every error the user encounters includes what happened,
 why, and how to fix it.
 
@@ -279,18 +279,18 @@ why, and how to fix it.
 more readily when they know removal is clean. Clear errors reduce
 support burden.
 
-**Independent Test**: Run `teamind uninstall`. Verify all IDE configs,
+**Independent Test**: Run `valis uninstall`. Verify all IDE configs,
 CLAUDE.md markers, and local files are removed. Trigger each error
 condition and verify the message includes action steps.
 
 **Acceptance Scenarios**:
 
-1. **Given** Teamind is installed with Claude Code and Codex configured,
-   **When** the user runs `teamind uninstall`, **Then** MCP configs are
+1. **Given** Valis is installed with Claude Code and Codex configured,
+   **When** the user runs `valis uninstall`, **Then** MCP configs are
    removed from both IDEs, CLAUDE.md markers are removed, and
-   `~/.teamind/` is deleted.
+   `~/.valis/` is deleted.
 2. **Given** uninstall completes, **When** the user checks IDE configs,
-   **Then** no Teamind artifacts remain.
+   **Then** no Valis artifacts remain.
 3. **Given** uninstall runs, **Then** the user is warned: "Cloud data
    preserved. Contact org admin to delete."
 4. **Given** the cloud is unreachable during store, **When** the error
@@ -311,7 +311,7 @@ condition and verify the message includes action steps.
 - What happens when the JSONL transcript format changes between IDE
   versions? The parser degrades gracefully — unparseable lines are
   skipped, and a warning is logged.
-- What happens when multiple `teamind serve` processes run for the same
+- What happens when multiple `valis serve` processes run for the same
   user? Content hash + session_id dedup prevents duplicate decisions.
 - What happens when the invite code is shared publicly? Anyone with the
   code can join. Org admins can rotate the code and remove members.
@@ -324,7 +324,7 @@ condition and verify the message includes action steps.
   handles it via polling fallback. If watcher fails entirely, log
   warning and rely on MCP-only capture + startup sweep.
 - What happens when Claude Code cleans up transcripts after 30 days
-  (default cleanupPeriodDays)? `teamind init` sets cleanupPeriodDays
+  (default cleanupPeriodDays)? `valis init` sets cleanupPeriodDays
   to 99999 to prevent this. If transcripts are already deleted,
   startup sweep finds nothing — no crash.
 - What happens when the file watcher reads a partial JSONL line
@@ -346,11 +346,11 @@ condition and verify the message includes action steps.
   CLAUDE.md / AGENTS.md between delimited markers, idempotently.
 - **FR-005**: System MUST seed the team brain on init by extracting
   decisions from CLAUDE.md, AGENTS.md, and git log.
-- **FR-006**: System MUST provide an MCP tool (`teamind_store`) to
+- **FR-006**: System MUST provide an MCP tool (`valis_store`) to
   store decisions with optional type, summary, and affected areas.
-- **FR-007**: System MUST provide an MCP tool (`teamind_search`) for
+- **FR-007**: System MUST provide an MCP tool (`valis_search`) for
   hybrid search across team decisions, returning ranked results.
-- **FR-008**: System MUST provide an MCP tool (`teamind_context`) to
+- **FR-008**: System MUST provide an MCP tool (`valis_context`) to
   load relevant decisions for a given task description and file list.
 - **FR-009**: System MUST auto-capture decisions by monitoring transcript
   activity and sending channel reminders to agents.

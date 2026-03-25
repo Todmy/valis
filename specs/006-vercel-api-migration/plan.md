@@ -9,7 +9,7 @@ Migrate 13 Supabase Deno Edge Functions to Next.js App Router API
 routes in `packages/web/src/app/api/`. Add a new `/api/enrich` route
 for server-side enrichment using the Anthropic API key. Update the CLI
 to route hosted-mode API calls through `HOSTED_API_URL`
-(`https://teamind.krukit.co`) instead of Supabase EF URLs. Community
+(`https://valis.krukit.co`) instead of Supabase EF URLs. Community
 mode remains unchanged (still calls Supabase EFs directly). Reduce
 Supabase's role to Postgres + Realtime only.
 

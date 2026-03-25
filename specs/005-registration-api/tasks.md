@@ -34,35 +34,35 @@
 
 ## Phase 2: US1 — First-Time Hosted Setup (Priority: P1)
 
-**Goal**: New users complete `teamind init` (Hosted) by calling a public registration API — no credentials needed
+**Goal**: New users complete `valis init` (Hosted) by calling a public registration API — no credentials needed
 
-**Independent Test**: Fresh machine, no config. Run `teamind init` -> Hosted -> enter org name + project name + name -> org created, project created, IDE configured, brain seeded. No .hosted-env or env vars needed.
+**Independent Test**: Fresh machine, no config. Run `valis init` -> Hosted -> enter org name + project name + name -> org created, project created, IDE configured, brain seeded. No .hosted-env or env vars needed.
 
 ### Implementation for User Story 1
 
 - [ ] T004 [US1] Implement Edge Function register (Deno runtime, validate org_name/project_name/author_name 1-100 chars alphanumeric+spaces+hyphens, extract client IP from x-forwarded-for or x-real-ip, rate limit check via registration_rate_limits count per IP per hour max 10, check org name uniqueness case-insensitive, generate org api_key tm_ prefix + org invite_code + member api_key tmm_ prefix + project invite_code, INSERT orgs + members + projects + project_members atomically with manual rollback on failure, INSERT audit entries org_created + member_joined + project_created, INSERT registration_rate_limits, read SUPABASE_URL + QDRANT_URL from Deno.env, return RegistrationResponse with member_api_key + public URLs + IDs, no service_role key in response) in supabase/functions/register/index.ts (new file)
 - [ ] T005 [US1] Create registration API client module (register function: POST /functions/v1/register with org_name + project_name + author_name, parse response into RegistrationResponse, map HTTP errors to user-friendly messages: 409 -> org name taken, 429 -> rate limit, 400 -> validation, 500/network -> service unavailable) in packages/cli/src/cloud/registration.ts (new file)
-- [ ] T006 [US1] Rewrite init.ts hosted mode path: replace resolveCredentials hosted branch to prompt for org_name + project_name + author_name only, call registration.register(), save config with member_api_key + supabase_url + qdrant_url (NO service_role_key, NO qdrant_api_key), write .teamind.json with project_id + project_name, proceed to IDE setup + Qdrant setup + seed using exchange-token flow with member_api_key, handle registration errors with user-friendly messages per spec edge cases in packages/cli/src/commands/init.ts (modify)
+- [ ] T006 [US1] Rewrite init.ts hosted mode path: replace resolveCredentials hosted branch to prompt for org_name + project_name + author_name only, call registration.register(), save config with member_api_key + supabase_url + qdrant_url (NO service_role_key, NO qdrant_api_key), write .valis.json with project_id + project_name, proceed to IDE setup + Qdrant setup + seed using exchange-token flow with member_api_key, handle registration errors with user-friendly messages per spec edge cases in packages/cli/src/commands/init.ts (modify)
 - [ ] T007 [P] [US1] Unit test for register Edge Function: test successful registration returns 201 with all fields, test rate limiting returns 429 after 10 registrations, test org name taken returns 409, test validation errors return 400, test rollback on partial failure in packages/cli/test/cloud/registration.test.ts (new file)
 
-**Checkpoint**: `teamind init` Hosted mode works via registration API. No .hosted-env needed.
+**Checkpoint**: `valis init` Hosted mode works via registration API. No .hosted-env needed.
 
 ---
 
 ## Phase 3: US2 — Join Existing Project (Priority: P2)
 
-**Goal**: `teamind init --join <code>` works on a fresh machine with no config, calling a public endpoint
+**Goal**: `valis init --join <code>` works on a fresh machine with no config, calling a public endpoint
 
-**Independent Test**: Create org + project (US1). Get invite code. On different machine, `teamind init --join <code>` -> joined, configured.
+**Independent Test**: Create org + project (US1). Get invite code. On different machine, `valis init --join <code>` -> joined, configured.
 
 ### Implementation for User Story 2
 
 - [ ] T008 [US2] Modify join-project Edge Function: add supabase_url (from Deno.env SUPABASE_URL) and qdrant_url (from Deno.env QDRANT_URL) to response body, add member_id to response body, rename member_key to member_api_key in response for consistency with register endpoint in supabase/functions/join-project/index.ts (modify)
 - [ ] T009 [US2] Add joinPublic function to registration client module (POST /functions/v1/join-project with invite_code + author_name, parse response into JoinPublicResponse, map errors: 404 -> invalid invite code, 409 -> already member, 403 -> member limit) in packages/cli/src/cloud/registration.ts (extend)
-- [ ] T010 [US2] Rewrite init.ts --join path for hosted mode: when no existing config, call registration.joinPublic() instead of joinProject() which requires service_role_key, save config with member_api_key + supabase_url + qdrant_url from response (NO service_role_key), write .teamind.json, proceed to IDE setup, handle errors with user-friendly messages in packages/cli/src/commands/init.ts (modify)
+- [ ] T010 [US2] Rewrite init.ts --join path for hosted mode: when no existing config, call registration.joinPublic() instead of joinProject() which requires service_role_key, save config with member_api_key + supabase_url + qdrant_url from response (NO service_role_key), write .valis.json, proceed to IDE setup, handle errors with user-friendly messages in packages/cli/src/commands/init.ts (modify)
 - [ ] T011 [P] [US2] Unit test for join-public flow: test successful join returns credentials + URLs, test invalid invite code error, test already member error, test CLI --join saves correct config without service_role_key in packages/cli/test/cloud/registration.test.ts (extend)
 
-**Checkpoint**: `teamind init --join` works on fresh machines via public endpoint. No credentials needed.
+**Checkpoint**: `valis init --join` works on fresh machines via public endpoint. No credentials needed.
 
 ---
 
@@ -70,7 +70,7 @@
 
 **Goal**: Community mode users provide their own credentials. Registration API not involved.
 
-**Independent Test**: `teamind init` -> Community -> enter credentials manually -> works exactly as before.
+**Independent Test**: `valis init` -> Community -> enter credentials manually -> works exactly as before.
 
 ### Implementation for User Story 3
 
@@ -85,15 +85,15 @@
 
 **Goal**: Remove loadHostedEnv(), HOSTED_CREDENTIALS, parseEnvContent(), and all .hosted-env references
 
-**Independent Test**: Delete ~/.teamind/.hosted-env, unset TEAMIND_HOSTED_* vars. `teamind init` Hosted mode works via registration API.
+**Independent Test**: Delete ~/.valis/.hosted-env, unset VALIS_HOSTED_* vars. `valis init` Hosted mode works via registration API.
 
 ### Implementation for User Story 4
 
-- [ ] T014 [US4] Remove from init.ts: HOSTED_CREDENTIALS constant (lines 35-40), parseEnvContent() function (lines 42-53), loadHostedEnv() function (lines 55-69), all TEAMIND_HOSTED_* env var references in resolveCredentials hosted branch, the error message directing users to create .hosted-env in packages/cli/src/commands/init.ts (modify)
+- [ ] T014 [US4] Remove from init.ts: HOSTED_CREDENTIALS constant (lines 35-40), parseEnvContent() function (lines 42-53), loadHostedEnv() function (lines 55-69), all VALIS_HOSTED_* env var references in resolveCredentials hosted branch, the error message directing users to create .hosted-env in packages/cli/src/commands/init.ts (modify)
 - [ ] T015 [US4] Remove unused imports from init.ts: readFileSync and existsSync (if no longer needed after loadHostedEnv removal), fileURLToPath (if no longer needed), dirname import from path (if only used by loadHostedEnv) in packages/cli/src/commands/init.ts (modify)
-- [ ] T016 [P] [US4] Verify no service_role key references in hosted code paths: grep codebase for HOSTED_CREDENTIALS, loadHostedEnv, .hosted-env, TEAMIND_HOSTED_ to confirm complete removal, add static assertion test in packages/cli/test/commands/init.test.ts (extend)
+- [ ] T016 [P] [US4] Verify no service_role key references in hosted code paths: grep codebase for HOSTED_CREDENTIALS, loadHostedEnv, .hosted-env, VALIS_HOSTED_ to confirm complete removal, add static assertion test in packages/cli/test/commands/init.test.ts (extend)
 
-**Checkpoint**: No .hosted-env, no TEAMIND_HOSTED_* env vars, no service_role key on client for hosted mode.
+**Checkpoint**: No .hosted-env, no VALIS_HOSTED_* env vars, no service_role key on client for hosted mode.
 
 ---
 
@@ -142,7 +142,7 @@
 
 1. Complete Phase 1: Setup (T001-T003)
 2. Complete Phase 2: US1 (T004-T007)
-3. **STOP and VALIDATE**: `teamind init` Hosted works via API
+3. **STOP and VALIDATE**: `valis init` Hosted works via API
 4. Deploy register Edge Function + migration
 
 ### Incremental Delivery

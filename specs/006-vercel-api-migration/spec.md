@@ -23,7 +23,7 @@ equivalent to the Edge Functions. Supabase charges per invocation after
 500K/month; Vercel includes serverless functions in its plan.
 
 **Independent Test**: Deploy the Next.js app to Vercel. Point the CLI
-at the Vercel URL. Run `teamind init` (Hosted) -> register -> store ->
+at the Vercel URL. Run `valis init` (Hosted) -> register -> store ->
 search -> lifecycle. All operations succeed via Vercel API routes.
 
 **Acceptance Scenarios**:
@@ -61,7 +61,7 @@ for direct Supabase client queries (Postgres reads via supabase-js).
 The API routes won't be used until the CLI is pointed at them.
 
 **Independent Test**: Update `HOSTED_API_URL` to the Vercel deployment
-URL. Run `teamind init` (Hosted) -> all calls route through Vercel.
+URL. Run `valis init` (Hosted) -> all calls route through Vercel.
 Verify via Vercel logs that requests arrive at API routes.
 
 **Acceptance Scenarios**:
@@ -76,9 +76,9 @@ Verify via Vercel logs that requests arrive at API routes.
 4. **Given** community mode, **When** the CLI calls any EF, **Then**
    it still uses `${supabaseUrl}/functions/v1/<name>` (direct Supabase
    EFs for community, since community users run their own Supabase).
-5. **Given** a `HOSTED_API_URL` of `https://teamind.krukit.co`,
+5. **Given** a `HOSTED_API_URL` of `https://valis.krukit.co`,
    **When** any hosted-mode API call is made, **Then** the URL is
-   `https://teamind.krukit.co/api/<route-name>`.
+   `https://valis.krukit.co/api/<route-name>`.
 
 ---
 
@@ -111,7 +111,7 @@ updated with type, summary, affects, confidence.
 3. **Given** no `ANTHROPIC_API_KEY` on the server, **When** enrichment
    is called, **Then** it returns 503 with a clear message.
 4. **Given** a community mode user, **When** they call `/api/enrich`,
-   **Then** it returns 403 (community users use local `teamind enrich`
+   **Then** it returns 403 (community users use local `valis enrich`
    with their own keys).
 
 ---
@@ -126,7 +126,7 @@ are unchanged. The migration only affects hosted mode routing.
 **Why this priority**: Community/enterprise users must not be affected.
 Their infrastructure is self-hosted and should not depend on Vercel.
 
-**Independent Test**: Run `teamind init` -> Community -> enter own
+**Independent Test**: Run `valis init` -> Community -> enter own
 credentials -> store -> search -> lifecycle. All operations work
 exactly as before. No calls to Vercel.
 
@@ -135,7 +135,7 @@ exactly as before. No calls to Vercel.
 1. **Given** community mode selected, **When** the CLI makes API
    calls, **Then** it uses `${supabaseUrl}/functions/v1/<name>` (not
    Vercel).
-2. **Given** community mode config, **When** `teamind enrich` runs,
+2. **Given** community mode config, **When** `valis enrich` runs,
    **Then** it uses the local Anthropic key from config, not the
    server endpoint.
 3. **Given** existing community mode tests, **When** run after
@@ -188,7 +188,7 @@ dashboard. Run the full hosted flow. Everything works via Vercel.
 - What happens to Stripe webhooks? The webhook URL in the Stripe
   dashboard must be updated from
   `https://xyz.supabase.co/functions/v1/stripe-webhook` to
-  `https://teamind.krukit.co/api/stripe-webhook`.
+  `https://valis.krukit.co/api/stripe-webhook`.
 
 ## Requirements *(mandatory)*
 
@@ -208,7 +208,7 @@ dashboard. Run the full hosted flow. Everything works via Vercel.
 - **FR-006**: CORS MUST be handled globally via `next.config.ts`,
   not per-route.
 - **FR-007**: The CLI MUST add a `HOSTED_API_URL` constant pointing
-  to the Vercel deployment URL (`https://teamind.krukit.co`).
+  to the Vercel deployment URL (`https://valis.krukit.co`).
 - **FR-008**: All hosted-mode CLI calls to Edge Functions MUST be
   redirected to `${HOSTED_API_URL}/api/<route-name>`.
 - **FR-009**: Community mode CLI calls MUST continue using
@@ -240,7 +240,7 @@ dashboard. Run the full hosted flow. Everything works via Vercel.
 ## Assumptions
 
 - The Vercel deployment URL for the web package is
-  `https://teamind.krukit.co` (already configured per BACKLOG.md).
+  `https://valis.krukit.co` (already configured per BACKLOG.md).
 - The web package (`packages/web`) is deployed to Vercel with all
   required environment variables (SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET, QDRANT_URL, QDRANT_API_KEY,

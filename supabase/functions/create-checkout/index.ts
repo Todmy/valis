@@ -138,9 +138,9 @@ serve(async (req: Request) => {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { org_id, plan, billing_cycle: cycle },
       success_url: success_url ??
-        "https://dashboard.teamind.dev/billing/success?session_id={CHECKOUT_SESSION_ID}",
+        "https://dashboard.valis.dev/billing/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: cancel_url ??
-        "https://dashboard.teamind.dev/billing/cancel",
+        "https://dashboard.valis.dev/billing/cancel",
     });
 
     return jsonResponse({ checkout_url: session.url }, 200);

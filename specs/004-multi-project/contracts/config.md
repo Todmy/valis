@@ -7,17 +7,17 @@
 
 Multi-project support splits config into two tiers:
 
-1. **Global config** (`~/.teamind/config.json`): Org credentials and
+1. **Global config** (`~/.valis/config.json`): Org credentials and
    cloud infrastructure settings. Shared across all projects. Contains
    secrets — stored with `0600` permissions. NOT committed to version
    control.
 
-2. **Per-directory config** (`.teamind.json`): Project identity only.
+2. **Per-directory config** (`.valis.json`): Project identity only.
    Contains no secrets. Lives in the project/repo root. SHOULD be
    committed to version control so all team members on the same repo
    automatically use the correct project.
 
-## Per-Directory Config: `.teamind.json`
+## Per-Directory Config: `.valis.json`
 
 **Location**: Project root directory (same level as `.git/`).
 
@@ -25,7 +25,7 @@ Multi-project support splits config into two tiers:
 
 ```typescript
 interface ProjectConfig {
-  /** UUID of the project in Teamind. */
+  /** UUID of the project in Valis. */
   project_id: string;
   /** Human-readable project name. */
   project_name: string;
@@ -47,14 +47,14 @@ interface ProjectConfig {
 - Max size: ~200 bytes
 - Should be added to `.gitignore`: NO (commit to share with team)
 
-## Global Config: `~/.teamind/config.json`
+## Global Config: `~/.valis/config.json`
 
-**Location**: `~/.teamind/config.json` (unchanged from MVP).
+**Location**: `~/.valis/config.json` (unchanged from MVP).
 
-**Schema** (updated `TeamindConfig`):
+**Schema** (updated `ValisConfig`):
 
 ```typescript
-interface TeamindConfig {
+interface ValisConfig {
   org_id: string;
   org_name: string;
   api_key: string;
@@ -74,13 +74,13 @@ interface TeamindConfig {
 
 **Changes from Phase 2/3**: None. The global config type is unchanged.
 The `project_id` field that was previously optional on some types is
-removed from global config — it now lives in `.teamind.json`.
+removed from global config — it now lives in `.valis.json`.
 
 **Properties**:
 - File permissions: `0600` (owner read/write only)
 - Directory permissions: `0700`
 - Encoding: UTF-8 JSON
-- Should be added to `.gitignore`: N/A (lives in `~/.teamind/`, not
+- Should be added to `.gitignore`: N/A (lives in `~/.valis/`, not
   in any repo)
 
 ## Resolution Algorithm
@@ -93,16 +93,16 @@ configs.
 ```typescript
 interface ResolvedConfig {
   /** Global org-level config. Null if not configured. */
-  global: TeamindConfig | null;
-  /** Per-directory project config. Null if no .teamind.json found. */
+  global: ValisConfig | null;
+  /** Per-directory project config. Null if no .valis.json found. */
   project: ProjectConfig | null;
 }
 
 async function resolveConfig(): Promise<ResolvedConfig> {
   // 1. Load global config
-  const global = await loadGlobalConfig();  // ~/.teamind/config.json
+  const global = await loadGlobalConfig();  // ~/.valis/config.json
 
-  // 2. Walk up from cwd to find .teamind.json
+  // 2. Walk up from cwd to find .valis.json
   const project = await findProjectConfig(process.cwd());
 
   return { global, project };
@@ -117,7 +117,7 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
   const root = parse(dir).root;  // '/' on Unix, 'C:\' on Windows
 
   while (true) {
-    const configPath = join(dir, '.teamind.json');
+    const configPath = join(dir, '.valis.json');
     try {
       const data = await readFile(configPath, 'utf-8');
       return JSON.parse(data) as ProjectConfig;
@@ -127,7 +127,7 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
 
     const parent = dirname(dir);
     if (parent === dir || dir === root) {
-      // Reached filesystem root — no .teamind.json found
+      // Reached filesystem root — no .valis.json found
       return null;
     }
     dir = parent;
@@ -137,21 +137,21 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
 
 **Walk-up behavior**:
 - Starts at `process.cwd()`
-- Checks each directory for `.teamind.json`
+- Checks each directory for `.valis.json`
 - Stops at filesystem root
 - First match wins (closest to cwd)
-- Returns `null` if no `.teamind.json` found anywhere
+- Returns `null` if no `.valis.json` found anywhere
 
 ### Resolution states
 
-| Global config | `.teamind.json` | State | CLI behavior |
+| Global config | `.valis.json` | State | CLI behavior |
 |:---:|:---:|:---:|---|
 | present | present | **Ready** | All operations work, project-scoped |
-| present | missing | **No project** | `teamind status` shows "No project. Run `teamind init`." Org-level commands (admin) still work. |
-| missing | present | **No org** | `teamind status` shows "Run `teamind init` to configure credentials." |
-| missing | missing | **Unconfigured** | `teamind status` shows "Run `teamind init` to get started." |
+| present | missing | **No project** | `valis status` shows "No project. Run `valis init`." Org-level commands (admin) still work. |
+| missing | present | **No org** | `valis status` shows "Run `valis init` to configure credentials." |
+| missing | missing | **Unconfigured** | `valis status` shows "Run `valis init` to get started." |
 
-## `teamind init` Flow (updated)
+## `valis init` Flow (updated)
 
 ### Case 1: Fresh install (no global config)
 
@@ -160,14 +160,14 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
 2. Create org or join via invite
    - If joining: call join-project (not join-org)
    - If creating: create org, then create first project
-3. Save global config (~/.teamind/config.json)
+3. Save global config (~/.valis/config.json)
 4. Prompt for project name (default: current directory name)
 5. Call create-project Edge Function
-6. Save .teamind.json in cwd
+6. Save .valis.json in cwd
 7. Configure IDEs, seed brain
 ```
 
-### Case 2: Org exists, new directory (global config present, no .teamind.json)
+### Case 2: Org exists, new directory (global config present, no .valis.json)
 
 ```
 1. Detect existing global config
@@ -176,12 +176,12 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
    a. If projects exist: show list with decision counts
    b. User selects existing or types new name
 4. If new: call create-project Edge Function
-5. Save .teamind.json in cwd
+5. Save .valis.json in cwd
 6. Skip org setup, credential entry, and IDE detection
    (IDEs are already configured from initial init)
 ```
 
-### Case 3: `teamind init --join <invite-code>`
+### Case 3: `valis init --join <invite-code>`
 
 ```
 1. Call join-project with invite code
@@ -189,7 +189,7 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
 3. If global config missing: save global config
 4. If global config exists (same org): skip
 5. If global config exists (different org): warn and confirm
-6. Save .teamind.json in cwd with returned project_id/name
+6. Save .valis.json in cwd with returned project_id/name
 7. Configure IDEs if not already configured
 ```
 
@@ -202,31 +202,31 @@ async function findProjectConfig(startDir: string): Promise<ProjectConfig | null
    b. Reconfigure org (full reset)
    c. Cancel
 3. If switch project:
-   - Update .teamind.json only
+   - Update .valis.json only
    - Global config unchanged
 ```
 
-## `teamind switch` Command (new)
+## `valis switch` Command (new)
 
 ```
-teamind switch --project <name-or-id>
+valis switch --project <name-or-id>
 ```
 
 **Behavior**:
 1. Load global config (required)
 2. List member's projects via `list_member_projects` RPC
 3. Find matching project by name or ID
-4. Update `.teamind.json` in cwd with new project_id/name
+4. Update `.valis.json` in cwd with new project_id/name
 5. Print confirmation
 
 **Flags**:
 - `--project <name>`: Switch to named project
 - (no flags): Interactive — show list and prompt for selection
 
-## `teamind status` Output (updated)
+## `valis status` Output (updated)
 
 ```
-Teamind Status
+Valis Status
   Org:      Krukit
   Project:  frontend-app (active)
   Author:   Olena
@@ -239,23 +239,23 @@ Teamind Status
 When no project is configured:
 
 ```
-Teamind Status
+Valis Status
   Org:      Krukit
   Project:  (not configured)
   Author:   Olena
 
-  Run `teamind init` in your project directory to select a project.
+  Run `valis init` in your project directory to select a project.
 ```
 
 ## `.gitignore` Recommendation
 
-During `teamind init`, the CLI does NOT add `.teamind.json` to
+During `valis init`, the CLI does NOT add `.valis.json` to
 `.gitignore` because it should be shared with the team. However, the
-global config directory `~/.teamind/` is never inside a repo, so no
+global config directory `~/.valis/` is never inside a repo, so no
 gitignore entry is needed for it.
 
 If the user has sensitive overrides, they can create
-`.teamind.local.json` (not read by Teamind — reserved for future use).
+`.valis.local.json` (not read by Valis — reserved for future use).
 
 ## Config Validation
 
@@ -280,21 +280,21 @@ const projectSchema = z.object({
 
 Invalid configs produce a clear error:
 ```
-Error: Invalid .teamind.json — project_id must be a valid UUID.
-  Fix the file at /path/to/.teamind.json or run `teamind init` to reconfigure.
+Error: Invalid .valis.json — project_id must be a valid UUID.
+  Fix the file at /path/to/.valis.json or run `valis init` to reconfigure.
 ```
 
 ## Migration: Existing Configs
 
-Existing installations have a global config but no `.teamind.json`.
+Existing installations have a global config but no `.valis.json`.
 When the upgraded CLI detects this state:
 
 1. All commands that require a project (store, search, serve) print:
    ```
    No project configured for this directory.
-   Run `teamind init` to select or create a project.
+   Run `valis init` to select or create a project.
    ```
-2. `teamind init` detects the existing org, creates a default project
-   (if not already created by migration 004), and writes `.teamind.json`.
+2. `valis init` detects the existing org, creates a default project
+   (if not already created by migration 004), and writes `.valis.json`.
 3. The migration is interactive — no silent automatic writes to the
    user's working directory.

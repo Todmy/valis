@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     const jwtClaims: Record<string, unknown> = {
       sub: auth.memberId,
       role: 'authenticated',
-      iss: 'teamind',
+      iss: 'valis',
       org_id: auth.orgId,
       member_role: auth.role,
       author_name: auth.authorName,

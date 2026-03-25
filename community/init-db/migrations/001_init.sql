@@ -1,4 +1,4 @@
--- Teamind MVP Schema
+-- Valis MVP Schema
 -- Tables: orgs, members, decisions, rate_limits
 -- With indexes and RLS policies
 

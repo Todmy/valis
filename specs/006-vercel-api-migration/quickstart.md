@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- Teamind Phase 5 (registration API) installed and working
-- `packages/web` deployed to Vercel at `https://teamind.krukit.co`
+- Valis Phase 5 (registration API) installed and working
+- `packages/web` deployed to Vercel at `https://valis.krukit.co`
 - Vercel env vars configured: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET, ANTHROPIC_API_KEY, all STRIPE_PRICE_* vars
@@ -13,9 +13,9 @@
 ## 1. Hosted Registration via Vercel (US1 + US2)
 
 ```bash
-# Fresh machine — no ~/.teamind/ directory, no .teamind.json
+# Fresh machine — no ~/.valis/ directory, no .valis.json
 
-teamind init
+valis init
 # Expected: "Choose your setup: 1) Hosted  2) Community"
 # Select: 1
 
@@ -25,7 +25,7 @@ teamind init
 #   Your name: Alice
 
 # Expected output:
-#   Registering with Teamind Cloud...
+#   Registering with Valis Cloud...
 #   ✓ Organization "Migration Test Org" created
 #   ✓ Project "my-repo" created
 #   ✓ Config saved
@@ -35,13 +35,13 @@ teamind init
 # Check Vercel dashboard -> Functions -> /api/register should show invocation
 
 # Verify config:
-cat ~/.teamind/config.json
+cat ~/.valis/config.json
 # Expected: member_api_key present (tmm_...)
 # Expected: supabase_url present (Supabase URL for direct DB access)
 # Expected: NO reference to /functions/v1/ in any stored URL
 
 # Verify subsequent operations route through Vercel:
-teamind status
+valis status
 # Expected: works — exchange-token called via /api/exchange-token
 ```
 
@@ -49,8 +49,8 @@ teamind status
 
 ```bash
 # After init, store a decision (triggers exchange-token + check-usage):
-# Start teamind serve, then in an IDE session:
-#   teamind_store("Test decision for migration validation")
+# Start valis serve, then in an IDE session:
+#   valis_store("Test decision for migration validation")
 
 # Check Vercel logs — should see:
 #   POST /api/exchange-token  (JWT minting)
@@ -65,7 +65,7 @@ teamind status
 # Machine 2 — fresh install, no config
 # Use invite code from step 1
 
-teamind init --join XXXX-XXXX
+valis init --join XXXX-XXXX
 # Prompt: Your name: Bob
 
 # Expected output:
@@ -74,7 +74,7 @@ teamind init --join XXXX-XXXX
 
 # Verify Vercel logs show: POST /api/join-project
 
-teamind status
+valis status
 # Expected: works via Vercel API routes
 ```
 
@@ -82,7 +82,7 @@ teamind status
 
 ```bash
 # Store a pending decision (via MCP or direct):
-#   teamind_store({ text: "We should use Redis for caching" })
+#   valis_store({ text: "We should use Redis for caching" })
 
 # Call enrichment (this will be a CLI command or MCP tool call):
 # The CLI calls POST /api/enrich with the decision ID
@@ -94,7 +94,7 @@ teamind status
 #   - Updated Postgres + Qdrant
 
 # Verify decision is enriched:
-# teamind_search("Redis caching")
+# valis_search("Redis caching")
 # Expected: result has type, summary, affects, confidence
 # Expected: enriched_by = 'llm'
 ```
@@ -103,7 +103,7 @@ teamind status
 
 ```bash
 # Fresh machine
-teamind init
+valis init
 # Select: 2 (Community)
 
 # Prompts (same as before):
@@ -116,7 +116,7 @@ teamind init
 # API calls go to supabaseUrl/functions/v1/ (NOT Vercel)
 
 # Verify no Vercel calls in community mode:
-# teamind status — exchange-token should hit my-instance.supabase.co
+# valis status — exchange-token should hit my-instance.supabase.co
 ```
 
 ## 6. Supabase EFs Disabled (US5)
@@ -126,15 +126,15 @@ teamind init
 # (Or rename them so they 404)
 
 # Run full hosted flow:
-teamind init  # Hosted
+valis init  # Hosted
 # Expected: succeeds via Vercel (no EF dependency)
 
-teamind status
+valis status
 # Expected: works
 
 # Store + search:
-#   teamind_store("Test after EF disable")
-#   teamind_search("test")
+#   valis_store("Test after EF disable")
+#   valis_search("test")
 # Expected: both work via Vercel API routes + direct Supabase DB
 
 # Re-enable EFs for community users
@@ -146,20 +146,20 @@ teamind status
 # Test each API route matches its EF contract:
 
 # register
-curl -s -X POST https://teamind.krukit.co/api/register \
+curl -s -X POST https://valis.krukit.co/api/register \
   -H "Content-Type: application/json" \
   -d '{"org_name":"curl-test","project_name":"proj","author_name":"tester"}'
 # Expected: 201 with member_api_key, supabase_url, qdrant_url, org_id, etc.
 
 # exchange-token (use member_api_key from register)
-curl -s -X POST https://teamind.krukit.co/api/exchange-token \
+curl -s -X POST https://valis.krukit.co/api/exchange-token \
   -H "Authorization: Bearer tmm_..." \
   -H "Content-Type: application/json" \
   -d '{}'
 # Expected: 200 with token, expires_at, member_id, org_id, role, etc.
 
 # check-usage (use JWT from exchange-token)
-curl -s -X POST https://teamind.krukit.co/api/check-usage \
+curl -s -X POST https://valis.krukit.co/api/check-usage \
   -H "Authorization: Bearer eyJ..." \
   -H "Content-Type: application/json" \
   -d '{"org_id":"uuid","operation":"store"}'
@@ -174,14 +174,14 @@ curl -s -X POST https://teamind.krukit.co/api/check-usage \
 # After deployment, wait 10 minutes for functions to go cold
 
 # Time a cold-start exchange-token call:
-time curl -s -X POST https://teamind.krukit.co/api/exchange-token \
+time curl -s -X POST https://valis.krukit.co/api/exchange-token \
   -H "Authorization: Bearer tmm_..." \
   -H "Content-Type: application/json" \
   -d '{}'
 # Expected: < 500ms total (including cold start)
 
 # Time a warm call (immediately after):
-time curl -s -X POST https://teamind.krukit.co/api/exchange-token \
+time curl -s -X POST https://valis.krukit.co/api/exchange-token \
   -H "Authorization: Bearer tmm_..." \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -201,12 +201,12 @@ https://rmawxpdaudinbansjfpd.supabase.co/functions/v1/stripe-webhook
 
 **New URL (Vercel API route):**
 ```
-https://teamind.krukit.co/api/stripe-webhook
+https://valis.krukit.co/api/stripe-webhook
 ```
 
 Steps:
 1. Go to https://dashboard.stripe.com/webhooks
-2. Select the existing teamind webhook endpoint
+2. Select the existing valis webhook endpoint
 3. Update the endpoint URL from the old to the new URL above
 4. Verify events are received by checking Vercel function logs
 5. Community/self-hosted deployments continue using the Supabase EF URL

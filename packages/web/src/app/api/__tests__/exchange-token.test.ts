@@ -143,7 +143,7 @@ describe('POST /api/exchange-token', () => {
     expect(payload.org_id).toBe('org-456');
     expect(payload.member_role).toBe('admin');
     expect(payload.author_name).toBe('Alice');
-    expect(payload.iss).toBe('teamind');
+    expect(payload.iss).toBe('valis');
     expect(payload.role).toBe('authenticated');
     expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });

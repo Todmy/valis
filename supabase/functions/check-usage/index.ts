@@ -284,7 +284,7 @@ serve(async (req: Request) => {
 
     // 7. T017: Track per-project usage for analytics (non-blocking)
     //    Limits are enforced at org level; project_id is tracked for
-    //    per-project analytics (e.g., `teamind admin metrics --project`).
+    //    per-project analytics (e.g., `valis admin metrics --project`).
     if (projectId) {
       try {
         await supabase.rpc("track_project_usage", {

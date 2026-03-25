@@ -9,7 +9,7 @@
 
 ### User Story 1 - First-Time Hosted Setup (Priority: P1)
 
-A new user installs Teamind and runs `teamind init`. They choose
+A new user installs Valis and runs `valis init`. They choose
 "Hosted" mode. Instead of needing a `.hosted-env` file or environment
 variables, the CLI calls a public registration endpoint. The endpoint
 creates an org, a default project, and a member — then returns only
@@ -21,17 +21,17 @@ and their name.
 user goes through it. Without this, users need to manually create
 `.hosted-env` files — a terrible first experience.
 
-**Independent Test**: Fresh machine, no config. Run `teamind init` →
+**Independent Test**: Fresh machine, no config. Run `valis init` →
 choose Hosted → enter org name + name → org created, project created,
 IDE configured, brain seeded. No credentials needed from the user.
 
 **Acceptance Scenarios**:
 
-1. **Given** a fresh machine with no Teamind config, **When** the
-   user runs `teamind init` and chooses Hosted, **Then** they only
+1. **Given** a fresh machine with no Valis config, **When** the
+   user runs `valis init` and chooses Hosted, **Then** they only
    enter org name, project name, and their name — no URLs or keys.
 2. **Given** the registration call succeeds, **When** config is
-   saved, **Then** `~/.teamind/config.json` contains only the
+   saved, **Then** `~/.valis/config.json` contains only the
    per-member API key, Supabase URL (public), and Qdrant URL
    (public). No service_role key is stored locally.
 3. **Given** the saved config, **When** the CLI makes subsequent
@@ -47,7 +47,7 @@ IDE configured, brain seeded. No credentials needed from the user.
 
 ### User Story 2 - Join Existing Project (Priority: P2)
 
-A teammate receives an invite code and runs `teamind init --join
+A teammate receives an invite code and runs `valis init --join
 ABCD-1234`. The CLI calls a public join endpoint that validates the
 invite, creates a member, and returns credentials. No `.hosted-env`
 needed. The invite code is project-scoped (from 004-multi-project).
@@ -56,12 +56,12 @@ needed. The invite code is project-scoped (from 004-multi-project).
 creation. It must be equally frictionless.
 
 **Independent Test**: Create org + project (US1). Get invite code.
-On a different machine, run `teamind init --join <code>` → joined,
+On a different machine, run `valis init --join <code>` → joined,
 configured, no credential files needed.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid project invite code, **When** `teamind init
+1. **Given** a valid project invite code, **When** `valis init
    --join <code>` runs, **Then** the CLI calls the join endpoint
    and receives per-member credentials without needing any config.
 2. **Given** an invalid invite code, **When** join is attempted,
@@ -84,7 +84,7 @@ deployments.
 **Why this priority**: Community mode must not break. Enterprise
 users self-host and need full control.
 
-**Independent Test**: Run `teamind init` → choose Community → enter
+**Independent Test**: Run `valis init` → choose Community → enter
 credentials manually → works exactly as before.
 
 **Acceptance Scenarios**:
@@ -100,7 +100,7 @@ credentials manually → works exactly as before.
 ### User Story 4 - Remove .hosted-env Dependency (Priority: P4)
 
 After this feature ships, the `.hosted-env` file and
-`TEAMIND_HOSTED_*` environment variables are no longer needed for
+`VALIS_HOSTED_*` environment variables are no longer needed for
 hosted mode. The `loadHostedEnv()` function is removed from init.ts.
 Hosted credentials come from the registration API response, not from
 local files.
@@ -108,14 +108,14 @@ local files.
 **Why this priority**: Cleanup — remove the anti-pattern of
 distributing credentials via files.
 
-**Independent Test**: Delete `~/.teamind/.hosted-env`. Run
-`teamind init` → Hosted mode works without it.
+**Independent Test**: Delete `~/.valis/.hosted-env`. Run
+`valis init` → Hosted mode works without it.
 
 **Acceptance Scenarios**:
 
 1. **Given** no `.hosted-env` file exists, **When** hosted init
    runs, **Then** it succeeds via the registration API.
-2. **Given** `TEAMIND_HOSTED_*` env vars are not set, **When**
+2. **Given** `VALIS_HOSTED_*` env vars are not set, **When**
    hosted init runs, **Then** it succeeds via the registration API.
 3. **Given** the codebase, **When** reviewed, **Then** no service
    role keys appear in any client-side code or config files.
@@ -125,7 +125,7 @@ distributing credentials via files.
 ### Edge Cases
 
 - What happens when the registration API is down? CLI shows
-  "Teamind registration service is currently unavailable. Try again
+  "Valis registration service is currently unavailable. Try again
   later or use Community mode for self-hosted setup."
 - What happens when rate limiting kicks in? The registration endpoint
   has rate limiting (e.g., 10 orgs per IP per hour). CLI shows
@@ -187,7 +187,7 @@ distributing credentials via files.
 
 ### Measurable Outcomes
 
-- **SC-001**: A new user completes `teamind init` (Hosted) in under
+- **SC-001**: A new user completes `valis init` (Hosted) in under
   60 seconds without needing any credentials, config files, or
   environment variables.
 - **SC-002**: Zero service_role keys exist on any client machine

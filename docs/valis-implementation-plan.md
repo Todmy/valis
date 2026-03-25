@@ -1,46 +1,46 @@
-# Teamind MVP Implementation Plan
+# Valis MVP Implementation Plan
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build Teamind MVP — shared decision intelligence for AI-augmented engineering teams. Cloud-first, pure MCP, zero native deps.
+**Goal:** Build Valis MVP — shared decision intelligence for AI-augmented engineering teams. Cloud-first, pure MCP, zero native deps.
 
 **Architecture:** Two packages: `cli` (MCP server + CLI commands + local enrichment) and `cloud` (Cloudflare Workers API + D1 + Qdrant Cloud + Cron + Queue). The CLI calls the Cloud API for all storage/search. Haiku enrichment runs locally in the MCP server process.
 
 **Tech Stack:** Node.js + TypeScript, pnpm workspace, Hono (Cloudflare Workers), Cloudflare D1/KV/Queues, Qdrant Cloud, Claude Haiku, @modelcontextprotocol/sdk
 
-**Spec:** `/Users/todmy/PBaaS/research/decision-intelligence-platform/teamind-design-spec-v3-final.md`
+**Spec:** `/Users/todmy/PBaaS/research/decision-intelligence-platform/valis-design-spec-v3-final.md`
 
 ---
 
 ## File Structure
 
 ```
-teamind/
+valis/
 ├── packages/
 │   ├── cli/
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── bin/
-│   │   │   └── teamind.ts                 # CLI entry point (#!/usr/bin/env node)
+│   │   │   └── valis.ts                 # CLI entry point (#!/usr/bin/env node)
 │   │   ├── src/
 │   │   │   ├── commands/
-│   │   │   │   ├── init.ts                # teamind init + init --join
-│   │   │   │   ├── serve.ts               # teamind serve (MCP server launcher)
-│   │   │   │   ├── status.ts              # teamind status
-│   │   │   │   ├── dashboard.ts           # teamind dashboard
-│   │   │   │   ├── export-cmd.ts          # teamind export
-│   │   │   │   ├── uninstall.ts           # teamind uninstall
-│   │   │   │   └── config-cmd.ts          # teamind config set/get
+│   │   │   │   ├── init.ts                # valis init + init --join
+│   │   │   │   ├── serve.ts               # valis serve (MCP server launcher)
+│   │   │   │   ├── status.ts              # valis status
+│   │   │   │   ├── dashboard.ts           # valis dashboard
+│   │   │   │   ├── export-cmd.ts          # valis export
+│   │   │   │   ├── uninstall.ts           # valis uninstall
+│   │   │   │   └── config-cmd.ts          # valis config set/get
 │   │   │   ├── mcp/
 │   │   │   │   ├── server.ts              # MCP server setup + tool registration
 │   │   │   │   └── tools/
-│   │   │   │       ├── store.ts           # teamind_store handler
-│   │   │   │       ├── search.ts          # teamind_search handler
-│   │   │   │       └── context.ts         # teamind_context handler
+│   │   │   │       ├── store.ts           # valis_store handler
+│   │   │   │       ├── search.ts          # valis_search handler
+│   │   │   │       └── context.ts         # valis_context handler
 │   │   │   ├── enrichment/
 │   │   │   │   └── haiku.ts               # Haiku client: classify + keywords
 │   │   │   ├── cloud/
-│   │   │   │   └── client.ts              # HTTP client for Teamind Cloud API
+│   │   │   │   └── client.ts              # HTTP client for Valis Cloud API
 │   │   │   ├── seed/
 │   │   │   │   ├── index.ts               # Seed orchestrator
 │   │   │   │   ├── parse-claude-md.ts     # Extract decisions from CLAUDE.md
@@ -57,8 +57,8 @@ teamind/
 │   │   │   ├── offline/
 │   │   │   │   └── queue.ts               # pending.jsonl read/write/flush
 │   │   │   ├── config/
-│   │   │   │   ├── store.ts               # ~/.teamind/config.json CRUD
-│   │   │   │   └── manifest.ts            # ~/.teamind/manifest.json (tracks what init created)
+│   │   │   │   ├── store.ts               # ~/.valis/config.json CRUD
+│   │   │   │   └── manifest.ts            # ~/.valis/manifest.json (tracks what init created)
 │   │   │   ├── types.ts                   # Decision interface, enums, API types
 │   │   │   └── errors.ts                  # Error message constants
 │   │   └── test/
@@ -123,16 +123,16 @@ teamind/
 ### Task 1.1: Initialize monorepo
 
 **Files:**
-- Create: `teamind/package.json`
-- Create: `teamind/pnpm-workspace.yaml`
-- Create: `teamind/tsconfig.base.json`
-- Create: `teamind/.gitignore`
-- Create: `teamind/LICENSE`
+- Create: `valis/package.json`
+- Create: `valis/pnpm-workspace.yaml`
+- Create: `valis/tsconfig.base.json`
+- Create: `valis/.gitignore`
+- Create: `valis/LICENSE`
 
 - [ ] **Step 1: Create repo directory**
 
 ```bash
-mkdir -p ~/Projects/teamind && cd ~/Projects/teamind
+mkdir -p ~/Projects/valis && cd ~/Projects/valis
 git init
 ```
 
@@ -140,7 +140,7 @@ git init
 
 ```json
 {
-  "name": "teamind",
+  "name": "valis",
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
@@ -198,14 +198,14 @@ dist/
 ```
 Business Source License 1.1
 
-Licensor: Teamind
-Licensed Work: Teamind
+Licensor: Valis
+Licensed Work: Valis
 Change Date: 2029-03-17
 Change License: Apache License, Version 2.0
 
 Additional Use Grant: You may use the Licensed Work for any purpose
 EXCEPT operating a commercial hosted service that competes with
-Teamind Cloud.
+Valis Cloud.
 
 For the full BSL 1.1 text, see https://mariadb.com/bsl11/
 ```
@@ -215,7 +215,7 @@ For the full BSL 1.1 text, see https://mariadb.com/bsl11/
 ```bash
 pnpm install
 git add -A
-git commit -m "chore: initialize teamind monorepo with pnpm workspace"
+git commit -m "chore: initialize valis monorepo with pnpm workspace"
 ```
 
 ---
@@ -232,12 +232,12 @@ git commit -m "chore: initialize teamind monorepo with pnpm workspace"
 
 ```json
 {
-  "name": "teamind",
+  "name": "valis",
   "version": "0.1.0",
   "description": "Shared decision intelligence for AI-augmented engineering teams",
   "type": "module",
   "bin": {
-    "teamind": "./dist/bin/teamind.js"
+    "valis": "./dist/bin/valis.js"
   },
   "scripts": {
     "build": "tsc",
@@ -361,7 +361,7 @@ export interface DashboardData {
 }
 
 // Local config
-export interface TeamindConfig {
+export interface ValisConfig {
   org_id: string;
   org_name: string;
   api_key: string;
@@ -379,26 +379,26 @@ Create `packages/cli/src/errors.ts`:
 export const ERRORS = {
   INVALID_API_KEY: `Error: Anthropic API key rejected (HTTP 401).
 Check: https://console.anthropic.com/settings/keys
-Teamind stores raw decisions without enrichment until valid key is set.
-Fix: teamind config set api-key <your-key>`,
+Valis stores raw decisions without enrichment until valid key is set.
+Fix: valis config set api-key <your-key>`,
 
   CLOUD_UNREACHABLE: (pending: number) =>
-    `Warning: Teamind Cloud unreachable.
+    `Warning: Valis Cloud unreachable.
 Decisions queued locally (${pending} pending). Search unavailable offline.
 Will sync automatically when connected.`,
 
   ORG_NOT_FOUND: `Error: Organization not found.
-Run: teamind init (create new) or teamind init --join CODE (join existing)`,
+Run: valis init (create new) or valis init --join CODE (join existing)`,
 
   INVITE_INVALID: (code: string) =>
     `Error: Invite code ${code} is invalid or expired.
-Ask your team lead: teamind org invite (generates new code)`,
+Ask your team lead: valis org invite (generates new code)`,
 
   FREE_LIMIT: (current: number, max: number) =>
     `Warning: Free tier limit reached (${current}/${max} decisions).
 New decisions will not be stored. Options:
-  teamind billing upgrade
-  teamind decisions prune --older-than 30d`,
+  valis billing upgrade
+  valis decisions prune --older-than 30d`,
 
   HAIKU_RATE_LIMITED: `Warning: Anthropic API rate limited. Enrichment paused.
 Decisions stored as raw text. Enrichment retries automatically.`,
@@ -434,14 +434,14 @@ git commit -m "feat: add cli package with Decision types and error constants"
 
 ```json
 {
-  "name": "@teamind/cloud",
+  "name": "@valis/cloud",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "db:migrate": "wrangler d1 execute teamind-db --local --file=src/db/schema.sql"
+    "db:migrate": "wrangler d1 execute valis-db --local --file=src/db/schema.sql"
   },
   "dependencies": {
     "hono": "^4.7.0"
@@ -458,18 +458,18 @@ git commit -m "feat: add cli package with Decision types and error constants"
 - [ ] **Step 2: Create wrangler.toml**
 
 ```toml
-name = "teamind-api"
+name = "valis-api"
 main = "src/index.ts"
 compatibility_date = "2025-12-01"
 
 [vars]
 QDRANT_URL = "https://YOUR_CLUSTER.cloud.qdrant.io"
 QDRANT_API_KEY = ""
-TEAMIND_HAIKU_KEY = ""
+VALIS_HAIKU_KEY = ""
 
 [[d1_databases]]
 binding = "DB"
-database_name = "teamind-db"
+database_name = "valis-db"
 database_id = ""
 
 [[kv_namespaces]]
@@ -535,7 +535,7 @@ type Bindings = {
   SEED_QUEUE: Queue;
   QDRANT_URL: string;
   QDRANT_API_KEY: string;
-  TEAMIND_HAIKU_KEY: string;
+  VALIS_HAIKU_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -1203,7 +1203,7 @@ git commit -m "feat(cloud): add decisions CRUD, search, batch, dashboard endpoin
 - Create: `packages/cloud/src/cron/orphan-enrichment.ts`
 - Create: `packages/cloud/src/services/haiku.ts`
 
-- [ ] **Step 1: Write Haiku client for cloud (Teamind's own key)**
+- [ ] **Step 1: Write Haiku client for cloud (Valis's own key)**
 
 Create `packages/cloud/src/services/haiku.ts`:
 
@@ -1284,9 +1284,9 @@ import { enrichDecision } from '../services/haiku.js';
 export async function handleOrphanEnrichment(env: {
   QDRANT_URL: string;
   QDRANT_API_KEY: string;
-  TEAMIND_HAIKU_KEY: string;
+  VALIS_HAIKU_KEY: string;
 }) {
-  if (!env.TEAMIND_HAIKU_KEY) return;
+  if (!env.VALIS_HAIKU_KEY) return;
 
   const qdrant = new QdrantService(env.QDRANT_URL, env.QDRANT_API_KEY);
 
@@ -1308,7 +1308,7 @@ export async function handleOrphanEnrichment(env: {
     // Skip if updated recently (still being enriched by user's local process)
     if (payload.updated_at > twoMinAgo) continue;
 
-    const result = await enrichDecision(env.TEAMIND_HAIKU_KEY, payload.detail);
+    const result = await enrichDecision(env.VALIS_HAIKU_KEY, payload.detail);
 
     if (result) {
       await qdrant.updatePayload(point.id as string, {
@@ -1370,9 +1370,9 @@ interface SeedMessage {
 
 export async function handleSeedBatch(
   batch: MessageBatch<SeedMessage>,
-  env: { QDRANT_URL: string; QDRANT_API_KEY: string; TEAMIND_HAIKU_KEY: string }
+  env: { QDRANT_URL: string; QDRANT_API_KEY: string; VALIS_HAIKU_KEY: string }
 ) {
-  if (!env.TEAMIND_HAIKU_KEY) {
+  if (!env.VALIS_HAIKU_KEY) {
     batch.ackAll();
     return;
   }
@@ -1393,7 +1393,7 @@ export async function handleSeedBatch(
         if (!point) continue;
 
         const payload = point.payload as Record<string, string>;
-        const enrichment = await enrichDecision(env.TEAMIND_HAIKU_KEY, payload.detail);
+        const enrichment = await enrichDecision(env.VALIS_HAIKU_KEY, payload.detail);
 
         if (enrichment) {
           await qdrant.updatePayload(id, {
@@ -1426,7 +1426,7 @@ async queue(batch, env) {
 
 ```bash
 cd packages/cloud
-wrangler d1 create teamind-db
+wrangler d1 create valis-db
 # Update wrangler.toml with database_id
 wrangler kv:namespace create RATE_LIMITS
 # Update wrangler.toml with KV id
@@ -1453,13 +1453,13 @@ git commit -m "feat(cloud): add seed batch queue consumer + deploy config"
 - [ ] **Step 1: Write the HTTP client**
 
 ```typescript
-import { TeamindConfig, StoreResponse, SearchResult, DashboardData } from '../types.js';
+import { ValisConfig, StoreResponse, SearchResult, DashboardData } from '../types.js';
 
-export class TeamindCloudClient {
+export class ValisCloudClient {
   private baseUrl: string;
   private apiKey: string;
 
-  constructor(config: TeamindConfig) {
+  constructor(config: ValisConfig) {
     this.baseUrl = config.cloud_url;
     this.apiKey = config.api_key;
   }
@@ -1543,7 +1543,7 @@ export class TeamindCloudClient {
 
 ```bash
 git add -A
-git commit -m "feat(cli): add Teamind Cloud API client"
+git commit -m "feat(cli): add Valis Cloud API client"
 ```
 
 ---
@@ -1595,7 +1595,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const QUEUE_PATH = join(homedir(), '.teamind', 'pending.jsonl');
+const QUEUE_PATH = join(homedir(), '.valis', 'pending.jsonl');
 
 export interface PendingDecision {
   text: string;
@@ -1627,13 +1627,13 @@ export function pendingCount(): number {
 }
 ```
 
-- [ ] **Step 3: Write teamind_store tool**
+- [ ] **Step 3: Write valis_store tool**
 
 Create `packages/cli/src/mcp/tools/store.ts`:
 
 ```typescript
 import { z } from 'zod';
-import { TeamindCloudClient } from '../../cloud/client.js';
+import { ValisCloudClient } from '../../cloud/client.js';
 import { detectSecret } from '../../security/secrets.js';
 import { enqueuePending, pendingCount } from '../../offline/queue.js';
 import { enrichWithHaiku } from '../../enrichment/haiku.js';
@@ -1659,10 +1659,10 @@ export async function handleStore(args: { text: string }) {
 
   const config = loadConfig();
   if (!config) {
-    return { content: [{ type: 'text' as const, text: 'Error: Teamind not initialized. Run: teamind init' }] };
+    return { content: [{ type: 'text' as const, text: 'Error: Valis not initialized. Run: valis init' }] };
   }
 
-  const client = new TeamindCloudClient(config);
+  const client = new ValisCloudClient(config);
 
   // 3. Store to cloud (or queue offline)
   let id: string;
@@ -1703,13 +1703,13 @@ export async function handleStore(args: { text: string }) {
 }
 ```
 
-- [ ] **Step 4: Write teamind_search tool**
+- [ ] **Step 4: Write valis_search tool**
 
 Create `packages/cli/src/mcp/tools/search.ts`:
 
 ```typescript
 import { z } from 'zod';
-import { TeamindCloudClient } from '../../cloud/client.js';
+import { ValisCloudClient } from '../../cloud/client.js';
 import { loadConfig } from '../../config/store.js';
 
 export const searchSchema = z.object({
@@ -1721,10 +1721,10 @@ export const searchSchema = z.object({
 export async function handleSearch(args: { query: string; type?: string; limit?: number }) {
   const config = loadConfig();
   if (!config) {
-    return { content: [{ type: 'text' as const, text: 'Error: Teamind not initialized.' }] };
+    return { content: [{ type: 'text' as const, text: 'Error: Valis not initialized.' }] };
   }
 
-  const client = new TeamindCloudClient(config);
+  const client = new ValisCloudClient(config);
 
   try {
     const { results } = await client.searchDecisions(args.query, args.type, args.limit || 10);
@@ -1751,13 +1751,13 @@ export async function handleSearch(args: { query: string; type?: string; limit?:
 }
 ```
 
-- [ ] **Step 5: Write teamind_context tool**
+- [ ] **Step 5: Write valis_context tool**
 
 Create `packages/cli/src/mcp/tools/context.ts`:
 
 ```typescript
 import { z } from 'zod';
-import { TeamindCloudClient } from '../../cloud/client.js';
+import { ValisCloudClient } from '../../cloud/client.js';
 import { loadConfig } from '../../config/store.js';
 
 export const contextSchema = z.object({
@@ -1768,10 +1768,10 @@ export const contextSchema = z.object({
 export async function handleContext(args: { task_description: string; files?: string[] }) {
   const config = loadConfig();
   if (!config) {
-    return { content: [{ type: 'text' as const, text: 'Error: Teamind not initialized.' }] };
+    return { content: [{ type: 'text' as const, text: 'Error: Valis not initialized.' }] };
   }
 
-  const client = new TeamindCloudClient(config);
+  const client = new ValisCloudClient(config);
 
   try {
     // Search using task description as query
@@ -1799,7 +1799,7 @@ export async function handleContext(args: { task_description: string; files?: st
       return {
         content: [{
           type: 'text' as const,
-          text: 'No relevant team decisions found for this task. Consider storing important decisions with teamind_store.',
+          text: 'No relevant team decisions found for this task. Consider storing important decisions with valis_store.',
         }],
       };
     }
@@ -1824,7 +1824,7 @@ export async function handleContext(args: { task_description: string; files?: st
       output += `\nLessons (be aware):\n${lessons.map(r => `  - ${r.decision.summary}`).join('\n')}`;
     }
 
-    output += '\n\nUse teamind_search for more specific queries.';
+    output += '\n\nUse valis_search for more specific queries.';
 
     return { content: [{ type: 'text' as const, text: output }] };
   } catch {
@@ -1851,12 +1851,12 @@ import { handleContext, contextSchema } from './tools/context.js';
 
 export async function startMcpServer() {
   const server = new McpServer({
-    name: 'teamind',
+    name: 'valis',
     version: '0.1.0',
   });
 
   server.tool(
-    'teamind_store',
+    'valis_store',
     `Store a team decision, architectural constraint, coding pattern, or lesson learned into the shared team brain. Call this when:
 - A technical decision is made ("We chose PostgreSQL because...")
 - A constraint is identified ("Client requires Safari 15+ support")
@@ -1869,7 +1869,7 @@ Do NOT store: status updates, trivial changes, questions without answers, brains
   );
 
   server.tool(
-    'teamind_search',
+    'valis_search',
     `Search the team's shared decision history before making architectural choices. Call this BEFORE:
 - Choosing a technology, library, or pattern (check if the team already decided)
 - Modifying a module's architecture (check for existing constraints)
@@ -1885,7 +1885,7 @@ Returns matching decisions ranked by relevance.`,
   );
 
   server.tool(
-    'teamind_context',
+    'valis_context',
     `Load relevant team decisions for the current task. Call this at the START of a new task or when switching context to a different part of the codebase. Provide your task description and the files you're working on.`,
     {
       task_description: contextSchema.shape.task_description,
@@ -1903,7 +1903,7 @@ Returns matching decisions ranked by relevance.`,
 
 ```bash
 git add -A
-git commit -m "feat(cli): add MCP server with teamind_store, teamind_search, teamind_context"
+git commit -m "feat(cli): add MCP server with valis_store, valis_search, valis_context"
 ```
 
 ---
@@ -1919,7 +1919,7 @@ git commit -m "feat(cli): add MCP server with teamind_store, teamind_search, tea
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { TeamindCloudClient } from '../cloud/client.js';
+import { ValisCloudClient } from '../cloud/client.js';
 import type { EnrichmentResult } from '../types.js';
 
 const EXTRACTION_PROMPT = `Classify this engineering team decision. Return ONLY valid JSON, no markdown.
@@ -1948,7 +1948,7 @@ export async function enrichWithHaiku(
   apiKey: string,
   text: string,
   decisionId: string,
-  cloudClient: TeamindCloudClient
+  cloudClient: ValisCloudClient
 ): Promise<void> {
   const client = new Anthropic({ apiKey, timeout: 5000 }); // 5s timeout
 
@@ -2007,9 +2007,9 @@ git commit -m "feat(cli): add local Haiku enrichment with extraction prompt"
 import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import type { TeamindConfig } from '../types.js';
+import type { ValisConfig } from '../types.js';
 
-const CONFIG_DIR = join(homedir(), '.teamind');
+const CONFIG_DIR = join(homedir(), '.valis');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
 export function ensureConfigDir(): void {
@@ -2018,7 +2018,7 @@ export function ensureConfigDir(): void {
   }
 }
 
-export function loadConfig(): TeamindConfig | null {
+export function loadConfig(): ValisConfig | null {
   try {
     const raw = readFileSync(CONFIG_PATH, 'utf-8');
     return JSON.parse(raw);
@@ -2027,19 +2027,19 @@ export function loadConfig(): TeamindConfig | null {
   }
 }
 
-export function saveConfig(config: TeamindConfig): void {
+export function saveConfig(config: ValisConfig): void {
   ensureConfigDir();
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
   chmodSync(CONFIG_PATH, 0o600); // Owner read/write only
 }
 
-export function updateConfig(updates: Partial<TeamindConfig>): void {
+export function updateConfig(updates: Partial<ValisConfig>): void {
   const config = loadConfig();
-  if (!config) throw new Error('Config not found. Run: teamind init');
+  if (!config) throw new Error('Config not found. Run: valis init');
   saveConfig({ ...config, ...updates });
 }
 
-export function getConfigValue(key: keyof TeamindConfig): string | undefined {
+export function getConfigValue(key: keyof ValisConfig): string | undefined {
   const config = loadConfig();
   return config?.[key] as string | undefined;
 }
@@ -2054,7 +2054,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const MANIFEST_PATH = join(homedir(), '.teamind', 'manifest.json');
+const MANIFEST_PATH = join(homedir(), '.valis', 'manifest.json');
 
 interface Manifest {
   created_at: string;
@@ -2095,11 +2095,11 @@ git commit -m "feat(cli): add config management and manifest tracking"
 
 _This chunk contains the remaining CLI commands. Each is a separate task. Due to plan length, showing the key ones — `init` and `serve` — with the rest following the same pattern._
 
-### Task 5.1: `teamind serve` command
+### Task 5.1: `valis serve` command
 
 **Files:**
 - Create: `packages/cli/src/commands/serve.ts`
-- Create: `packages/cli/bin/teamind.ts`
+- Create: `packages/cli/bin/valis.ts`
 
 - [ ] **Step 1: Write serve command (just launches MCP server)**
 
@@ -2113,7 +2113,7 @@ export async function serveCommand() {
 
 - [ ] **Step 2: Write CLI entry point**
 
-Create `packages/cli/bin/teamind.ts`:
+Create `packages/cli/bin/valis.ts`:
 
 ```typescript
 #!/usr/bin/env node
@@ -2122,7 +2122,7 @@ import { Command } from 'commander';
 const program = new Command();
 
 program
-  .name('teamind')
+  .name('valis')
   .description('Shared decision intelligence for AI-augmented engineering teams')
   .version('0.1.0');
 
@@ -2136,7 +2136,7 @@ program
 
 program
   .command('init')
-  .description('Initialize Teamind for your project')
+  .description('Initialize Valis for your project')
   .option('--join <code>', 'Join existing org with invite code')
   .action(async (opts) => {
     const { initCommand } = await import('../src/commands/init.js');
@@ -2145,7 +2145,7 @@ program
 
 program
   .command('status')
-  .description('Check Teamind health')
+  .description('Check Valis health')
   .action(async () => {
     const { statusCommand } = await import('../src/commands/status.js');
     await statusCommand();
@@ -2171,7 +2171,7 @@ program
 
 program
   .command('uninstall')
-  .description('Remove Teamind from this project')
+  .description('Remove Valis from this project')
   .action(async () => {
     const { uninstallCommand } = await import('../src/commands/uninstall.js');
     await uninstallCommand();
@@ -2196,9 +2196,9 @@ program.parse();
 ```bash
 cd packages/cli
 pnpm build
-node dist/bin/teamind.js --version
+node dist/bin/valis.js --version
 # Expected: 0.1.0
-node dist/bin/teamind.js serve --help
+node dist/bin/valis.js serve --help
 # Expected: help text
 ```
 
@@ -2211,7 +2211,7 @@ git commit -m "feat(cli): add CLI entry point with serve command"
 
 ---
 
-### Task 5.2: `teamind init` command
+### Task 5.2: `valis init` command
 
 _This is the most complex command. Creates org (or joins), prompts for API key, detects IDEs, seeds knowledge base, configures MCP._
 
@@ -2233,12 +2233,12 @@ _Due to plan length, these implementations follow the same TDD pattern as above.
 - [ ] **Step 4: Write CLAUDE.md injection** (markers, create/append/replace)
 - [ ] **Step 5: Write seed parsers** (CLAUDE.md regex, git log filter)
 - [ ] **Step 6: Write init orchestrator** (prompts, API calls, config save)
-- [ ] **Step 7: Test full init flow** (`teamind init` in a test project)
+- [ ] **Step 7: Test full init flow** (`valis init` in a test project)
 - [ ] **Step 8: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(cli): add teamind init with org creation, IDE setup, and seeding"
+git commit -m "feat(cli): add valis init with org creation, IDE setup, and seeding"
 ```
 
 ---
@@ -2247,10 +2247,10 @@ git commit -m "feat(cli): add teamind init with org creation, IDE setup, and see
 
 _Following the same pattern:_
 
-- [ ] **Task 5.3: `teamind status`** — calls cloud healthCheck, checks config, shows decision count
-- [ ] **Task 5.4: `teamind dashboard`** — calls getDashboard, formats as colored terminal table
-- [ ] **Task 5.5: `teamind export`** — calls searchDecisions (all), writes JSON/Markdown file
-- [ ] **Task 5.6: `teamind uninstall`** — reads manifest, removes all tracked files/configs, clean exit
+- [ ] **Task 5.3: `valis status`** — calls cloud healthCheck, checks config, shows decision count
+- [ ] **Task 5.4: `valis dashboard`** — calls getDashboard, formats as colored terminal table
+- [ ] **Task 5.5: `valis export`** — calls searchDecisions (all), writes JSON/Markdown file
+- [ ] **Task 5.6: `valis uninstall`** — reads manifest, removes all tracked files/configs, clean exit
 
 ---
 
@@ -2260,17 +2260,17 @@ _Following the same pattern:_
 
 - [ ] **Step 1: Deploy cloud to Cloudflare**
 - [ ] **Step 2: `npm install -g .` from packages/cli**
-- [ ] **Step 3: Run `teamind init` → create org → seed**
-- [ ] **Step 4: Open Claude Code → test teamind_store → teamind_search → teamind_context**
-- [ ] **Step 5: Run `teamind dashboard` → verify stats**
-- [ ] **Step 6: Run `teamind export --json` → verify output**
-- [ ] **Step 7: Run `teamind uninstall` → verify clean removal**
+- [ ] **Step 3: Run `valis init` → create org → seed**
+- [ ] **Step 4: Open Claude Code → test valis_store → valis_search → valis_context**
+- [ ] **Step 5: Run `valis dashboard` → verify stats**
+- [ ] **Step 6: Run `valis export --json` → verify output**
+- [ ] **Step 7: Run `valis uninstall` → verify clean removal**
 - [ ] **Step 8: Verify acceptance criteria 1-12 from spec**
 
 ### Task 6.2: README + AGENTS.md
 
 - [ ] **Step 1: Write README.md** (install, quickstart, features, pricing link)
-- [ ] **Step 2: Write AGENTS.md** (Teamind eats its own dogfood — instructions for agents working on this repo)
+- [ ] **Step 2: Write AGENTS.md** (Valis eats its own dogfood — instructions for agents working on this repo)
 - [ ] **Step 3: Publish to npm** (`npm publish` from packages/cli)
 
 ---

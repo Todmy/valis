@@ -5,7 +5,7 @@
   "outputDirectory": ".next",
   "installCommand": "pnpm install",
   "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@teamind-supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@teamind-supabase-anon-key"
+    "NEXT_PUBLIC_SUPABASE_URL": "@valis-supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@valis-supabase-anon-key"
   }
 }

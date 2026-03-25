@@ -31,7 +31,7 @@
 
 ## Notes
 
-- All items pass. Spec builds on deferred items from 001-teamind-mvp.
+- All items pass. Spec builds on deferred items from 001-valis-mvp.
 - Constitution v1.1.0 provides architectural principles for all 5
   user stories (IX: Decision Lifecycle, X: Identity-First Access
   Control, VIII expanded: Cross-Session Push).

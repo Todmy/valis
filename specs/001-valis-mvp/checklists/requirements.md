@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Teamind MVP
+# Specification Quality Checklist: Valis MVP
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-22
@@ -34,7 +34,7 @@
 - All items pass. Spec derived from 5 iterations of design spec review
   (v1 through v5) and detailed user stories document.
 - Phase 2 items explicitly deferred in Assumptions section.
-- MCP tool names (`teamind_store`, `teamind_search`, `teamind_context`)
-  and CLI commands (`teamind init`, `teamind status`, etc.) are retained
+- MCP tool names (`valis_store`, `valis_search`, `valis_context`)
+  and CLI commands (`valis init`, `valis status`, etc.) are retained
   as interface contracts, not implementation details — they define the
   user-facing API surface.

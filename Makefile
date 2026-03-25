@@ -1,5 +1,5 @@
-IMAGE_NAME := teamind-claude
-CONTAINER_NAME := teamind-worker
+IMAGE_NAME := valis-claude
+CONTAINER_NAME := valis-worker
 CLAUDE_DIR := $(HOME)/.claude
 CLAUDE_JSON := $(HOME)/.claude.json
 GITCONFIG := $(HOME)/.gitconfig

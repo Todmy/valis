@@ -1,4 +1,4 @@
-# Teamind Product Backlog
+# Valis Product Backlog
 
 ## Current: Deploy + Dog Fooding
 
@@ -9,10 +9,10 @@
 | 3 | Set EF env vars (JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_*) | Not started | Via Supabase Dashboard or `supabase secrets set` |
 | 4 | ~~Set HOSTED URLs~~ | ✅ Done | Real URLs now in types.ts |
 | 5 | Enable Supabase Realtime | Not started | Dashboard → Settings → API → Realtime |
-| 6 | npm link + rebuild + test `teamind init` e2e | Not started | |
+| 6 | npm link + rebuild + test `valis init` e2e | Not started | |
 | 7 | **Dog fooding** (several weeks) | Not started | Owner: Todmy. Real project testing. |
 
-**Domain**: `teamind.krukit.co` (subdomain of main domain)
+**Domain**: `valis.krukit.co` (subdomain of main domain)
 
 ## Blockers Found During Review
 
@@ -27,7 +27,7 @@
 | # | Feature | Effort | Notes |
 |---|---------|--------|-------|
 | 11 | Billing integration (Stripe) | 3-5 days | Code exists, deploy after dog fooding |
-| 12 | Pricing page at teamind.krukit.co | 3-5 days | |
+| 12 | Pricing page at valis.krukit.co | 3-5 days | |
 | 13 | Annual prepay discount (20%) | 1-2 days | Depends on Stripe |
 | 14 | Device Authorization Grant (RFC 8628) | 2-3 days | Better dashboard auth UX |
 | 15 | Deploy web dashboard to Vercel | 1 day | packages/web ready |
@@ -38,7 +38,7 @@
 |---|------|----------|-------|
 | 16 | **Move high-frequency EFs to Vercel** — check-usage, exchange-token called on every store/search. Supabase charges per invocation after 500K/mo. Vercel Edge Functions included in plan (free/pro). Keep low-frequency EFs on Supabase (register, create-project, seed). | HIGH | Evaluate during dog fooding |
 | 17 | **Realtime push cost** — Supabase: 200 connections (free), 500 (pro). Monitor during dog fooding. | MEDIUM | |
-| 18 | **Server-side enrichment** — move enrichment to EF using our Anthropic key for hosted users. Community users use own keys via global config (~/.teamind/config.json). | MEDIUM | |
+| 18 | **Server-side enrichment** — move enrichment to EF using our Anthropic key for hosted users. Community users use own keys via global config (~/.valis/config.json). | MEDIUM | |
 
 ## Conversion Flows
 
@@ -51,7 +51,7 @@
 
 | # | Feature | Effort | Status |
 |---|---------|--------|--------|
-| 21 | **Task Marketplace** — freelance platform on Teamind KB. KB controls access, validates work. | Large | Idea |
+| 21 | **Task Marketplace** — freelance platform on Valis KB. KB controls access, validates work. | Large | Idea |
 | 22 | Selective Knowledge Sharing — per-task scoped access | Medium | Prerequisite for #21 |
 | 23 | External member invites with task-scoped access | Medium | Prerequisite for #21 |
 | 24 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
@@ -71,13 +71,13 @@
 | 28 | Delete `export-cmd.ts` dead code | Low |
 | 29 | Golden test set — 50 query-result pairs for NDCG | Medium |
 | 30 | E2E tests per quickstart.md | Medium |
-| 31 | ~~`.gitignore` for `.teamind.json`~~ | ✅ Done |
+| 31 | ~~`.gitignore` for `.valis.json`~~ | ✅ Done |
 
 ## Completed Phases
 
 | Phase | Feature | Spec |
 |-------|---------|------|
-| 001 | MVP — CLI + MCP + dual storage | `specs/001-teamind-mvp/` |
+| 001 | MVP — CLI + MCP + dual storage | `specs/001-valis-mvp/` |
 | 002 | Retention & Enterprise — lifecycle, push, auth, RBAC | `specs/002-retention-enterprise/` |
 | 003 | Search Intelligence & Growth | `specs/003-search-growth/` |
 | 004 | Multi-Project — project-scoped isolation | `specs/004-multi-project/` |

@@ -152,8 +152,8 @@ registration. Project-level instructions go in `.cursorrules`.
 ```json
 {
   "mcpServers": {
-    "teamind": {
-      "command": "teamind",
+    "valis": {
+      "command": "valis",
       "args": ["serve"]
     }
   }
@@ -162,19 +162,19 @@ registration. Project-level instructions go in `.cursorrules`.
 
 **Instruction injection** (`.cursorrules`):
 ```
-<!-- teamind:start -->
-## Team Knowledge (Teamind)
+<!-- valis:start -->
+## Team Knowledge (Valis)
 
-Use `teamind_search` before making architectural decisions.
-Use `teamind_store` when decisions are made.
-Use `teamind_context` at the start of each task.
-<!-- teamind:end -->
+Use `valis_search` before making architectural decisions.
+Use `valis_store` when decisions are made.
+Use `valis_context` at the start of each task.
+<!-- valis:end -->
 ```
 
 **Detection**: `~/.cursor/` directory existence.
 
-**Uninstall**: Remove `teamind` key from `mcp.json`. Remove content
-between `teamind:start` and `teamind:end` markers in `.cursorrules`.
+**Uninstall**: Remove `valis` key from `mcp.json`. Remove content
+between `valis:start` and `valis:end` markers in `.cursorrules`.
 
 **Implementation pattern**: Follows the existing `codex.ts` pattern
 exactly. New file: `packages/cli/src/ide/cursor.ts` with
@@ -185,9 +185,9 @@ structure as Codex. The `.cursorrules` file is the Cursor equivalent
 of Codex's `AGENTS.md` — project-level agent instructions.
 
 **Alternatives considered**:
-- **Global rules** (`~/.cursor/rules/teamind.md`): Global rules apply
+- **Global rules** (`~/.cursor/rules/valis.md`): Global rules apply
   to all projects. Project-level `.cursorrules` is more appropriate
-  since Teamind context is project-specific. Rejected as default, but
+  since Valis context is project-specific. Rejected as default, but
   could be added as option.
 - **VS Code settings.json MCP**: Cursor also reads VS Code MCP config
   in `settings.json`. Using `mcp.json` is cleaner and avoids polluting

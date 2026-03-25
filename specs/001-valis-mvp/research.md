@@ -1,4 +1,4 @@
-# Research: Teamind MVP
+# Research: Valis MVP
 
 **Phase**: 0 — Outline & Research
 **Date**: 2026-03-22
@@ -128,7 +128,7 @@ model.
 
 ### 9. Installation: npm install -g (not npx)
 
-**Decision**: Global install via `npm install -g teamind`.
+**Decision**: Global install via `npm install -g valis`.
 
 **Rationale**:
 - npx cold start = 3-10s blocking on every MCP server launch.

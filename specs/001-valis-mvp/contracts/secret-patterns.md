@@ -1,4 +1,4 @@
-# Secret Detection Patterns: Teamind MVP
+# Secret Detection Patterns: Valis MVP
 
 **Source**: design-spec-v5.md § 2 "Secret Detection (before storage)"
 **Used by**: T014 (packages/cli/src/security/secrets.ts)

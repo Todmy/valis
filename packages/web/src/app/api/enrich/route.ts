@@ -5,7 +5,7 @@
  * Anthropic API to classify each unenriched decision, updates Postgres and
  * Qdrant, and enforces a daily enrichment budget per org.
  *
- * Community users are rejected (403) — they use `teamind enrich` locally.
+ * Community users are rejected (403) — they use `valis enrich` locally.
  */
 
 import { type NextRequest } from 'next/server';
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   let claims: Record<string, unknown>;
   try {
     const secret = new TextEncoder().encode(jwtSecret);
-    const { payload } = await jwtVerify(token, secret, { issuer: 'teamind' });
+    const { payload } = await jwtVerify(token, secret, { issuer: 'valis' });
     claims = payload as Record<string, unknown>;
   } catch {
     return unauthorized('unauthorized');
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Reject community users
-  // Community users should use `teamind enrich` locally with their own API key.
+  // Community users should use `valis enrich` locally with their own API key.
   // On the hosted server, ANTHROPIC_API_KEY is set (checked in step 1).
   // If a community user somehow reaches this endpoint, we detect it via the
   // JWT `hosted` claim. Community-mode JWTs lack this claim.

@@ -9,10 +9,10 @@
 
 ### User Story 1 - Create Project Within Org (Priority: P1)
 
-A Tech Lead has already initialized Teamind for their org "Krukit."
-They run `teamind init` in their frontend repo and create a project
+A Tech Lead has already initialized Valis for their org "Krukit."
+They run `valis init` in their frontend repo and create a project
 called "frontend-app." Later, they `cd` to their backend repo, run
-`teamind init` again, and create a second project "backend-api" in
+`valis init` again, and create a second project "backend-api" in
 the same org. Each project has its own decision brain. Decisions
 stored in frontend-app are not visible when searching from backend-api
 unless explicitly requested.
@@ -28,19 +28,19 @@ appear. Switch to A, search — decision appears.
 
 **Acceptance Scenarios**:
 
-1. **Given** an existing org, **When** a member runs `teamind init`
+1. **Given** an existing org, **When** a member runs `valis init`
    in a new directory, **Then** they can create a new project or
    select an existing one within their org.
-2. **Given** an org with 0 projects, **When** the first `teamind init`
+2. **Given** an org with 0 projects, **When** the first `valis init`
    runs, **Then** a project is created automatically (named after the
    directory or prompted).
-3. **Given** an org with existing projects, **When** `teamind init`
+3. **Given** an org with existing projects, **When** `valis init`
    runs, **Then** the user sees a list of existing projects and can
    choose one or create new.
 4. **Given** a project created, **When** the config is saved, **Then**
-   a `.teamind.json` file is created in the project root with
+   a `.valis.json` file is created in the project root with
    `project_id` and `project_name`. Org credentials remain in the
-   global `~/.teamind/config.json`.
+   global `~/.valis/config.json`.
 5. **Given** two projects in the same org, **When** decisions are
    stored in project A, **Then** searching from project B returns
    zero results by default.
@@ -70,7 +70,7 @@ project B.
    **Then** they are granted access to that specific project (not
    all projects in the org).
 2. **Given** a member with access to project A only, **When** they
-   call `teamind_search` (which is scoped to their active project),
+   call `valis_search` (which is scoped to their active project),
    **Then** they see only project A decisions.
 3. **Given** a member with access to project A only, **When** they
    attempt to store a decision in project B, **Then** they receive
@@ -80,7 +80,7 @@ project B.
    and B (but not from project C they don't have access to).
 5. **Given** an org admin, **When** they manage projects, **Then**
    they can add/remove members from any project.
-6. **Given** `teamind init --join <invite-code>`, **When** a new
+6. **Given** `valis init --join <invite-code>`, **When** a new
    member joins, **Then** the invite code is scoped to a specific
    project (not the entire org).
 
@@ -109,9 +109,9 @@ NextAuth appears. Search with `--all-projects` — both appear.
 
 **Acceptance Scenarios**:
 
-1. **Given** active project A, **When** `teamind_search` is called,
+1. **Given** active project A, **When** `valis_search` is called,
    **Then** results are filtered to project A by default.
-2. **Given** active project A, **When** `teamind_context` is called
+2. **Given** active project A, **When** `valis_context` is called
    with a task description, **Then** only project A decisions are
    loaded as context.
 3. **Given** a member with access to A and B, **When** they search
@@ -120,7 +120,7 @@ NextAuth appears. Search with `--all-projects` — both appear.
 4. **Given** a member with access to A only, **When** they search
    with `all_projects: true`, **Then** they still only see A
    (access control enforced even in cross-project mode).
-5. **Given** the CLI `teamind search`, **When** `--all-projects`
+5. **Given** the CLI `valis search`, **When** `--all-projects`
    flag is used, **Then** results show `[project-name]` prefix.
 
 ---
@@ -150,7 +150,7 @@ nothing.
    a decision in "frontend-app", **Then** Dev C receives nothing.
 3. **Given** a contradiction detected in project A, **When** the
    notification fires, **Then** only project A members see it.
-4. **Given** Realtime subscription, **When** `teamind serve` starts,
+4. **Given** Realtime subscription, **When** `valis serve` starts,
    **Then** it subscribes to the active project's channel (not the
    entire org).
 
@@ -159,12 +159,12 @@ nothing.
 ### User Story 5 - Switch Between Projects (Priority: P5)
 
 A developer works on both frontend and backend. In the morning they
-work on frontend — they `cd` to the frontend repo where Teamind is
+work on frontend — they `cd` to the frontend repo where Valis is
 configured for "frontend-app." In the afternoon they switch to the
-backend repo — Teamind automatically uses the "backend-api" project
+backend repo — Valis automatically uses the "backend-api" project
 config. No manual switching needed.
 
-If they need to switch within the same directory, `teamind switch
+If they need to switch within the same directory, `valis switch
 --project <name>` changes the active project.
 
 **Why this priority**: Developers work on multiple repos daily.
@@ -172,21 +172,21 @@ Project switching must be frictionless — ideally automatic based on
 working directory.
 
 **Independent Test**: Init project A in `/frontend`, init project B
-in `/backend`. `cd /frontend && teamind status` shows project A.
-`cd /backend && teamind status` shows project B.
+in `/backend`. `cd /frontend && valis status` shows project A.
+`cd /backend && valis status` shows project B.
 
 **Acceptance Scenarios**:
 
 1. **Given** project A configured in `/frontend` and project B in
-   `/backend`, **When** the developer runs `teamind status` from
+   `/backend`, **When** the developer runs `valis status` from
    `/frontend`, **Then** it shows project A as active.
 2. **Given** a developer in a directory with no project config,
-   **When** they run `teamind status`, **Then** they see "No project
-   configured. Run `teamind init` to set up."
-3. **Given** `teamind switch --project backend-api`, **When** it
+   **When** they run `valis status`, **Then** they see "No project
+   configured. Run `valis init` to set up."
+3. **Given** `valis switch --project backend-api`, **When** it
    runs, **Then** the active project changes and config is updated.
 4. **Given** multiple projects configured on the same machine,
-   **When** `teamind init` runs in a new directory, **Then** it
+   **When** `valis init` runs in a new directory, **Then** it
    detects the org from global config and asks to create/select a
    project (no need to re-enter credentials).
 
@@ -194,7 +194,7 @@ in `/backend`. `cd /frontend && teamind status` shows project A.
 
 ### User Story 6 - Migrate Existing Decisions to Projects (Priority: P6)
 
-Existing Teamind installations have decisions without a `project_id`
+Existing Valis installations have decisions without a `project_id`
 (they were created before multi-project support). When the user
 upgrades, these decisions MUST be migrated to a default project.
 The migration is automatic and non-destructive.
@@ -213,7 +213,7 @@ Verify search still works.
    migration runs, **Then** a "default" project is created and all
    existing decisions are assigned to it.
 2. **Given** an existing config without `project_id`, **When**
-   `teamind init` runs after upgrade, **Then** it detects the legacy
+   `valis init` runs after upgrade, **Then** it detects the legacy
    config and offers to migrate to the new project structure.
 3. **Given** migration complete, **When** search and store run,
    **Then** they work exactly as before (backward compatible).
@@ -236,7 +236,7 @@ Verify search still works.
 - What happens when an org has only one project? Everything works
   the same — the project layer is always present, even for single-
   project orgs.
-- What happens when `teamind init --join` is used with a project
+- What happens when `valis init --join` is used with a project
   invite code but the member is already in the org? They are added
   to the new project without creating a duplicate org membership.
 - What happens when searching with `--all-projects` across 10
@@ -254,14 +254,14 @@ Verify search still works.
   `project_id`. No decision may exist without a project.
 - **FR-003**: Members MUST be granted access to specific projects.
   Org membership alone does NOT grant access to any project.
-- **FR-004**: `teamind_search` and `teamind_context` MUST filter by
+- **FR-004**: `valis_search` and `valis_context` MUST filter by
   the active project by default.
 - **FR-005**: Cross-project search MUST be available via an explicit
   `all_projects` parameter or `--all-projects` CLI flag, but MUST
   respect per-project access control.
 - **FR-006**: Cross-session push notifications MUST be scoped to the
   active project, not the entire org.
-- **FR-007**: `teamind init` MUST support creating a new project or
+- **FR-007**: `valis init` MUST support creating a new project or
   selecting an existing one. The active project MUST be stored in
   the local config.
 - **FR-008**: Invite codes MUST be project-scoped (not org-scoped).
@@ -299,14 +299,14 @@ Verify search still works.
 
 ### Session 2026-03-24
 
-- Q: How is the active project resolved — global config, per-directory file, or manual switch? → A: Per-directory `.teamind.json` in the project root stores `project_id` and `project_name`. Global `~/.teamind/config.json` stores org credentials (shared across all projects). Auto-switching happens when `cd`-ing between repos.
+- Q: How is the active project resolved — global config, per-directory file, or manual switch? → A: Per-directory `.valis.json` in the project root stores `project_id` and `project_name`. Global `~/.valis/config.json` stores org credentials (shared across all projects). Auto-switching happens when `cd`-ing between repos.
 
 ## Assumptions
 
-- Per-directory config: `.teamind.json` in the project root stores
-  `project_id` and `project_name`. Global `~/.teamind/config.json`
+- Per-directory config: `.valis.json` in the project root stores
+  `project_id` and `project_name`. Global `~/.valis/config.json`
   stores org credentials shared across all projects. CLI resolves
-  active project by walking up from cwd to find `.teamind.json`.
+  active project by walking up from cwd to find `.valis.json`.
 - The Qdrant `decisions` collection adds `project_id` as a payload
   filter field alongside `org_id`.
 - Existing `org_id` filtering in all queries is replaced with
@@ -329,10 +329,10 @@ Verify search still works.
 - **SC-004**: Existing installations upgrade seamlessly — all
   pre-existing decisions are migrated to a default project with
   zero data loss.
-- **SC-005**: `teamind init` in a new directory takes under 30
+- **SC-005**: `valis init` in a new directory takes under 30
   seconds when the org already exists (project creation/selection
   only, no credential re-entry).
 - **SC-006**: Per-directory project switching is automatic — running
-  `teamind status` in different repos shows the correct project.
+  `valis status` in different repos shows the correct project.
 - **SC-007**: All 255 existing tests continue to pass after the
   multi-project migration (backward compatibility).

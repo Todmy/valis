@@ -37,9 +37,9 @@
 
 - [ ] T006 [P] [US1] Create shared key generators in packages/web/src/lib/api-keys.ts: export `generateOrgApiKey(): string` (returns `tm_` + 32 hex chars using `crypto.getRandomValues`), `generateMemberKey(): string` (returns `tmm_` + 32 hex chars), `generateInviteCode(): string` (returns `XXXX-XXXX` format using charset `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`).
 
-- [ ] T007 [P] [US2] Add `HOSTED_API_URL` constant to packages/cli/src/types.ts: `export const HOSTED_API_URL = 'https://teamind.krukit.co';`. Place it near the existing `HOSTED_SUPABASE_URL` and `HOSTED_QDRANT_URL` constants.
+- [ ] T007 [P] [US2] Add `HOSTED_API_URL` constant to packages/cli/src/types.ts: `export const HOSTED_API_URL = 'https://valis.krukit.co';`. Place it near the existing `HOSTED_SUPABASE_URL` and `HOSTED_QDRANT_URL` constants.
 
-- [ ] T008 [P] [US2] Create URL resolution helper in packages/cli/src/cloud/api-url.ts (new file): export `resolveApiUrl(supabaseUrl: string, isHosted: boolean): string` that returns `HOSTED_API_URL` for hosted mode or `supabaseUrl` for community mode. Export `resolveApiPath(apiUrl: string, functionName: string): string` that returns `${apiUrl}/api/${functionName}` when apiUrl equals HOSTED_API_URL, or `${apiUrl}/functions/v1/${functionName}` for community mode. Export `isHostedMode(config: TeamindConfig): boolean` that returns true when `supabase_url === HOSTED_SUPABASE_URL` and `(!config.supabase_service_role_key || config.supabase_service_role_key === '')`.
+- [ ] T008 [P] [US2] Create URL resolution helper in packages/cli/src/cloud/api-url.ts (new file): export `resolveApiUrl(supabaseUrl: string, isHosted: boolean): string` that returns `HOSTED_API_URL` for hosted mode or `supabaseUrl` for community mode. Export `resolveApiPath(apiUrl: string, functionName: string): string` that returns `${apiUrl}/api/${functionName}` when apiUrl equals HOSTED_API_URL, or `${apiUrl}/functions/v1/${functionName}` for community mode. Export `isHostedMode(config: ValisConfig): boolean` that returns true when `supabase_url === HOSTED_SUPABASE_URL` and `(!config.supabase_service_role_key || config.supabase_service_role_key === '')`.
 
 **Checkpoint**: Shared utilities ready. Dependencies installed. Constants defined. URL resolver created.
 
@@ -105,7 +105,7 @@
 
 **Goal**: CLI hosted-mode calls route through Vercel API routes instead of Supabase EFs
 
-**Independent Test**: Point HOSTED_API_URL at Vercel. Run `teamind init` (Hosted). Verify via Vercel logs that all API calls hit /api/ routes.
+**Independent Test**: Point HOSTED_API_URL at Vercel. Run `valis init` (Hosted). Verify via Vercel logs that all API calls hit /api/ routes.
 
 - [ ] T025 [US2] Update packages/cli/src/cloud/registration.ts: import `HOSTED_API_URL` and `resolveApiPath` from api-url.ts. In `resolveBaseUrl()`, when the supabaseUrl matches HOSTED_SUPABASE_URL, return HOSTED_API_URL instead. In `register()`, change URL from `${base}/functions/v1/register` to `${resolveApiPath(base, 'register')}`. In `joinPublic()`, change URL from `${base}/functions/v1/join-project` to `${resolveApiPath(base, 'join-project')}`.
 
@@ -129,7 +129,7 @@
 
 - [ ] T031e [US2] Update packages/cli/src/commands/switch-org.ts to use resolveApiUrl() for join-org calls
 
-**Checkpoint**: CLI hosted-mode API calls route to `https://teamind.krukit.co/api/<name>`. Community mode unchanged.
+**Checkpoint**: CLI hosted-mode API calls route to `https://valis.krukit.co/api/<name>`. Community mode unchanged.
 
 ---
 
@@ -173,7 +173,7 @@
 
 - [ ] T040 [P] [US5] Add deprecation notice to remaining 9 EFs (join-org, create-org, create-project, change-status, rotate-key, revoke-member, seed, stripe-webhook, create-checkout): same deprecation notice pattern as T038, each pointing to its corresponding API route.
 
-- [ ] T041 [P] [US5] Document Stripe webhook URL change: add a section to specs/006-vercel-api-migration/quickstart.md or create a deployment note file. State that the Stripe dashboard webhook endpoint must be updated from `https://rmawxpdaudinbansjfpd.supabase.co/functions/v1/stripe-webhook` to `https://teamind.krukit.co/api/stripe-webhook` after migration. Include both old and new URLs.
+- [ ] T041 [P] [US5] Document Stripe webhook URL change: add a section to specs/006-vercel-api-migration/quickstart.md or create a deployment note file. State that the Stripe dashboard webhook endpoint must be updated from `https://rmawxpdaudinbansjfpd.supabase.co/functions/v1/stripe-webhook` to `https://valis.krukit.co/api/stripe-webhook` after migration. Include both old and new URLs.
 
 **Checkpoint**: Community mode verified unchanged. All EFs deprecated with notices. Stripe webhook URL documented.
 
@@ -241,7 +241,7 @@
 1. Complete Phase 1: Setup (T001-T008)
 2. Implement 3 critical routes: register (T009), exchange-token (T013), check-usage (T014)
 3. Update CLI for these 3 routes: registration.ts (T025), jwt.ts (T026), usage.ts (T027)
-4. **STOP and VALIDATE**: `teamind init` Hosted works via Vercel
+4. **STOP and VALIDATE**: `valis init` Hosted works via Vercel
 
 ### Incremental Delivery
 

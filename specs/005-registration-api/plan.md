@@ -9,7 +9,7 @@ Replace the `.hosted-env` file and hardcoded `HOSTED_CREDENTIALS` with a
 public registration Edge Function. The `register` endpoint creates an org,
 default project, and first member atomically — returning only a per-member
 API key and public endpoint URLs. The service_role key never leaves the
-server. The CLI's `teamind init` hosted mode is rewritten to call this
+server. The CLI's `valis init` hosted mode is rewritten to call this
 endpoint instead of loading credentials from local files. A modified
 `join-project` endpoint enables frictionless teammate onboarding via invite
 code with no pre-existing config. Community mode remains unchanged.

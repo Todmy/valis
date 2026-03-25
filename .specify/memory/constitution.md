@@ -17,7 +17,7 @@ Templates requiring updates:
 Follow-up TODOs: none
 -->
 
-# Teamind Constitution
+# Valis Constitution
 
 ## Core Principles
 
@@ -27,13 +27,13 @@ Team sync, org management, and shared storage MUST be available from
 Day 1 of any deployment. Local-only mode is acceptable only as an
 offline fallback — never as the default architecture.
 
-**Rationale:** Teamind's core value is *shared* decision intelligence.
+**Rationale:** Valis's core value is *shared* decision intelligence.
 A local-first approach would defer the hardest problem (multi-user sync)
 and undermine the product's differentiator.
 
 ### II. Minimally Invasive
 
-Teamind MUST integrate via standard MCP protocol and Claude Code
+Valis MUST integrate via standard MCP protocol and Claude Code
 channels. It MUST NOT proxy, intercept, or modify IDE data streams.
 All IDE interaction happens through registered MCP tools and channel
 push notifications.
@@ -45,9 +45,9 @@ interception.
 
 ### III. Non-Blocking
 
-If Teamind is unavailable — cloud down, MCP server crashed, channel
+If Valis is unavailable — cloud down, MCP server crashed, channel
 disconnected — the IDE and agent MUST continue to function normally.
-No Teamind failure may block, slow, or degrade the developer's
+No Valis failure may block, slow, or degrade the developer's
 primary workflow.
 
 **Rationale:** Developer trust is lost the moment a background tool
@@ -83,7 +83,7 @@ eliminates the need for local SQLite.
 
 Decision capture MUST happen automatically without manual developer
 action. Three capture layers — CLAUDE.md keyword triggers + explicit
-`teamind_store` (baseline), channel-driven reminders (enhancement),
+`valis_store` (baseline), channel-driven reminders (enhancement),
 and startup sweep (catch-up) — run in a single process. The baseline
 MUST work without channels. Channels improve capture rate (~80% vs
 ~30-50%) but MUST NOT be a hard dependency.
@@ -107,8 +107,8 @@ applications.
 
 ### VIII. Push + Pull (Hybrid Server)
 
-Teamind MUST operate as a hybrid MCP + Channel server. Pull-based
-tools (`teamind_store`, `teamind_search`, `teamind_context`) handle
+Valis MUST operate as a hybrid MCP + Channel server. Pull-based
+tools (`valis_store`, `valis_search`, `valis_context`) handle
 on-demand access. Channel push delivers real-time team notifications
 (new decisions, contradiction alerts) to active sessions.
 
@@ -119,7 +119,7 @@ unavailable (pull still works). Push is supplementary — never required.
 
 **Rationale:** Pull-only means the agent must explicitly search to
 discover new team decisions. Push closes the awareness gap for active
-sessions. Cross-session push transforms Teamind from a shared database
+sessions. Cross-session push transforms Valis from a shared database
 into a real-time team awareness tool — the core differentiator for
 retention.
 
@@ -184,14 +184,14 @@ independent knowledge base within the org.
 - **Per-project membership**: Members MUST be granted access to
   specific projects. Being an org member does NOT automatically grant
   access to all projects.
-- **Search is project-scoped**: `teamind_search` and
-  `teamind_context` MUST filter by the active project by default.
+- **Search is project-scoped**: `valis_search` and
+  `valis_context` MUST filter by the active project by default.
   Cross-project search is available via an explicit `--all-projects`
   flag or MCP parameter, but MUST NOT be the default.
 - **Push is project-scoped**: Cross-session push notifications MUST
   only be delivered to members of the same project, not the entire
   org.
-- **Init selects a project**: `teamind init` MUST either create a
+- **Init selects a project**: `valis init` MUST either create a
   new project or select an existing one. The active project is stored
   in the local config.
 
@@ -234,11 +234,11 @@ search remains available for architects who need the full picture.
 - **Error messages:** Every user-facing error MUST include: what
   happened, why, and how to fix it (per spec Section 13).
 - **Offline resilience:** Store operations MUST queue to
-  `~/.teamind/pending.jsonl` when cloud is unreachable. Search
+  `~/.valis/pending.jsonl` when cloud is unreachable. Search
   operations MUST return empty results (not errors) when offline.
 - **Deduplication:** Content hash + session_id dedup MUST prevent
   duplicate decisions across all capture layers.
-- **Idempotent configuration:** `teamind init` and IDE config
+- **Idempotent configuration:** `valis init` and IDE config
   operations MUST be safe to re-run without duplicating entries.
 - **Backward-compatible migrations:** Schema changes MUST be
   additive (new columns, new tables). Destructive changes (column
@@ -252,7 +252,7 @@ search remains available for architects who need the full picture.
 ## Governance
 
 This constitution captures the non-negotiable architectural
-principles of Teamind. It supersedes ad-hoc decisions made during
+principles of Valis. It supersedes ad-hoc decisions made during
 implementation when there is a conflict.
 
 - **Amendments:** Any change to a core principle MUST be documented

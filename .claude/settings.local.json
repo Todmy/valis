@@ -13,13 +13,13 @@
       "mcp__qdrant__qdrant-store",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(.specify/scripts/bash/create-new-feature.sh \"@docs/\" --json --short-name \"teamind-mvp\" \"Teamind MVP — shared decision intelligence for AI-augmented engineering teams\")",
+      "Bash(.specify/scripts/bash/create-new-feature.sh \"@docs/\" --json --short-name \"valis-mvp\" \"Valis MVP — shared decision intelligence for AI-augmented engineering teams\")",
       "Bash(.specify/scripts/bash/check-prerequisites.sh --json --paths-only)",
       "Bash(.specify/scripts/bash/setup-plan.sh --json)",
       "Bash(.specify/scripts/bash/update-agent-context.sh claude:*)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh --json)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
-      "Bash(/Users/todmy/github/teamind/packages/cli/.env:*)",
+      "Bash(/Users/todmy/github/valis/packages/cli/.env:*)",
       "Bash(python3 -c \"import json; json.load\\(open\\(''/Users/todmy/.claude/backups/.claude.json.backup.1774255037226''\\)\\)\")",
       "Bash(node:*)",
       "Bash(ls -lt /home/claude/.claude/backups/.claude.json.backup.*)",
@@ -27,7 +27,11 @@
       "Bash(do echo:*)",
       "Bash(done)",
       "Bash(python3:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "WebSearch",
+      "Bash(find /Users/todmy/github/valis -type d -name *valis*)",
+      "Bash(grep -r valis --include=*.sh --include=Makefile --include=.gitignore --include=*.env* -n)",
+      "Bash(xargs sed:*)"
     ]
   }
 }

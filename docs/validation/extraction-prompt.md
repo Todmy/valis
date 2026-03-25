@@ -1,8 +1,8 @@
-# Teamind Inline Haiku Extraction — Full Problem Analysis
+# Valis Inline Haiku Extraction — Full Problem Analysis
 
 **Date:** 2026-03-17
 **Status:** Pre-implementation analysis
-**Architecture under review:** Agent calls `teamind_store({text})` → MCP server stores raw in SQLite (<10ms) → calls Haiku API inline → updates SQLite → returns structured result
+**Architecture under review:** Agent calls `valis_store({text})` → MCP server stores raw in SQLite (<10ms) → calls Haiku API inline → updates SQLite → returns structured result
 
 ---
 
@@ -26,7 +26,7 @@ This is **optimistic for the happy path and dangerously wrong for tail latency.*
 | Haiku 4.5 | Output speed (AWS) | ~100 t/s | artificialanalysis.ai |
 | Haiku 3.5 (Anthropic) | TTFT P50 | ~1.1s | artificialanalysis.ai (slower than 4.5) |
 
-**Calculating actual extraction latency for Teamind:**
+**Calculating actual extraction latency for Valis:**
 
 Our extraction output is ~150-250 tokens of JSON. At 82 tokens/sec (Anthropic direct):
 
@@ -53,7 +53,7 @@ But that's for 200 output tokens at median. Real variance comes from:
 
 ### Impact on MCP Tool Response Time
 
-The MCP tool call `teamind_store` is **synchronous from the agent's perspective.** The agent sends a tool call, waits for the response, then continues. If extraction takes 3s:
+The MCP tool call `valis_store` is **synchronous from the agent's perspective.** The agent sends a tool call, waits for the response, then continues. If extraction takes 3s:
 
 - Agent is **blocked for 3 seconds** every time it stores a decision
 - In a typical Claude Code session, agent makes 2-5 store calls
@@ -85,7 +85,7 @@ The MCP tool call `teamind_store` is **synchronous from the agent's perspective.
 
 ### Rate Limit Reality (using USER'S API key)
 
-Teamind uses the user's own Anthropic API key. Their rate limits depend on their tier:
+Valis uses the user's own Anthropic API key. Their rate limits depend on their tier:
 
 | Tier | Deposit | Haiku 4.5 RPM | Haiku 4.5 ITPM | Haiku 4.5 OTPM |
 |------|---------|---------------|----------------|----------------|
@@ -94,7 +94,7 @@ Teamind uses the user's own Anthropic API key. Their rate limits depend on their
 | 3 | $200 | 2,000 | 1,000,000 | 200,000 |
 | 4 | $400 | 4,000 | 4,000,000 | 800,000 |
 
-**Critical problem:** A Tier 1 user (just started, $5 deposit) gets **50 RPM for Haiku.** That sounds fine — 50 extractions per minute. But this limit is **SHARED** across everything they use Haiku for. If they're already using Haiku in their Claude Code workflow or other tools, Teamind's extraction calls compete for the same quota.
+**Critical problem:** A Tier 1 user (just started, $5 deposit) gets **50 RPM for Haiku.** That sounds fine — 50 extractions per minute. But this limit is **SHARED** across everything they use Haiku for. If they're already using Haiku in their Claude Code workflow or other tools, Valis's extraction calls compete for the same quota.
 
 **Worse:** Many users are Tier 1. The typical early adopter who just signed up for Anthropic API is Tier 1. This is exactly our target demographic during launch.
 
@@ -103,7 +103,7 @@ Teamind uses the user's own Anthropic API key. Their rate limits depend on their
 Current architecture has **no defined failure path.** The spec says:
 
 ```
-Agent calls teamind_store → MCP server → Haiku classifies → returns structured result
+Agent calls valis_store → MCP server → Haiku classifies → returns structured result
 ```
 
 If Haiku fails, current prototype (`mcp-prototype.js`) does NOT call Haiku at all — it uses a heuristic (first sentence = summary). The gap between prototype and spec is the entire extraction pipeline.
@@ -111,7 +111,7 @@ If Haiku fails, current prototype (`mcp-prototype.js`) does NOT call Haiku at al
 **Required failure handling (not specified in design):**
 
 ```
-Agent calls teamind_store({text: "..."})
+Agent calls valis_store({text: "..."})
   → SQLite INSERT (raw text, type='unclassified') [<10ms, always succeeds]
   → Try Haiku extraction
     → 200 OK: UPDATE SQLite with structured fields, return enriched result
@@ -161,7 +161,7 @@ At 10,000 extractions/month: $9.50 → $12.80 (extra $3.30/month). Still negligi
 
 ### But Is It Worth It?
 
-**The real question: does Teamind even need LLM-generated keywords?**
+**The real question: does Valis even need LLM-generated keywords?**
 
 FTS5 already does stemming and keyword matching on `summary` + `detail` + `affects`. If someone searches "PostgreSQL", FTS5 will find it in the `detail` field. Keywords add value ONLY for:
 
@@ -338,7 +338,7 @@ Classify this engineering knowledge:
 
 ## Problem 5: Garbage Input Handling
 
-### Scenario: `teamind_store({text: "asdfasdf"})`
+### Scenario: `valis_store({text: "asdfasdf"})`
 
 **What happens now (prototype):** Stores "asdfasdf" as summary, with type='decision'. No validation.
 
@@ -349,7 +349,7 @@ Classify this engineering knowledge:
 
 **Cost:** ~200 input tokens + ~20 output tokens = $0.0003. Effectively free, but multiplied by a rogue agent sending garbage repeatedly, it adds up.
 
-### Scenario: `teamind_store({text: ""})`
+### Scenario: `valis_store({text: ""})`
 
 **What should happen:** MCP server validates BEFORE calling Haiku. Empty string → immediate rejection, no API call.
 
@@ -589,7 +589,7 @@ Cache has a 5-minute TTL. If extractions happen more than 5 minutes apart (likel
 ## Recommended Architecture (Post-Analysis)
 
 ```
-Agent calls teamind_store({text: "We decided to use Redis..."})
+Agent calls valis_store({text: "We decided to use Redis..."})
   │
   ├─ 1. Input validation (sync, <1ms)
   │    Empty? Too short? Garbage? → Return error immediately
@@ -618,7 +618,7 @@ Agent calls teamind_store({text: "We decided to use Redis..."})
 
 **Key change from spec:** The MCP tool returns in <15ms (always succeeds). Extraction happens async. The agent never waits for Haiku. This is the single most important architectural change.
 
-**Trade-off:** The agent doesn't get the structured result immediately. It gets `{id, status: 'pending'}`. If it needs the classified version (e.g., to check for contradictions before proceeding), it must call `teamind_search` or `teamind_context` after a short delay. In practice, agents rarely need the structured version immediately — they store and move on.
+**Trade-off:** The agent doesn't get the structured result immediately. It gets `{id, status: 'pending'}`. If it needs the classified version (e.g., to check for contradictions before proceeding), it must call `valis_search` or `valis_context` after a short delay. In practice, agents rarely need the structured version immediately — they store and move on.
 
 ---
 

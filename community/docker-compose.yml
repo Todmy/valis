@@ -1,8 +1,8 @@
 version: "3.8"
 
-# Teamind Community Edition — Self-hosted
+# Valis Community Edition — Self-hosted
 # Usage: docker compose up -d
-# Then:  teamind init (choose Community, enter localhost URLs)
+# Then:  valis init (choose Community, enter localhost URLs)
 
 services:
   # PostgreSQL with auto-applied migrations
@@ -10,16 +10,16 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: teamind
-      POSTGRES_USER: teamind
-      POSTGRES_PASSWORD: teamind_local_dev
+      POSTGRES_DB: valis
+      POSTGRES_USER: valis
+      POSTGRES_PASSWORD: valis_local_dev
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U teamind"]
+      test: ["CMD-SHELL", "pg_isready -U valis"]
       interval: 5s
       timeout: 5s
       retries: 5

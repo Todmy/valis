@@ -1,4 +1,4 @@
-# Teamind — Design Specification v4 (Final)
+# Valis — Design Specification v4 (Final)
 
 **Date:** 2026-03-17
 **Status:** Final — approved after 4 iterations of review + external analysis
@@ -9,7 +9,7 @@
 
 ## 1. Product Overview
 
-**Teamind** — shared decision intelligence for AI-augmented engineering teams.
+**Valis** — shared decision intelligence for AI-augmented engineering teams.
 
 **One-liner:** Your team's AI agents share one brain. Decisions made in one session are available in every session, for every developer.
 
@@ -17,7 +17,7 @@
 
 **Target:** Engineering Manager / Tech Lead / CTO. Teams 15-50 devs, 50%+ using AI agents daily.
 
-**Differentiator vs memctl:** memctl = flat text memory. Teamind = typed decision objects (decision/constraint/pattern/lesson) with Haiku classification, Qdrant hybrid search (dense + BM25), and team-wide shared context.
+**Differentiator vs memctl:** memctl = flat text memory. Valis = typed decision objects (decision/constraint/pattern/lesson) with Haiku classification, Qdrant hybrid search (dense + BM25), and team-wide shared context.
 
 ---
 
@@ -27,28 +27,28 @@
 
 1. **Cloud-first** — team sync, org management, shared storage from Day 1
 2. **Minimally invasive** — pure MCP, no proxy, no stream interception
-3. **Non-blocking** — if Teamind fails, IDE works normally
+3. **Non-blocking** — if Valis fails, IDE works normally
 4. **API key stays local** — user's Anthropic key never leaves their machine
 5. **Zero native dependencies** — pure JS/TS npm package, no compilation
 6. **Auto-capture by default** — three capture layers in one process, user does nothing
 
 ### Capture Architecture: Three Layers, One Process
 
-Every `teamind serve` process runs ALL three capture mechanisms simultaneously:
+Every `valis serve` process runs ALL three capture mechanisms simultaneously:
 
 | Layer | Mechanism | Coverage | Quality |
 |-------|-----------|----------|---------|
 | **1. JSONL File Watcher** (primary) | Watches `~/.claude/projects/` for transcript changes, extracts decisions from new lines | ~100% (Claude Code), ~0% (Cursor/Codex) | Medium (auto-extracted, needs Haiku) |
 | **2. Stop Hook** (secondary) | HTTP handler on localhost, Claude Code fires on session end, batch-extracts from transcript | ~60-70% (misses /exit, stalls, long sessions) | High (full session context) |
-| **3. MCP teamind_store** (explicit) | Agent calls tool when instructed via CLAUDE.md | ~10-20% (compliance varies) | Highest (agent curated) |
+| **3. MCP valis_store** (explicit) | Agent calls tool when instructed via CLAUDE.md | ~10-20% (compliance varies) | Highest (agent curated) |
 
 Overlap between layers → dedup by content hash + session_id.
 
-**Startup sweep:** On every `teamind serve` launch, BEFORE entering MCP event loop:
+**Startup sweep:** On every `valis serve` launch, BEFORE entering MCP event loop:
 1. Scan `~/.claude/projects/` for JSONL files modified since last processed timestamp
 2. Extract decisions from unprocessed content
 3. Store to cloud
-4. This catches sessions that happened without Teamind running
+4. This catches sessions that happened without Valis running
 
 ### System Diagram
 
@@ -58,13 +58,13 @@ Overlap between layers → dedup by content hash + session_id.
 │     (Claude Code, Cursor, Codex)                     │
 │                                                       │
 │  CLAUDE.md / AGENTS.md / .cursorrules                │
-│  "Store decisions via teamind tools"                 │
+│  "Store decisions via valis tools"                 │
 └──────────┬──────────────────────┬────────────────────┘
            │ MCP (stdio)          │ MCP (stdio)
       write/store             read/search
            │                      │
 ┌──────────▼──────────────────────▼────────────────────┐
-│    Teamind MCP Server — SINGLE PROCESS (`teamind serve`)  │
+│    Valis MCP Server — SINGLE PROCESS (`valis serve`)  │
 │    Per-session, started by IDE, dies with session     │
 │                                                       │
 │  ┌──────────┐  ┌─────────────────────────────────┐   │
@@ -92,7 +92,7 @@ Overlap between layers → dedup by content hash + session_id.
 │  │  └────────────────────────────────────────────┘   │
 │  │                                                   │
 │  │  ┌────────────────────────────────────────────┐   │
-│  │  │ Offline Queue (~/.teamind/pending.jsonl)    │   │
+│  │  │ Offline Queue (~/.valis/pending.jsonl)    │   │
 │  │  │ Stores locally if cloud unreachable         │   │
 │  │  │ Flushes on next successful API call         │   │
 │  │  └─────────────────────┬──────────────────────┘   │
@@ -107,7 +107,7 @@ Overlap between layers → dedup by content hash + session_id.
 └──────────────────────┬───────────────────────────────┘
                        │ HTTPS
 ┌──────────────────────▼───────────────────────────────┐
-│              Teamind Cloud                            │
+│              Valis Cloud                            │
 │                                                       │
 │  ┌──────────────────────────────────────────────┐    │
 │  │  Cloudflare Workers (Hono)                    │    │
@@ -129,7 +129,7 @@ Overlap between layers → dedup by content hash + session_id.
 │  ┌──────────────────────────────────────────────┐    │
 │  │ Cloudflare Cron Trigger (every 5 min)         │    │
 │  │ Re-enriches orphaned pending records          │    │
-│  │ using Teamind's own Haiku key                 │    │
+│  │ using Valis's own Haiku key                 │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                       │
 │  ┌──────────────────────────────────────────────┐    │
@@ -145,10 +145,10 @@ Overlap between layers → dedup by content hash + session_id.
 |----------|-----|---------------------|
 | Three capture layers in ONE process | File watcher (~100%) + Stop hook (~60-70%) + MCP store (~10-20%). No separate daemon. | Separate daemon (lifecycle management), MCP-only (10-20% capture) |
 | JSONL file watcher = primary capture | Append-only files always exist, survive crashes, ~100% coverage. Agent compliance is 10-20% without it. | MCP-only relying on CLAUDE.md instructions |
-| Startup sweep on every `teamind serve` | Catches sessions that happened without Teamind. Processes unread transcript content. | No sweep (data gaps between sessions) |
+| Startup sweep on every `valis serve` | Catches sessions that happened without Valis. Processes unread transcript content. | No sweep (data gaps between sessions) |
 | Single Qdrant collection + org_id filter | Qdrant docs: "collection-per-user is antipattern." Max 1000 collections. | Collection-per-org |
 | Haiku enrichment runs LOCAL (MCP server) | API key never leaves user's machine. Security. | Cloud Worker enrichment (key custody risk) |
-| Cloudflare Cron for orphaned records | Retries enrichment that failed when session died. Uses Teamind's key (~$0.001/orphan). | "Retry on next session start" (unreliable) |
+| Cloudflare Cron for orphaned records | Retries enrichment that failed when session died. Uses Valis's key (~$0.001/orphan). | "Retry on next session start" (unreliable) |
 | Cloudflare Queue for seed batch | Seed-on-init = 15-30 records. Sequential Haiku = 75s. Queue = async, init returns in <5s. | Sequential enrichment in Worker waitUntil |
 | `npm install -g` (not npx) | npx cold start = 3-10s blocking. Global = ~200ms. | npx (slow, registry dependency) |
 | Zero native deps (no better-sqlite3) | Cloud storage = no local SQLite needed. 100% install success. | SQLite local (15-25% install failures) |
@@ -157,7 +157,7 @@ Overlap between layers → dedup by content hash + session_id.
 
 ### MCP Tools (3 tools)
 
-#### teamind_store
+#### valis_store
 
 ```
 Store a team decision, architectural constraint, coding pattern, or lesson learned
@@ -184,7 +184,7 @@ Returns: {id, status: "stored"} immediately. Enrichment happens automatically.
 
 If Haiku fails or session dies before enrichment: record stays as raw text with `extraction_status: 'pending'`. Cloudflare Cron re-enriches within 5 minutes.
 
-#### teamind_search
+#### valis_search
 
 ```
 Search the team's shared decision history before making architectural choices.
@@ -199,7 +199,7 @@ Returns: [{decision, score, type, summary, affects}] ranked by relevance.
 
 Qdrant hybrid search: dense vectors (MiniLM 384d) + sparse BM25 + payload filter (org_id). No manual keyword extraction needed — Qdrant generates both dense and sparse vectors server-side from raw text.
 
-#### teamind_context
+#### valis_context
 
 ```
 Load relevant team decisions for the current task. Call this at the START of
@@ -209,7 +209,7 @@ Input: {task_description: string, files?: string[]}
 Returns: [{relevant_decisions}] + summary of key constraints.
 ```
 
-Piggyback: if this is the FIRST tool call in a session, include a brief note: "N total decisions in team brain. Use teamind_search for specific queries."
+Piggyback: if this is the FIRST tool call in a session, include a brief note: "N total decisions in team brain. Use valis_search for specific queries."
 
 ### Decision Object Schema
 
@@ -268,9 +268,9 @@ Agent receives: `{error: "secret_detected", pattern: "Anthropic API Key", action
 
 | Tool | Offline behavior |
 |------|-----------------|
-| teamind_store | Queue to `~/.teamind/pending.jsonl`. Return `{stored: true, synced: false}`. Flush on reconnect. |
-| teamind_search | Return `{results: [], offline: true, note: "Cloud unavailable. Search offline."}`. Agent proceeds without context. |
-| teamind_context | Same as search — empty results, no crash. |
+| valis_store | Queue to `~/.valis/pending.jsonl`. Return `{stored: true, synced: false}`. Flush on reconnect. |
+| valis_search | Return `{results: [], offline: true, note: "Cloud unavailable. Search offline."}`. Agent proceeds without context. |
+| valis_context | Same as search — empty results, no crash. |
 
 ---
 
@@ -313,7 +313,7 @@ GET    /orgs/:id/dashboard           # Aggregated stats (counts by type/author/d
 
 Every 5 minutes:
 1. Query Qdrant: `extraction_status = 'pending' AND updated_at < (now - 2 min)`
-2. For each orphan: call Haiku (Teamind's own key) for classification (type, summary, affects, confidence)
+2. For each orphan: call Haiku (Valis's own key) for classification (type, summary, affects, confidence)
 3. Update record in Qdrant
 4. Cost: ~$0.001 per orphan. At 50 orphans/day = $0.05/day = $1.50/month
 
@@ -324,11 +324,11 @@ Every 5 minutes:
 ### New org creator:
 
 ```bash
-$ npm install -g teamind               # Pure JS, ~5-10 seconds, 100% success
+$ npm install -g valis               # Pure JS, ~5-10 seconds, 100% success
 
-$ teamind init
+$ valis init
 
-  Welcome to Teamind — shared brain for your AI team.
+  Welcome to Valis — shared brain for your AI team.
 
   [1] Create new organization
   [2] Join existing organization (invite code)
@@ -354,21 +354,21 @@ $ teamind init
   Configuring IDEs...
   ✅ Added MCP server to Claude Code
   ✅ Added MCP server to Cursor
-  ✅ Added instructions to CLAUDE.md (<!-- teamind:start/end -->)
+  ✅ Added instructions to CLAUDE.md (<!-- valis:start/end -->)
 
   Verification...
   ✅ Stored test decision → found via search
-  ✅ Teamind is working!
+  ✅ Valis is working!
 
   Next: share invite code ACME-7X3K with your team
-  Run `teamind status` anytime | `teamind dashboard` for overview
+  Run `valis status` anytime | `valis dashboard` for overview
 ```
 
 ### Team member joining:
 
 ```bash
-$ npm install -g teamind
-$ teamind init --join ACME-7X3K
+$ npm install -g valis
+$ valis init --join ACME-7X3K
 
   ✅ Joined org "acme-eng" (20 decisions already available)
   ... (same IDE config + optional API key)
@@ -376,15 +376,15 @@ $ teamind init --join ACME-7X3K
 
 ### CLAUDE.md handling:
 
-- No CLAUDE.md exists → create project-level `CLAUDE.md` with teamind block
-- CLAUDE.md exists in project → append teamind block between markers
+- No CLAUDE.md exists → create project-level `CLAUDE.md` with valis block
+- CLAUDE.md exists in project → append valis block between markers
 - CLAUDE.md exists in parent only → create NEW project-level, never modify parent
 - Markers already exist → replace content between markers (idempotent)
 
 ### API key handling:
 
-- Provided → stored in `~/.teamind/config.json` (0600 permissions). Local enrichment active.
-- Skipped → decisions stored as raw text. Search works on raw text only. User can add later: `teamind config set api-key sk-ant-...`
+- Provided → stored in `~/.valis/config.json` (0600 permissions). Local enrichment active.
+- Skipped → decisions stored as raw text. Search works on raw text only. User can add later: `valis config set api-key sk-ant-...`
 - Never sent to cloud. Ever.
 
 ---
@@ -407,12 +407,12 @@ $ teamind init --join ACME-7X3K
 | **Seed-on-init** | CLAUDE.md + AGENTS.md + .cursorrules + git log. Batch endpoint + Queue. |
 | **IDE auto-setup** | Claude Code + Cursor + Codex MCP configs |
 | **CLAUDE.md injection** | Delimited markers, safe creation/update/removal |
-| **Offline queue** | `~/.teamind/pending.jsonl`, flush on reconnect |
+| **Offline queue** | `~/.valis/pending.jsonl`, flush on reconnect |
 | **Secret detection** | 10 regex patterns, block don't redact |
-| **teamind status** | Health check (cloud, API key, decision count) |
-| **teamind dashboard** | CLI report from cloud (counts, recent, by author) |
-| **teamind export** | JSON + Markdown export |
-| **teamind uninstall** | Clean removal via manifest.json |
+| **valis status** | Health check (cloud, API key, decision count) |
+| **valis dashboard** | CLI report from cloud (counts, recent, by author) |
+| **valis export** | JSON + Markdown export |
+| **valis uninstall** | Clean removal via manifest.json |
 | **Error handling** | Defined messages for all failure modes |
 
 ### NOT IN (by phase)
@@ -450,9 +450,9 @@ Enforced server-side by Cloud API (D1 counters + KV rate limits).
 - **API key never leaves local machine**: enrichment runs in MCP server process
 - **Encryption**: at rest (Qdrant Cloud) + in transit (TLS 1.3)
 - **Secret detection**: 10 regex patterns, block entire record if matched
-- **Org API keys**: generated on create, rotatable via `teamind config rotate-key`
-- **Local config**: `~/.teamind/config.json` with 0600 permissions
-- **Orphan enrichment**: uses Teamind's own Haiku key, not user's
+- **Org API keys**: generated on create, rotatable via `valis config rotate-key`
+- **Local config**: `~/.valis/config.json` with 0600 permissions
+- **Orphan enrichment**: uses Valis's own Haiku key, not user's
 - Phase 2: access logs, RBAC
 - Phase 3: SSO, SOC 2, data residency
 
@@ -477,12 +477,12 @@ Enforced server-side by Cloud API (D1 counters + KV rate limits).
 ### Repo Structure
 
 ```
-teamind/
+valis/
 ├── packages/
 │   ├── cli/                # init, serve, status, dashboard, export, uninstall, config
 │   └── cloud/              # Cloudflare Workers: API + Cron + Queue consumer
 ├── LICENSE                 # Apache 2.0
-├── AGENTS.md               # Teamind eats its own dogfood
+├── AGENTS.md               # Valis eats its own dogfood
 ├── package.json            # pnpm workspace
 └── README.md
 ```
@@ -491,7 +491,7 @@ teamind/
 
 ## 9. Competitive Positioning
 
-| | memctl | Grov | ByteRover | **Teamind** |
+| | memctl | Grov | ByteRover | **Valis** |
 |---|---|---|---|---|
 | Architecture | Pure MCP | Proxy + MCP | MCP daemon | **Pure MCP + Cloud** |
 | Storage | Turso cloud | Supabase | Local markdown | **Qdrant Cloud** |
@@ -537,7 +537,7 @@ LinkedIn (existing audience) → Show HN → Product Hunt → GitHub → MCP dir
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | CLAUDE.md compliance 10-20% | HIGH | **RESOLVED by file watcher (~100% capture) + stop hook (~60-70%) + startup sweep.** MCP store = bonus, not primary. |
-| No auto-context in MCP protocol | HIGH | Seed critical decisions into CLAUDE.md. Instruction to call teamind_context. Piggyback on first tool call. |
+| No auto-context in MCP protocol | HIGH | Seed critical decisions into CLAUDE.md. Instruction to call valis_context. Piggyback on first tool call. |
 | Platform risk (Copilot Memory org scope) | HIGH | Ship fast. Differentiate on typed decisions + auto-capture + enrichment. |
 | Market timing (6-12 month window) | HIGH | MVP in 8-10 weeks. Install for consulting clients first. |
 | JSONL transcript format instability | HIGH | Version-aware parser. Graceful degradation on unknown format. |
@@ -551,16 +551,16 @@ LinkedIn (existing audience) → Show HN → Product Hunt → GitHub → MCP dir
 
 ## 12. Acceptance Criteria
 
-1. `npm install -g teamind` succeeds on macOS (ARM64 + Intel), Linux (x64), Windows — zero native compilation
-2. `teamind init` creates org + seeds + configures IDEs in <3 minutes
-3. Dev A stores decision on Machine A → Dev B on Machine B finds it via `teamind search`
+1. `npm install -g valis` succeeds on macOS (ARM64 + Intel), Linux (x64), Windows — zero native compilation
+2. `valis init` creates org + seeds + configures IDEs in <3 minutes
+3. Dev A stores decision on Machine A → Dev B on Machine B finds it via `valis search`
 4. Seed-on-init extracts 15+ decisions, init returns in <10 seconds (enrichment async)
 5. Haiku enrichment produces type + summary + affects for >80% of stores within 5 minutes
-6. `teamind search "authentication"` finds a decision about JWT (via Qdrant hybrid search)
-7. `teamind dashboard` shows team activity from cloud (counts, recent, by author)
-8. `teamind export --json` produces valid, complete export of all org decisions
-9. `teamind uninstall` removes all configs cleanly, mentions cloud data persistence
-10. Offline: `teamind_store` queues locally, `teamind_search` returns empty gracefully
+6. `valis search "authentication"` finds a decision about JWT (via Qdrant hybrid search)
+7. `valis dashboard` shows team activity from cloud (counts, recent, by author)
+8. `valis export --json` produces valid, complete export of all org decisions
+9. `valis uninstall` removes all configs cleanly, mentions cloud data persistence
+10. Offline: `valis_store` queues locally, `valis_search` returns empty gracefully
 11. Secret detection blocks storage of known key patterns (Anthropic, AWS, GitHub, etc.)
 12. 3 private beta teams use it for 1 week without critical bugs
 
@@ -572,27 +572,27 @@ LinkedIn (existing audience) → Show HN → Product Hunt → GitHub → MCP dir
 # Invalid API key
 Error: Anthropic API key rejected (HTTP 401).
 Check: https://console.anthropic.com/settings/keys
-Teamind stores raw decisions without enrichment until valid key is set.
-Fix: teamind config set api-key <your-key>
+Valis stores raw decisions without enrichment until valid key is set.
+Fix: valis config set api-key <your-key>
 
 # Cloud unreachable
-Warning: Teamind Cloud unreachable.
+Warning: Valis Cloud unreachable.
 Decisions queued locally (3 pending). Search unavailable offline.
 Will sync automatically when connected.
 
 # Org not found
 Error: Organization not found.
-Run: teamind init (create new) or teamind init --join CODE (join existing)
+Run: valis init (create new) or valis init --join CODE (join existing)
 
 # Invite code invalid
 Error: Invite code ACME-7X3K is invalid or expired.
-Ask your team lead: teamind org invite (generates new code)
+Ask your team lead: valis org invite (generates new code)
 
 # Free tier limit
 Warning: Free tier limit reached (500/500 decisions).
 New decisions will not be stored. Options:
-  teamind billing upgrade
-  teamind decisions prune --older-than 30d
+  valis billing upgrade
+  valis decisions prune --older-than 30d
 
 # Haiku rate limited
 Warning: Anthropic API rate limited. Enrichment paused.

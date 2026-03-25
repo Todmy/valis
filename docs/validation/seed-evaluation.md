@@ -222,7 +222,7 @@ The 70% accuracy is acceptable for a seed operation. The errors are mostly "patt
 
 ---
 
-## Conclusions for Teamind
+## Conclusions for Valis
 
 ### 1. Seed-on-init IS viable. Ship it.
 

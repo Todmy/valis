@@ -58,11 +58,11 @@
 ### Implementation for User Story 1
 
 - [ ] T010 [US1] Implement Edge Function change-status (Deno runtime, validate transition rules per FR-001 permissions, UPDATE decision status + status_changed_by/at/reason, find dependents if deprecated, resolve open contradictions via SQL: `UPDATE contradictions SET status='resolved', resolved_at=now() WHERE (decision_a_id = $1 OR decision_b_id = $1) AND status = 'open'`, create audit entry, use service_role key) in supabase/functions/change-status/index.ts per edge-functions contract
-- [ ] T011 [US1] Extend teamind_store handler: add replaces param (validate target exists + same org, check RBAC canSupersede, call change-status on target to supersede, include superseded info in response), add depends_on param (validate all IDs exist in same org), add status param (active/proposed) in packages/cli/src/mcp/tools/store.ts (extend)
-- [ ] T012 [US1] Implement teamind_lifecycle MCP tool handler (deprecate: call change-status Edge Function, promote: call change-status, history: call getDecisionHistory RPC, return formatted response) in packages/cli/src/mcp/tools/lifecycle.ts per mcp-tools contract
-- [ ] T013 [US1] Register teamind_lifecycle tool in MCP server (add tool definition with schema, wire handler) in packages/cli/src/mcp/server.ts (extend)
-- [ ] T014 [US1] Extend teamind_search handler: add status field to SearchResult, rank active above deprecated/superseded at equal relevance, include replaced_by reverse lookup in results in packages/cli/src/mcp/tools/search.ts (extend)
-- [ ] T015 [P] [US1] Extend teamind_context handler: filter out deprecated/superseded from primary results, include them in a separate "historical" group if relevant in packages/cli/src/mcp/tools/context.ts (extend)
+- [ ] T011 [US1] Extend valis_store handler: add replaces param (validate target exists + same org, check RBAC canSupersede, call change-status on target to supersede, include superseded info in response), add depends_on param (validate all IDs exist in same org), add status param (active/proposed) in packages/cli/src/mcp/tools/store.ts (extend)
+- [ ] T012 [US1] Implement valis_lifecycle MCP tool handler (deprecate: call change-status Edge Function, promote: call change-status, history: call getDecisionHistory RPC, return formatted response) in packages/cli/src/mcp/tools/lifecycle.ts per mcp-tools contract
+- [ ] T013 [US1] Register valis_lifecycle tool in MCP server (add tool definition with schema, wire handler) in packages/cli/src/mcp/server.ts (extend)
+- [ ] T014 [US1] Extend valis_search handler: add status field to SearchResult, rank active above deprecated/superseded at equal relevance, include replaced_by reverse lookup in results in packages/cli/src/mcp/tools/search.ts (extend)
+- [ ] T015 [P] [US1] Extend valis_context handler: filter out deprecated/superseded from primary results, include them in a separate "historical" group if relevant in packages/cli/src/mcp/tools/context.ts (extend)
 - [ ] T016 [US1] Extend dashboard command: add lifecycle stats section (Active/Deprecated/Superseded/Proposed counts), show dependency warnings for flagged decisions in packages/cli/src/commands/dashboard.ts (extend)
 
 **Checkpoint**: Decision lifecycle works end-to-end. Store with replaces auto-supersedes. Search ranks by status. Lifecycle tool deprecates/promotes.
@@ -82,7 +82,7 @@
 - [ ] T019 [US2] Integrate Realtime into serve command: after MCP server start, subscribe to org Realtime channel, on event → push to local MCP channel, on disconnect → log warning + set status degraded, on exit → unsubscribe in packages/cli/src/commands/serve.ts (extend)
 - [ ] T020 [P] [US2] Extend status command: show Realtime connection status (connected/disconnected/degraded), show auth mode in packages/cli/src/commands/status.ts (extend)
 
-**Checkpoint**: `teamind serve` subscribes to Realtime. Cross-session push delivers within 5 seconds. Graceful degradation on disconnect.
+**Checkpoint**: `valis serve` subscribes to Realtime. Cross-session push delivers within 5 seconds. Graceful degradation on disconnect.
 
 ---
 
@@ -116,8 +116,8 @@
 - [ ] T027 [P] [US4] Implement Edge Function revoke-member (Deno runtime, authenticate, verify admin, if target_member_id equals caller's member_id return warning and require confirmation flag (force: true) to proceed, SET revoked_at, create audit entry) in supabase/functions/revoke-member/index.ts per edge-functions contract
 - [ ] T028 [US4] Extend Edge Function join-org: generate per-member API key (tmm_ + 32 hex), INSERT into members.api_key, return member key in response alongside org key in supabase/functions/join-org/index.ts (extend)
 - [ ] T029 [US4] Implement migrate-auth CLI command (verify legacy auth, call exchange-token, update config with auth_mode:'jwt' + member_api_key + member_id, test round-trip, print migration status) in packages/cli/src/commands/migrate-auth.ts per cli-commands contract
-- [ ] T030 [US4] Implement admin audit CLI command (teamind admin audit: load config, call getAuditTrail RPC, format chronological table with member/action/target/timestamp, support --org/--member/--limit flags) in packages/cli/src/commands/admin-audit.ts per cli-commands contract
-- [ ] T031 [US4] Register migrate-auth and admin audit commands in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [ ] T030 [US4] Implement admin audit CLI command (valis admin audit: load config, call getAuditTrail RPC, format chronological table with member/action/target/timestamp, support --org/--member/--limit flags) in packages/cli/src/commands/admin-audit.ts per cli-commands contract
+- [ ] T031 [US4] Register migrate-auth and admin audit commands in CLI entry point in packages/cli/bin/valis.ts (extend)
 
 **Checkpoint**: Per-member keys issued at join. JWT auth works. Key rotation/revocation immediate. Audit trail viewable.
 
@@ -125,17 +125,17 @@
 
 ## Phase 7: User Story 5 — Observability & Unit Economics (Priority: P5)
 
-**Goal**: `teamind admin metrics` shows activation, engagement, COGS, churn
+**Goal**: `valis admin metrics` shows activation, engagement, COGS, churn
 
-**Independent Test**: `teamind admin metrics` shows active orgs, avg decisions, COGS estimates, activation funnel.
+**Independent Test**: `valis admin metrics` shows active orgs, avg decisions, COGS estimates, activation funnel.
 
 ### Implementation for User Story 5
 
 - [ ] T032 [US5] Implement metrics computation (computeMetrics: query rate_limits + orgs tables with service_role key, derive active members from count of distinct authors in decisions table within period (or from audit_entries if available), calculate active orgs 7d/30d, avg decisions/searches per org, COGS estimate from unit-economics.md constants, activation funnel from org created_at vs first rate_limits entry, churn detection for 30d idle orgs) in packages/cli/src/metrics/compute.ts
-- [ ] T033 [US5] Implement admin metrics CLI command (teamind admin metrics: require service_role key, call computeMetrics, format table output with picocolors, support --json and --period flags) in packages/cli/src/commands/admin-metrics.ts per cli-commands contract
-- [ ] T034 [US5] Register admin metrics command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [ ] T033 [US5] Implement admin metrics CLI command (valis admin metrics: require service_role key, call computeMetrics, format table output with picocolors, support --json and --period flags) in packages/cli/src/commands/admin-metrics.ts per cli-commands contract
+- [ ] T034 [US5] Register admin metrics command in CLI entry point in packages/cli/bin/valis.ts (extend)
 
-**Checkpoint**: `teamind admin metrics` returns activation funnel, COGS estimates within 5 seconds.
+**Checkpoint**: `valis admin metrics` returns activation funnel, COGS estimates within 5 seconds.
 
 ---
 

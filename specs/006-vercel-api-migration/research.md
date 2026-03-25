@@ -202,7 +202,7 @@ runtime). Environment variables are set in the Vercel dashboard or
 
 After migration, the CLI operates with two distinct URLs:
 
-1. **`HOSTED_API_URL`** (`https://teamind.krukit.co`) — Vercel
+1. **`HOSTED_API_URL`** (`https://valis.krukit.co`) — Vercel
    deployment. Used for all "Edge Function" calls: register, exchange-
    token, check-usage, join-project, create-org, create-project,
    change-status, rotate-key, revoke-member, seed, enrich.
@@ -220,7 +220,7 @@ function invocation. These are different infrastructure components.
 ### URL Resolution Logic
 
 ```typescript
-function resolveApiUrl(config: TeamindConfig, supabaseUrl: string): string {
+function resolveApiUrl(config: ValisConfig, supabaseUrl: string): string {
   // Hosted mode: use Vercel API URL
   if (isHostedMode(config)) {
     return HOSTED_API_URL;
@@ -323,11 +323,11 @@ file. Community users who self-host on Supabase may still deploy them.
 /**
  * @deprecated Migrated to Vercel API route: packages/web/src/app/api/<name>/route.ts
  * This Edge Function is kept for community/self-hosted deployments only.
- * Hosted Teamind (teamind.krukit.co) uses Vercel API routes as of 006-vercel-api-migration.
+ * Hosted Valis (valis.krukit.co) uses Vercel API routes as of 006-vercel-api-migration.
  */
 ```
 
 **Supabase's remaining role**:
 1. Postgres database — migrations, RLS, RPC functions
 2. Realtime — WebSocket push for cross-session notifications
-3. Auth-free — no Supabase Auth used (Teamind has its own JWT)
+3. Auth-free — no Supabase Auth used (Valis has its own JWT)

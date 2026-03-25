@@ -1,8 +1,8 @@
 # MCP Tool Contract Changes: Phase 2
 
-Extends `/specs/001-teamind-mvp/contracts/mcp-tools.md`.
+Extends `/specs/001-valis-mvp/contracts/mcp-tools.md`.
 
-## teamind_store (extended)
+## valis_store (extended)
 
 New optional parameters:
 
@@ -58,7 +58,7 @@ interface StoreArgs {
    succeeds regardless)
 5. Push contradiction events via cross-session push
 
-## teamind_search (extended)
+## valis_search (extended)
 
 Search results now include status information:
 
@@ -97,7 +97,7 @@ Search results now include status information:
 **Ranking change**: Active decisions ranked above deprecated/superseded
 at equal relevance scores. Status label included in all results.
 
-## teamind_lifecycle (new tool)
+## valis_lifecycle (new tool)
 
 Manage decision status from MCP context.
 
@@ -140,5 +140,5 @@ interface LifecycleArgs {
 ```
 
 **Note**: `supersede` is not an action here — it happens via
-`teamind_store` with `replaces` parameter. Direct status change to
+`valis_store` with `replaces` parameter. Direct status change to
 `superseded` without a replacement is not allowed.

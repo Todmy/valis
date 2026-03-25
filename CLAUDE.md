@@ -1,4 +1,4 @@
-# teamind Development Guidelines
+# valis Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-03-24
 
@@ -10,7 +10,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-24
 - TypeScript (ES2022, NodeNext module resolution), Node.js 20+ + Existing deps (no new dependencies required) (004-multi-project)
 - Supabase Postgres (migration 004: projects + project_members tables, altered decisions/contradictions/audit_entries) + Qdrant Cloud (project_id payload field + index) + Supabase Realtime (project-scoped subscriptions) (004-multi-project)
 
-- TypeScript (ES2022, NodeNext module resolution), Node.js 20+ + @modelcontextprotocol/sdk, @supabase/supabase-js, @qdrant/js-client-rest, commander, chokidar, picocolors, zod (001-teamind-mvp)
+- TypeScript (ES2022, NodeNext module resolution), Node.js 20+ + @modelcontextprotocol/sdk, @supabase/supabase-js, @qdrant/js-client-rest, commander, chokidar, picocolors, zod (001-valis-mvp)
 
 ## Project Structure
 

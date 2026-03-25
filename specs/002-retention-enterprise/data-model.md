@@ -2,7 +2,7 @@
 
 **Phase**: 1 — Design & Contracts
 **Date**: 2026-03-23
-**Extends**: `/specs/001-teamind-mvp/data-model.md`
+**Extends**: `/specs/001-valis-mvp/data-model.md`
 
 ## Schema Changes (Migration 002)
 
@@ -143,7 +143,7 @@ open → resolved
 ```
 
 Resolved when either decision in the pair is deprecated, superseded,
-or explicitly dismissed via `teamind dismiss-contradiction <id>`.
+or explicitly dismissed via `valis dismiss-contradiction <id>`.
 
 ## Validation Rules (new)
 

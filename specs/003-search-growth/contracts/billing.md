@@ -363,7 +363,7 @@ and the automatic downgrade to free tier.
 
 **Endpoint**: `POST /functions/v1/create-checkout`
 
-**Called by**: CLI (`teamind upgrade`) or dashboard (upgrade link).
+**Called by**: CLI (`valis upgrade`) or dashboard (upgrade link).
 
 ### Request
 
@@ -489,7 +489,7 @@ async function handleSearch(args: SearchArgs): Promise<SearchResponse> {
 ### Upgrade Command
 
 ```
-teamind upgrade [--plan team|business] [--annual]
+valis upgrade [--plan team|business] [--annual]
 ```
 
 Opens the Stripe Checkout URL in the user's default browser:
@@ -504,8 +504,8 @@ async function handleUpgrade(options: UpgradeOptions): Promise<void> {
       org_id: config.org_id,
       plan: options.plan ?? 'team',
       billing_cycle: options.annual ? 'annual' : 'monthly',
-      success_url: 'https://dashboard.teamind.dev/billing/success',
-      cancel_url: 'https://dashboard.teamind.dev/billing/cancel',
+      success_url: 'https://dashboard.valis.dev/billing/success',
+      cancel_url: 'https://dashboard.valis.dev/billing/cancel',
     }),
   });
 

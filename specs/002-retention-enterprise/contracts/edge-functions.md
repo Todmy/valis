@@ -1,6 +1,6 @@
 # Edge Function Contracts: Phase 2
 
-Extends `/specs/001-teamind-mvp/contracts/edge-functions.md`.
+Extends `/specs/001-valis-mvp/contracts/edge-functions.md`.
 
 ## POST /functions/v1/exchange-token
 

@@ -57,7 +57,7 @@ the JWT via `createClient({ accessToken })`.
   "role": "authenticated",
   "exp": "<now + 3600>",
   "iat": "<now>",
-  "iss": "teamind",
+  "iss": "valis",
   "org_id": "<org_id>",
   "member_role": "admin|member",
   "author_name": "<author_name>"

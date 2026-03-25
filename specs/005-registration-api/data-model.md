@@ -101,7 +101,7 @@ register request
 
 After registration, the CLI config stores:
 
-**~/.teamind/config.json** (hosted mode — NO service_role_key):
+**~/.valis/config.json** (hosted mode — NO service_role_key):
 ```json
 {
   "org_id": "uuid",
@@ -117,7 +117,7 @@ After registration, the CLI config stores:
 }
 ```
 
-**.teamind.json** (per-directory):
+**.valis.json** (per-directory):
 ```json
 {
   "project_id": "uuid",

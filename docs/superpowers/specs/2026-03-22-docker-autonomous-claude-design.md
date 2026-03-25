@@ -7,7 +7,7 @@
 
 Docker container that runs Claude Code with `--dangerously-skip-permissions`
 and `--channels plugin:telegram@claude-plugins-official` for autonomous
-Teamind MVP implementation. Isolated sandbox — destructive permissions
+Valis MVP implementation. Isolated sandbox — destructive permissions
 stay inside the container, code changes persist via mounted volume.
 
 ## Design

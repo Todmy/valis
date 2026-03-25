@@ -5,7 +5,7 @@
 
 ## Summary
 
-Extend the Teamind MVP with decision lifecycle management (status
+Extend the Valis MVP with decision lifecycle management (status
 transitions, relationships, contradiction detection), cross-session
 real-time push via Supabase Realtime, per-member API keys with RBAC
 and JWT-based RLS, and unit economics instrumentation. All changes
@@ -18,7 +18,7 @@ are additive — backward compatible with existing MVP installations.
 **Primary Dependencies**: Existing MVP deps + `jose` (JWT signing, already in dependency tree via supabase-js)
 **Storage**: Supabase Postgres (extended schema) + Qdrant Cloud (extended payload) + Supabase Realtime (new: cross-session push)
 **Auth Model**: Per-member API keys (`tmm_` prefix) → Edge Function exchanges for short-lived JWT (1h, HS256) → CLI uses JWT via `createClient({ accessToken })`. Legacy org-level keys (`tm_` prefix) continue to work. Edge Functions use `service_role` key (trusted server-side).
-**Realtime**: Supabase Realtime `postgres_changes` subscription on `decisions` table, filtered by `org_id`. Each `teamind serve` instance subscribes to its org's channel. Events pushed to local IDE via MCP channel notifications.
+**Realtime**: Supabase Realtime `postgres_changes` subscription on `decisions` table, filtered by `org_id`. Each `valis serve` instance subscribes to its org's channel. Events pushed to local IDE via MCP channel notifications.
 **Contradiction Detection**: Two-tier — `affects` array overlap (SQL `&&` operator) + Qdrant embedding cosine similarity (threshold >0.7). No LLM dependency.
 **Testing**: vitest with mocked Supabase/Qdrant/Realtime clients. Manual E2E with two sessions for cross-session push validation.
 **Target Platform**: macOS ARM64/Intel, Linux x64 (unchanged)

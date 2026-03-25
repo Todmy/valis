@@ -514,7 +514,7 @@ function printSummary(session, fileInfo) {
   console.log();
 
   // Verdict
-  console.log('VERDICT FOR TEAMIND ARCHITECTURE:');
+  console.log('VERDICT FOR VALIS ARCHITECTURE:');
   if (passed >= 5) {
     console.log('  JSONL transcripts contain rich, parseable data.');
     console.log('  Tool calls, file operations, and reasoning are all extractable.');

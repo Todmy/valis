@@ -52,8 +52,8 @@ endpoint addresses (not secrets).
   via tmm_ key)**: Possible but the CLI would need two round trips and
   the register-org endpoint would still be a new endpoint. Single call
   is simpler and more robust.
-- **Supabase Auth signup flow**: Would couple Teamind to Supabase Auth
-  (email/password). Teamind uses API keys, not auth identities.
+- **Supabase Auth signup flow**: Would couple Valis to Supabase Auth
+  (email/password). Valis uses API keys, not auth identities.
 
 ## Public URLs as Constants
 
@@ -62,7 +62,7 @@ hardcoded as constants in the `register` Edge Function response and
 in the CLI. They are not secrets — they are public API endpoint
 addresses discoverable via DNS.
 
-**Rationale**: Hosted Teamind runs on fixed infrastructure. The
+**Rationale**: Hosted Valis runs on fixed infrastructure. The
 Supabase project URL (`https://xyz.supabase.co`) and Qdrant cluster
 URL (`https://xyz.qdrant.io`) do not change between registrations.
 Including them in the registration response means the CLI does not
@@ -70,7 +70,7 @@ need to know them in advance — the server tells the client where to
 connect.
 
 **Why include them in the response instead of hardcoding in the CLI?**
-- Future-proofing: if Teamind adds regional endpoints, the server can
+- Future-proofing: if Valis adds regional endpoints, the server can
   return the closest one.
 - Single source of truth: the server knows the infrastructure topology.
 - The CLI becomes infrastructure-agnostic — it connects wherever the
@@ -123,14 +123,14 @@ are removed entirely.
 
 **New hosted flow**:
 ```
-1. User runs `teamind init` → chooses Hosted
+1. User runs `valis init` → chooses Hosted
 2. Prompt: org name, project name, your name
 3. CLI calls POST /functions/v1/register
 4. Response: { member_api_key, supabase_url, qdrant_url, org_id, ... }
 5. CLI saves config:
-   - ~/.teamind/config.json: supabase_url, qdrant_url, member_api_key,
+   - ~/.valis/config.json: supabase_url, qdrant_url, member_api_key,
      org_id, org_name, author_name (NO service_role_key)
-   - .teamind.json: project_id, project_name
+   - .valis.json: project_id, project_name
 6. IDE configuration, Qdrant setup, seed (using exchange-token flow)
 ```
 
@@ -186,13 +186,13 @@ removed from `packages/cli/src/commands/init.ts`:
 1. `HOSTED_CREDENTIALS` constant (lines 35-40)
 2. `parseEnvContent()` function (lines 42-53)
 3. `loadHostedEnv()` function (lines 55-69)
-4. All references to `TEAMIND_HOSTED_*` env vars in `resolveCredentials`
+4. All references to `VALIS_HOSTED_*` env vars in `resolveCredentials`
 5. The error message directing users to create `.hosted-env`
 
 **Migration for existing users**: Existing users who have
-`~/.teamind/config.json` with a `supabase_service_role_key` from the
+`~/.valis/config.json` with a `supabase_service_role_key` from the
 old hosted setup are on the "legacy hosted" path. A deprecation
-warning guides them to re-run `teamind init` which will use the
+warning guides them to re-run `valis init` which will use the
 registration API instead. The old config continues to work (community
 mode path) but the user is nudged to re-register.
 

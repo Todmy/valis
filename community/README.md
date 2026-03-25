@@ -1,6 +1,6 @@
-# Teamind Community Edition
+# Valis Community Edition
 
-Self-hosted Teamind with Docker Compose. Your data stays on your infrastructure.
+Self-hosted Valis with Docker Compose. Your data stays on your infrastructure.
 
 ## Quick Start
 
@@ -12,12 +12,12 @@ docker compose up -d
 # 2. Wait for services to be healthy (~10 seconds)
 docker compose ps
 
-# 3. Install and init Teamind CLI
-npm install -g teamind
-teamind init
+# 3. Install and init Valis CLI
+npm install -g valis
+valis init
 # Choose: Community
 # Supabase URL: http://localhost:5432
-# Service Role Key: teamind_local_dev
+# Service Role Key: valis_local_dev
 # Qdrant URL: http://localhost:6333
 # Qdrant API Key: (leave empty for local)
 ```
@@ -39,18 +39,18 @@ Edit `docker-compose.yml` to change defaults:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `POSTGRES_DB` | `teamind` | Database name |
-| `POSTGRES_USER` | `teamind` | Database user |
-| `POSTGRES_PASSWORD` | `teamind_local_dev` | Database password |
+| `POSTGRES_DB` | `valis` | Database name |
+| `POSTGRES_USER` | `valis` | Database user |
+| `POSTGRES_PASSWORD` | `valis_local_dev` | Database password |
 
-### Teamind CLI Config
+### Valis CLI Config
 
-After `teamind init` with Community mode, your config is at `~/.teamind/config.json`:
+After `valis init` with Community mode, your config is at `~/.valis/config.json`:
 
 ```json
 {
   "supabase_url": "http://localhost:5432",
-  "supabase_service_role_key": "teamind_local_dev",
+  "supabase_service_role_key": "valis_local_dev",
   "qdrant_url": "http://localhost:6333",
   "qdrant_api_key": ""
 }
@@ -64,12 +64,12 @@ Data is stored in Docker volumes:
 
 To backup:
 ```bash
-docker compose exec postgres pg_dump -U teamind teamind > backup.sql
+docker compose exec postgres pg_dump -U valis valis > backup.sql
 ```
 
 To restore:
 ```bash
-docker compose exec -T postgres psql -U teamind teamind < backup.sql
+docker compose exec -T postgres psql -U valis valis < backup.sql
 ```
 
 ## Stopping
@@ -92,7 +92,7 @@ docker compose down -v     # Stop and DELETE all data
 
 ## Upgrading
 
-When Teamind releases new migrations:
+When Valis releases new migrations:
 
 ```bash
 docker compose down
@@ -100,5 +100,5 @@ docker compose down
 docker compose up -d
 # New migrations apply automatically on fresh DB
 # For existing DB, apply manually:
-docker compose exec -T postgres psql -U teamind teamind < new_migration.sql
+docker compose exec -T postgres psql -U valis valis < new_migration.sql
 ```

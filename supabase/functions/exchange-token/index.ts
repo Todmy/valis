@@ -260,7 +260,7 @@ serve(async (req: Request) => {
     const jwtClaims: Record<string, unknown> = {
       sub: memberId,
       role: "authenticated",
-      iss: "teamind",
+      iss: "valis",
       org_id: orgId,
       member_role: memberRole,
       author_name: authorName,

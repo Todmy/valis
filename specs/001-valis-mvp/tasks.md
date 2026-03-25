@@ -1,6 +1,6 @@
-# Tasks: Teamind MVP
+# Tasks: Valis MVP
 
-**Input**: Design documents from `/specs/001-teamind-mvp/`
+**Input**: Design documents from `/specs/001-valis-mvp/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
 **Tests**: Not explicitly requested in spec. Test tasks omitted. Add via `/speckit.checklist` if needed.
@@ -26,7 +26,7 @@
 **Purpose**: Monorepo scaffold, both packages compiling
 
 - [x] T001 Create root monorepo files: package.json (private workspace), pnpm-workspace.yaml, tsconfig.base.json (ES2022, NodeNext, strict), .gitignore (include .env*), LICENSE (Apache 2.0) at repo root
-- [x] T002 Create CLI package scaffold: packages/cli/package.json (teamind bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
+- [x] T002 Create CLI package scaffold: packages/cli/package.json (valis bin entry, all deps from research.md), packages/cli/tsconfig.json (extends base), packages/cli/.env.example (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QDRANT_URL, QDRANT_API_KEY)
 - [x] T003 [P] Configure vitest in packages/cli/package.json (test script, vitest.config.ts). All tests use mocked Supabase/Qdrant clients — no cloud credentials needed for pnpm test
 
 ---
@@ -37,7 +37,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T004 Define shared types (Decision, RawDecision, TeamindConfig, API types) in packages/cli/src/types.ts per data-model.md
+- [x] T004 Define shared types (Decision, RawDecision, ValisConfig, API types) in packages/cli/src/types.ts per data-model.md
 - [x] T005 [P] Define 7 error message constants (cloud_unreachable, org_not_found, invite_invalid, free_tier_limit, secret_detected, qdrant_unreachable, dual_write_partial) in packages/cli/src/errors.ts
 - [x] T006 [P] Implement config store (loadConfig, saveConfig, updateConfig with 0600 permissions) in packages/cli/src/config/store.ts
 - [x] T007 [P] Implement manifest tracker (loadManifest, saveManifest, trackFile for uninstall) in packages/cli/src/config/manifest.ts
@@ -56,44 +56,44 @@
 
 ## Phase 3: User Story 1 — Organization Setup & Team Onboarding (Priority: P1) 🎯 MVP
 
-**Goal**: `teamind init` creates/joins an org, configures IDEs, seeds brain, prints invite code — all in <3 minutes
+**Goal**: `valis init` creates/joins an org, configures IDEs, seeds brain, prints invite code — all in <3 minutes
 
-**Independent Test**: Run `teamind init` on fresh machine with Claude Code → org created, IDE configured, decisions seeded, invite code displayed. Join from second machine with invite code.
+**Independent Test**: Run `valis init` on fresh machine with Claude Code → org created, IDE configured, decisions seeded, invite code displayed. Join from second machine with invite code.
 
 ### Implementation for User Story 1
 
 - [x] T017 [US1] Implement IDE detection (check for ~/.claude/, .codex/ directories, return list with config paths) in packages/cli/src/ide/detect.ts
 - [x] T018 [P] [US1] Implement Claude Code MCP config writer (JSON merge into settings.json, stop hook config, cleanupPeriodDays: 99999) in packages/cli/src/ide/claude-code.ts
 - [x] T019 [P] [US1] Implement Codex MCP config writer (write to .codex/ mcp config) in packages/cli/src/ide/codex.ts
-- [x] T020 [P] [US1] Implement CLAUDE.md/AGENTS.md marker injection (create if missing, append between <!-- teamind:start/end --> markers, idempotent, never modify parent-level) in packages/cli/src/ide/claude-code.ts (extend)
+- [x] T020 [P] [US1] Implement CLAUDE.md/AGENTS.md marker injection (create if missing, append between <!-- valis:start/end --> markers, idempotent, never modify parent-level) in packages/cli/src/ide/claude-code.ts (extend)
 - [x] T021 [P] [US1] Implement seed parser: extract decisions from CLAUDE.md in packages/cli/src/seed/parse-claude-md.ts (reference: docs/validation/seed-claude-md.js)
 - [x] T022 [P] [US1] Implement seed parser: extract decisions from AGENTS.md in packages/cli/src/seed/parse-agents-md.ts
 - [x] T023 [P] [US1] Implement seed parser: extract decisions from git log (recent meaningful commits) in packages/cli/src/seed/parse-git-log.ts (reference: docs/validation/seed-git-log.js)
 - [x] T024 [US1] Implement seed orchestrator (run all parsers, batch store to Supabase + Qdrant, report count) in packages/cli/src/seed/index.ts
 - [x] T025 [US1] Implement init command (interactive prompts, create/join org via Edge Functions, save config, detect IDEs, configure MCP + --dangerously-load-development-channels flag, inject markers, run seed, verify round-trip, print invite code) in packages/cli/src/commands/init.ts
-- [x] T026 [US1] Implement CLI entry point with commander (register init + version + help) in packages/cli/bin/teamind.ts
+- [x] T026 [US1] Implement CLI entry point with commander (register init + version + help) in packages/cli/bin/valis.ts
 
-**Checkpoint**: `teamind init` works end-to-end. Org created, IDEs configured, decisions seeded.
+**Checkpoint**: `valis init` works end-to-end. Org created, IDEs configured, decisions seeded.
 
 ---
 
 ## Phase 4: User Story 2 — Decision Capture (Priority: P2)
 
-**Goal**: Decisions auto-captured through channel reminders, keyword triggers, and startup sweep. `teamind_store` MCP tool works.
+**Goal**: Decisions auto-captured through channel reminders, keyword triggers, and startup sweep. `valis_store` MCP tool works.
 
-**Independent Test**: Start `teamind serve`, make decisions during coding session, verify decisions captured without manual action.
+**Independent Test**: Start `valis serve`, make decisions during coding session, verify decisions captured without manual action.
 
 ### Implementation for User Story 2
 
 - [x] T027 [US2] Implement MCP server setup with stdio transport, channel capability registration, and 3 tool definitions in packages/cli/src/mcp/server.ts (reference: docs/validation/mcp-prototype.js, contracts/channel-events.md § Implementation Constraints)
-- [x] T028 [US2] Implement teamind_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
+- [x] T028 [US2] Implement valis_store handler (validate → secret check → dedup → dual write Supabase + Qdrant → offline fallback → return response) in packages/cli/src/mcp/tools/store.ts per mcp-tools contract
 - [x] T029 [US2] Implement JSONL activity watcher (chokidar watch ~/.claude/projects/**/*.jsonl, track byte offset per file in watcher-state.json, detect activity → if channels available: push capture reminder, if not: log activity for startup sweep. Channels are enhancement, not hard dependency) in packages/cli/src/capture/watcher.ts
-- [x] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.teamind/hook-port) in packages/cli/src/capture/hook-handler.ts
+- [x] T030 [P] [US2] Implement stop hook HTTP handler (localhost random port, POST /hook/stop receives session end event, push channel capture reminder, save port to ~/.valis/hook-port) in packages/cli/src/capture/hook-handler.ts
 - [x] T031 [US2] Implement startup sweep (scan ~/.claude/projects/ for unprocessed JSONL since last timestamp, extract and store raw decisions as type:pending, flush offline queue) in packages/cli/src/capture/startup-sweep.ts
 - [x] T032 [US2] Implement serve command (load config → startup sweep async → start watcher → start hook handler → start MCP server blocking → on exit save state) in packages/cli/src/commands/serve.ts
-- [x] T033 [US2] Register serve command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T033 [US2] Register serve command in CLI entry point in packages/cli/bin/valis.ts (extend)
 
-**Checkpoint**: `teamind serve` runs all 3 capture layers + MCP store tool. Auto-capture works.
+**Checkpoint**: `valis serve` runs all 3 capture layers + MCP store tool. Auto-capture works.
 
 ---
 
@@ -101,14 +101,14 @@
 
 **Goal**: Agents search team brain via MCP tools. Eng Manager searches from CLI.
 
-**Independent Test**: Store "We chose PostgreSQL" via Dev A. Dev B's agent calls `teamind_search({query: "database"})` → finds it.
+**Independent Test**: Store "We chose PostgreSQL" via Dev A. Dev B's agent calls `valis_search({query: "database"})` → finds it.
 
 ### Implementation for User Story 3
 
-- [x] T034 [US3] Implement teamind_search handler (validate → Qdrant hybrid search with org_id filter + optional type filter → return ranked results → offline: empty results) in packages/cli/src/mcp/tools/search.ts per mcp-tools contract
-- [x] T035 [US3] Implement teamind_context handler (build query from task_description + files → Qdrant search → group by type → first-call orientation note → offline: empty) in packages/cli/src/mcp/tools/context.ts per mcp-tools contract
-- [x] T036 [US3] Implement CLI search command (teamind search <query> --type --limit, call Qdrant directly, format colored table output) in packages/cli/src/commands/search-cmd.ts
-- [x] T037 [US3] Register search command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T034 [US3] Implement valis_search handler (validate → Qdrant hybrid search with org_id filter + optional type filter → return ranked results → offline: empty results) in packages/cli/src/mcp/tools/search.ts per mcp-tools contract
+- [x] T035 [US3] Implement valis_context handler (build query from task_description + files → Qdrant search → group by type → first-call orientation note → offline: empty) in packages/cli/src/mcp/tools/context.ts per mcp-tools contract
+- [x] T036 [US3] Implement CLI search command (valis search <query> --type --limit, call Qdrant directly, format colored table output) in packages/cli/src/commands/search-cmd.ts
+- [x] T037 [US3] Register search command in CLI entry point in packages/cli/bin/valis.ts (extend)
 
 **Checkpoint**: MCP search + context tools work. CLI search works.
 
@@ -123,7 +123,7 @@
 ### Implementation for User Story 4
 
 - [x] T038 [US4] Implement channel push emitter (emit notifications/claude/channel with new_decision event containing author, type, summary) in packages/cli/src/channel/push.ts per channel-events contract
-- [x] T039 [US4] Integrate channel push into teamind_store pipeline (after successful dual write, push to local channel; cross-session push scoped for later) in packages/cli/src/mcp/tools/store.ts (extend)
+- [x] T039 [US4] Integrate channel push into valis_store pipeline (after successful dual write, push to local channel; cross-session push scoped for later) in packages/cli/src/mcp/tools/store.ts (extend)
 
 **Checkpoint**: Store → channel push works for local session. Cross-session push deferred.
 
@@ -148,7 +148,7 @@
 
 **Goal**: status, dashboard, export, config commands work from terminal.
 
-**Independent Test**: `teamind status` shows health. `teamind dashboard` shows stats. `teamind export --json` produces valid file.
+**Independent Test**: `valis status` shows health. `valis dashboard` shows stats. `valis export --json` produces valid file.
 
 ### Implementation for User Story 6
 
@@ -156,7 +156,7 @@
 - [x] T043 [P] [US6] Implement dashboard command (call getDashboardStats from Supabase, format colored table: totals by type/author, recent 5, pending count) in packages/cli/src/commands/dashboard.ts per cli-commands contract
 - [x] T044 [P] [US6] Implement export command (--json: fetch all decisions → write JSON, --markdown: group by type → write MD, --output flag or stdout) in packages/cli/src/commands/export-cmd.ts per cli-commands contract
 - [x] T045 [P] [US6] Implement config command (set/get for api-key with masking, author-name, org-id read-only) in packages/cli/src/commands/config-cmd.ts per cli-commands contract
-- [x] T046 [US6] Register status, dashboard, export, config commands in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T046 [US6] Register status, dashboard, export, config commands in CLI entry point in packages/cli/bin/valis.ts (extend)
 
 **Checkpoint**: All management commands work from terminal.
 
@@ -179,14 +179,14 @@
 
 ## Phase 10: User Story 8 — Clean Uninstall & Error Messages (Priority: P8)
 
-**Goal**: `teamind uninstall` cleanly removes all artifacts. All errors include what/why/how-to-fix.
+**Goal**: `valis uninstall` cleanly removes all artifacts. All errors include what/why/how-to-fix.
 
 **Independent Test**: Install → uninstall → verify no artifacts remain. Trigger each error → verify message format.
 
 ### Implementation for User Story 8
 
-- [x] T049 [US8] Implement uninstall command (read manifest, remove MCP configs from IDEs via surgical JSON edit, remove CLAUDE.md markers, remove hook configs, delete ~/.teamind/, print cloud data warning) in packages/cli/src/commands/uninstall.ts per cli-commands contract
-- [x] T050 [US8] Register uninstall command in CLI entry point in packages/cli/bin/teamind.ts (extend)
+- [x] T049 [US8] Implement uninstall command (read manifest, remove MCP configs from IDEs via surgical JSON edit, remove CLAUDE.md markers, remove hook configs, delete ~/.valis/, print cloud data warning) in packages/cli/src/commands/uninstall.ts per cli-commands contract
+- [x] T050 [US8] Register uninstall command in CLI entry point in packages/cli/bin/valis.ts (extend)
 - [x] T051 [US8] Verify all 7 error message constants produce actionable output (what happened, why, how to fix) across all command paths in packages/cli/src/errors.ts (review and extend if gaps)
 
 **Checkpoint**: Uninstall removes all artifacts. Error messages are actionable.
@@ -199,7 +199,7 @@
 
 - [x] T052 End-to-end flow test: init → serve → store → search → dashboard → export → uninstall (manual validation per quickstart.md)
 - [x] T053 [P] Write README.md (install, quickstart 30s, features, how it works, pricing link) at repo root
-- [x] T054 [P] Write AGENTS.md (Teamind instructions for AI agents — dogfooding) at repo root
+- [x] T054 [P] Write AGENTS.md (Valis instructions for AI agents — dogfooding) at repo root
 - [x] T055 Build and dry-run npm publish from packages/cli (verify package contents, bin entry, zero native deps)
 - [x] T056 Tag v0.1.0 and prepare for beta distribution
 
@@ -282,7 +282,7 @@ Task T013: "Qdrant client in packages/cli/src/cloud/qdrant.ts"
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (CRITICAL — blocks all stories)
 3. Complete Phase 3: US1 — Organization Setup
-4. **STOP and VALIDATE**: `teamind init` works, org created, IDEs configured
+4. **STOP and VALIDATE**: `valis init` works, org created, IDEs configured
 5. This alone delivers: shared org, seeded brain, configured IDEs
 
 ### Incremental Delivery
@@ -325,7 +325,7 @@ Address during implementation:
   spec.md Key Entities. Treat data-model.md as authoritative for
   entities.
 - **CLAUDE.md injection content (LOW)**: Exact text between
-  `<!-- teamind:start/end -->` markers not specified in contracts.
+  `<!-- valis:start/end -->` markers not specified in contracts.
   Define during T020 implementation — derive from MCP tool descriptions
   and design-spec-v5 § CLAUDE.md instructions.
 

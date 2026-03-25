@@ -1,20 +1,20 @@
-# CLI Command Contracts: Teamind MVP
+# CLI Command Contracts: Valis MVP
 
-**Binary**: `teamind`
-**Install**: `npm install -g teamind`
+**Binary**: `valis`
+**Install**: `npm install -g valis`
 
-## teamind init
+## valis init
 
 Create or join an organization and configure the local environment.
 
 ```
-teamind init [--join <invite-code>]
+valis init [--join <invite-code>]
 ```
 
 **Create flow** (no flags):
 1. Prompt: org name
 2. Call Edge Function `create-org` → returns org_id, api_key, invite_code
-3. Save to `~/.teamind/config.json` (0600)
+3. Save to `~/.valis/config.json` (0600)
 4. Auto-detect IDEs (Claude Code, Codex)
 5. Configure MCP server for each IDE
 6. Inject CLAUDE.md / AGENTS.md instruction markers
@@ -31,15 +31,15 @@ teamind init [--join <invite-code>]
 
 **Exit codes**: 0 = success, 1 = error (with actionable message)
 
-## teamind serve
+## valis serve
 
 Start the unified MCP + Channel server process.
 
 ```
-teamind serve
+valis serve
 ```
 
-1. Load config from `~/.teamind/config.json`
+1. Load config from `~/.valis/config.json`
 2. Run startup sweep (async, non-blocking)
 3. Start JSONL activity watcher (background)
 4. Start stop hook HTTP handler (background, localhost, random port)
@@ -48,12 +48,12 @@ teamind serve
 
 **Note**: This is the entry point the IDE launches as an MCP server subprocess.
 
-## teamind status
+## valis status
 
 Show system health and org info.
 
 ```
-teamind status
+valis status
 ```
 
 **Output**:
@@ -65,12 +65,12 @@ teamind status
 
 **Latency target**: <2 seconds
 
-## teamind dashboard
+## valis dashboard
 
 Show aggregated team activity.
 
 ```
-teamind dashboard
+valis dashboard
 ```
 
 **Output** (colored terminal):
@@ -80,50 +80,50 @@ teamind dashboard
 - Recent 5: {summary} — {author} — {date}
 - Pending: N decisions awaiting classification
 
-## teamind search
+## valis search
 
 Search decisions from the terminal.
 
 ```
-teamind search <query> [--type <type>] [--limit <n>]
+valis search <query> [--type <type>] [--limit <n>]
 ```
 
 **Output**: Formatted table with score, type, summary, author, date.
 
-## teamind export
+## valis export
 
 Export all org decisions.
 
 ```
-teamind export --json [--output <file>]
-teamind export --markdown [--output <file>]
+valis export --json [--output <file>]
+valis export --markdown [--output <file>]
 ```
 
 **Defaults**: stdout (pipe-friendly). `--output` writes to file.
 
-## teamind config
+## valis config
 
 Manage configuration.
 
 ```
-teamind config set <key> <value>
-teamind config get <key>
+valis config set <key> <value>
+valis config get <key>
 ```
 
 **Keys**: api-key (masked on get), author-name, org-id (read-only).
 
-## teamind uninstall
+## valis uninstall
 
-Remove all local Teamind configuration.
+Remove all local Valis configuration.
 
 ```
-teamind uninstall [--yes]
+valis uninstall [--yes]
 ```
 
 1. Confirm (skip with `--yes`)
-2. Read `~/.teamind/manifest.json`
+2. Read `~/.valis/manifest.json`
 3. Remove MCP configs from each IDE (surgical JSON edit)
 4. Remove CLAUDE.md / AGENTS.md markers
 5. Remove hook configs
-6. Delete `~/.teamind/`
+6. Delete `~/.valis/`
 7. Print: "Cloud data preserved. Contact org admin to delete."

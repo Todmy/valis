@@ -1,4 +1,4 @@
-# Unit Economics: Teamind MVP
+# Unit Economics: Valis MVP
 
 **Date**: 2026-03-22
 **Status**: Analysis — pre-implementation baseline
@@ -21,7 +21,7 @@
 
 ## Key Metrics
 
-| Metric | Teamind | Benchmark | Assessment |
+| Metric | Valis | Benchmark | Assessment |
 |--------|---------|-----------|------------|
 | Blended ARPU | $45/mo | — | 60% Team + 30% Business + 10% Enterprise |
 | Monthly churn | 3% (assumed) | <5% | Mid-market dev tools |

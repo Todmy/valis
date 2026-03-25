@@ -55,9 +55,9 @@
 
 **Independent Test**: Store decision with `status: 'proposed'`. Search — see "proposed" label. Promote via lifecycle. Verify active with audit trail.
 
-- [ ] T011 [US1] Extend teamind_store handler: validate `status: 'proposed'` as valid store option, ensure proposed decisions are visible in search results with proposed label in `packages/cli/src/mcp/tools/store.ts` (extend)
-- [ ] T012 [US1] Extend teamind_lifecycle handler: extend existing promote action with explicit proposed→active audit trail and notification, add 'deprecate' for proposed decisions (proposed -> deprecated as rejection), create audit entries for both transitions in `packages/cli/src/mcp/tools/lifecycle.ts` (extend)
-- [ ] T013 [US1] Extend teamind_search handler: include proposed decisions in results with status label, ensure proposed decisions appear in default search (not filtered out) in `packages/cli/src/mcp/tools/search.ts` (extend)
+- [ ] T011 [US1] Extend valis_store handler: validate `status: 'proposed'` as valid store option, ensure proposed decisions are visible in search results with proposed label in `packages/cli/src/mcp/tools/store.ts` (extend)
+- [ ] T012 [US1] Extend valis_lifecycle handler: extend existing promote action with explicit proposed→active audit trail and notification, add 'deprecate' for proposed decisions (proposed -> deprecated as rejection), create audit entries for both transitions in `packages/cli/src/mcp/tools/lifecycle.ts` (extend)
+- [ ] T013 [US1] Extend valis_search handler: include proposed decisions in results with status label, ensure proposed decisions appear in default search (not filtered out) in `packages/cli/src/mcp/tools/search.ts` (extend)
 - [ ] T014 [US1] Extend dashboard command: add "Proposed (N)" section listing decisions awaiting review, show proposed count in summary stats in `packages/cli/src/commands/dashboard.ts` (extend)
 - [ ] T015 [P] [US1] Extend Realtime push: trigger cross-session notification when a new proposed decision is stored, include proposed label in push event in `packages/cli/src/cloud/realtime.ts` (extend)
 
@@ -69,9 +69,9 @@
 
 **Goal**: Auto-detect Cursor, configure MCP settings and .cursorrules, idempotent init/uninstall
 
-**Independent Test**: Run `teamind init` with Cursor installed. Verify MCP config created, .cursorrules has markers, MCP server works.
+**Independent Test**: Run `valis init` with Cursor installed. Verify MCP config created, .cursorrules has markers, MCP server works.
 
-- [ ] T016 [US2] Implement Cursor IDE module: detect Cursor via `~/.cursor/` directory existence; configure MCP server in Cursor settings JSON; inject Teamind instruction markers (between delimiters) into `.cursorrules`; idempotent — no duplicate entries on re-run; follow same pattern as codex.ts in `packages/cli/src/ide/cursor.ts`
+- [ ] T016 [US2] Implement Cursor IDE module: detect Cursor via `~/.cursor/` directory existence; configure MCP server in Cursor settings JSON; inject Valis instruction markers (between delimiters) into `.cursorrules`; idempotent — no duplicate entries on re-run; follow same pattern as codex.ts in `packages/cli/src/ide/cursor.ts`
 - [ ] T017 [US2] Extend IDE detection: add Cursor to detectInstalledIDEs() alongside Claude Code and Codex; return Cursor in detected list when `~/.cursor/` exists in `packages/cli/src/ide/detect.ts` (extend)
 - [ ] T018 [US2] Extend init command: configure Cursor when detected, call cursor.ts configure function, log Cursor setup status in `packages/cli/src/commands/init.ts` (extend)
 - [ ] T019 [US2] Extend uninstall command: clean up Cursor MCP config and remove .cursorrules markers when Cursor was configured in `packages/cli/src/commands/uninstall.ts` (extend)
@@ -85,14 +85,14 @@
 
 **Goal**: Identify exact/near duplicates and stale orphans, auto-deprecate exact dupes, flag near-dupes for review
 
-**Independent Test**: Store 5 near-duplicate decisions. Run `teamind admin cleanup --dry-run`. Verify duplicates identified.
+**Independent Test**: Store 5 near-duplicate decisions. Run `valis admin cleanup --dry-run`. Verify duplicates identified.
 
 - [ ] T021 [US3] Implement exact-duplicate detection: query decisions grouped by content_hash in same org with count > 1; keep newest; mark others for deprecation; respect protection rules (pinned never deprecated, decisions with inbound depends_on flagged for manual review instead) per cleanup contract in `packages/cli/src/cleanup/dedup.ts`
 - [ ] T022 [US3] Implement near-duplicate detection: for each active decision, query Qdrant for similar points with cosine > 0.9 in same org; deduplicate symmetric pairs; return as flagged-for-review (NOT auto-deprecated) per cleanup contract in `packages/cli/src/cleanup/dedup.ts` (extend)
 - [ ] T023 [US3] Implement stale orphan detection: query pending decisions older than 30 days; return as OrphanCandidate[] with age_days; flagged for review only per cleanup contract in `packages/cli/src/cleanup/orphans.ts`
 - [ ] T024 [US3] Implement cleanup runner: orchestrate dedup + orphan detection; --dry-run reports without mutations; --apply auto-deprecates exact dupes + creates audit entries (decision_auto_deduped); return CleanupReport per contract in `packages/cli/src/cleanup/runner.ts`
-- [ ] T025 [US3] Implement admin cleanup command: `teamind admin cleanup [--dry-run | --apply] [--org <org_id>]`; call cleanup runner; format report output with picocolors in `packages/cli/src/commands/admin-cleanup.ts`
-- [ ] T026 [US3] Register admin cleanup command in CLI entry point in `packages/cli/bin/teamind.ts` (extend)
+- [ ] T025 [US3] Implement admin cleanup command: `valis admin cleanup [--dry-run | --apply] [--org <org_id>]`; call cleanup runner; format report output with picocolors in `packages/cli/src/commands/admin-cleanup.ts`
+- [ ] T026 [US3] Register admin cleanup command in CLI entry point in `packages/cli/bin/valis.ts` (extend)
 - [ ] T027 [P] [US3] Unit tests for dedup: exact hash match detection, near-duplicate flagging, protection rules (pinned, dependents), symmetric pair dedup in `packages/cli/test/cleanup/dedup.test.ts`
 - [ ] T028 [P] [US3] Unit tests for orphan detection: stale pending identification, age calculation, empty result when no orphans in `packages/cli/test/cleanup/orphans.test.ts`
 
@@ -144,7 +144,7 @@
 **Depends on**: Phase 2 (signals.ts, reranker.ts)
 
 - [ ] T042 [US5] Extend Qdrant client: add `pinned` field to payload on upsert; update payload on pin/unpin lifecycle action in `packages/cli/src/cloud/qdrant.ts` (extend)
-- [ ] T043 [US5] Extend teamind_lifecycle handler: add 'pin' action (admin-only RBAC check, set pinned=true in Postgres + Qdrant, audit entry 'decision_pinned'); add 'unpin' action (admin-only, set pinned=false, audit entry 'decision_unpinned') in `packages/cli/src/mcp/tools/lifecycle.ts` (extend)
+- [ ] T043 [US5] Extend valis_lifecycle handler: add 'pin' action (admin-only RBAC check, set pinned=true in Postgres + Qdrant, audit entry 'decision_pinned'); add 'unpin' action (admin-only, set pinned=false, audit entry 'decision_unpinned') in `packages/cli/src/mcp/tools/lifecycle.ts` (extend)
 - [ ] T044 [US5] Extend MCP server: register pin/unpin as valid lifecycle actions in tool schema definition in `packages/cli/src/mcp/server.ts` (extend)
 - [ ] T045 [US5] Extend dashboard command: show pinned decisions count, mark pinned decisions visually in `packages/cli/src/commands/dashboard.ts` (extend)
 
@@ -160,8 +160,8 @@
 
 **Depends on**: Phase 2 (reranker, signals), Phase 7 (pinned payload in Qdrant)
 
-- [ ] T046 [US6] Integrate reranker into teamind_search: replace rankByStatus with rerank(); fetch 50 results from Qdrant; compute composite scores; sort by composite_score; include signal breakdown in response; slice to requested limit per search-reranking contract in `packages/cli/src/mcp/tools/search.ts` (extend)
-- [ ] T047 [US6] Integrate reranker into teamind_context: apply reranking to context results for consistent ordering with search per contract in `packages/cli/src/mcp/tools/context.ts` (extend)
+- [ ] T046 [US6] Integrate reranker into valis_search: replace rankByStatus with rerank(); fetch 50 results from Qdrant; compute composite scores; sort by composite_score; include signal breakdown in response; slice to requested limit per search-reranking contract in `packages/cli/src/mcp/tools/search.ts` (extend)
+- [ ] T047 [US6] Integrate reranker into valis_context: apply reranking to context results for consistent ordering with search per contract in `packages/cli/src/mcp/tools/context.ts` (extend)
 - [ ] T048 [P] [US6] Performance benchmark test: rerank 50 results in <10ms using performance.now() assertions in `packages/cli/test/search/reranker.test.ts` (extend)
 
 **Checkpoint**: Search uses 5-signal composite score. <10ms overhead on 50 results. Signal values in response.
@@ -176,7 +176,7 @@
 
 **Depends on**: Phase 8 (reranker integrated into search)
 
-- [ ] T049 [US7] Integrate suppression into teamind_search: after reranking, call suppressResults(); return visible results + suppressed_count; support args.all flag to include suppressed with label per contract in `packages/cli/src/mcp/tools/search.ts` (extend)
+- [ ] T049 [US7] Integrate suppression into valis_search: after reranking, call suppressResults(); return visible results + suppressed_count; support args.all flag to include suppressed with label per contract in `packages/cli/src/mcp/tools/search.ts` (extend)
 - [ ] T050 [US7] Extend MCP search tool schema: add `all` boolean parameter for requesting full (unsuppressed) results in `packages/cli/src/mcp/server.ts` (extend)
 - [ ] T051 [P] [US7] Integration test: 5 same-area decisions → default returns top 2, --all returns all 5 with suppressed labels in `packages/cli/test/search/suppression.test.ts` (extend)
 
@@ -188,15 +188,15 @@
 
 **Goal**: Optional LLM classification of pending decisions with provider abstraction and cost ceiling
 
-**Independent Test**: Store 5 pending decisions. Run `teamind enrich`. Verify type/summary/affects assigned. Works without LLM key.
+**Independent Test**: Store 5 pending decisions. Run `valis enrich`. Verify type/summary/affects assigned. Works without LLM key.
 
 - [ ] T052 [US8] Implement EnrichmentProvider interface and response parsing: EnrichmentResult type, parseEnrichmentResponse helper, ENRICHMENT_SYSTEM_PROMPT constant per cleanup-enrichment contract in `packages/cli/src/enrichment/provider.ts`
 - [ ] T053 [US8] Implement Anthropic Haiku provider: AnthropicProvider implementing EnrichmentProvider; claude-3-5-haiku-latest model; estimatedCostPerToken per contract in `packages/cli/src/enrichment/anthropic.ts`
 - [ ] T054 [P] [US8] Implement OpenAI GPT-4o-mini provider: OpenAIProvider implementing EnrichmentProvider; gpt-4o-mini model; estimatedCostPerToken per contract in `packages/cli/src/enrichment/openai.ts`
 - [ ] T055 [US8] Implement daily cost ceiling tracker: checkCeiling(orgId, provider, ceilingCents) -> { allowed, spent, remaining }; increment_enrichment_usage RPC call after each enrichment per contract in `packages/cli/src/enrichment/cost-tracker.ts`
 - [ ] T056 [US8] Implement enrichment runner: getProvider() with fallback; fetch pending decisions; dry-run mode; enrich loop with ceiling check; update Postgres (type, summary, affects, enriched_by='llm') + Qdrant payload; create audit entries (decision_enriched); no-LLM-key graceful exit per contract in `packages/cli/src/enrichment/runner.ts`
-- [ ] T057 [US8] Implement enrich command: `teamind enrich [--dry-run] [--provider <anthropic|openai>] [--ceiling <dollars>]`; call enrichment runner; format report in `packages/cli/src/commands/enrich.ts`
-- [ ] T058 [US8] Register enrich command in CLI entry point in `packages/cli/bin/teamind.ts` (extend)
+- [ ] T057 [US8] Implement enrich command: `valis enrich [--dry-run] [--provider <anthropic|openai>] [--ceiling <dollars>]`; call enrichment runner; format report in `packages/cli/src/commands/enrich.ts`
+- [ ] T058 [US8] Register enrich command in CLI entry point in `packages/cli/bin/valis.ts` (extend)
 - [ ] T059 [P] [US8] Unit tests for enrichment: provider interface mock, cost ceiling enforcement, no-LLM-key path, dry-run mode in `packages/cli/test/enrichment/provider.test.ts`
 - [ ] T060 [P] [US8] Unit tests for cost tracker: ceiling reached, ceiling remaining, multi-provider per day in `packages/cli/test/enrichment/cost-tracker.test.ts`
 
@@ -208,13 +208,13 @@
 
 **Goal**: Detect decision clusters by area overlap, synthesize pattern decisions, idempotent
 
-**Independent Test**: Store 5+ decisions with affects:["auth"]. Run `teamind admin patterns`. Verify pattern created.
+**Independent Test**: Store 5+ decisions with affects:["auth"]. Run `valis admin patterns`. Verify pattern created.
 
 - [ ] T061 [US9] Implement pattern detection: inverted index (area -> decision IDs); clusterByJaccard with 0.3 threshold; averagePairwiseJaccard cohesion; deduplicatePatterns for overlapping candidates per contract in `packages/cli/src/synthesis/patterns.ts`
 - [ ] T062 [US9] Implement Jaccard similarity helper: jaccard(a, b) -> 0-1 intersection-over-union on string arrays per contract in `packages/cli/src/synthesis/patterns.ts` (extend)
 - [ ] T063 [US9] Implement synthesis runner: detectPatterns(); idempotency check (existing pattern with >0.8 Jaccard overlap on depends_on skipped); createPattern via normal store pipeline with source='synthesis' + type='pattern'; deprecateStalePatterns (all source decisions deprecated -> auto-deprecate pattern); audit entries (pattern_synthesized); push notification via Realtime per contract in `packages/cli/src/synthesis/runner.ts`
-- [ ] T064 [US9] Implement admin patterns command: `teamind admin patterns [--window <days>] [--min-cluster <n>] [--dry-run]`; call synthesis runner; format report in `packages/cli/src/commands/admin-patterns.ts`
-- [ ] T065 [US9] Register admin patterns command in CLI entry point in `packages/cli/bin/teamind.ts` (extend)
+- [ ] T064 [US9] Implement admin patterns command: `valis admin patterns [--window <days>] [--min-cluster <n>] [--dry-run]`; call synthesis runner; format report in `packages/cli/src/commands/admin-patterns.ts`
+- [ ] T065 [US9] Register admin patterns command in CLI entry point in `packages/cli/bin/valis.ts` (extend)
 - [ ] T066 [P] [US9] Unit tests for pattern detection: cluster identification, Jaccard similarity, idempotency, stale pattern deprecation in `packages/cli/test/synthesis/patterns.test.ts`
 
 **Checkpoint**: Patterns detected from 3+ same-area decisions. Idempotent. Stale patterns auto-deprecated. Push sent.
@@ -236,10 +236,10 @@
 ### CLI Integration
 
 - [ ] T070 [US10] Implement usage check helper: checkUsageOrProceed(orgId, operation) with 3s timeout, fail-open on any error (network, Edge Function error, timeout) per billing contract in `packages/cli/src/billing/usage.ts`
-- [ ] T071 [US10] Integrate usage check into teamind_store: call checkUsageOrProceed before store; return blocked response with upgrade info when denied; proceed on allowed or error (fail-open) per contract in `packages/cli/src/mcp/tools/store.ts` (extend)
-- [ ] T072 [US10] Integrate usage check into teamind_search: call checkUsageOrProceed before search; return empty results with upgrade message when denied; proceed on allowed or error (fail-open) per contract in `packages/cli/src/mcp/tools/search.ts` (extend)
-- [ ] T073 [US10] Implement upgrade command: `teamind upgrade [--plan team|business] [--annual]`; call create-checkout; open Stripe Checkout URL in default browser in `packages/cli/src/commands/upgrade.ts`
-- [ ] T074 [US10] Register upgrade command in CLI entry point in `packages/cli/bin/teamind.ts` (extend)
+- [ ] T071 [US10] Integrate usage check into valis_store: call checkUsageOrProceed before store; return blocked response with upgrade info when denied; proceed on allowed or error (fail-open) per contract in `packages/cli/src/mcp/tools/store.ts` (extend)
+- [ ] T072 [US10] Integrate usage check into valis_search: call checkUsageOrProceed before search; return empty results with upgrade message when denied; proceed on allowed or error (fail-open) per contract in `packages/cli/src/mcp/tools/search.ts` (extend)
+- [ ] T073 [US10] Implement upgrade command: `valis upgrade [--plan team|business] [--annual]`; call create-checkout; open Stripe Checkout URL in default browser in `packages/cli/src/commands/upgrade.ts`
+- [ ] T074 [US10] Register upgrade command in CLI entry point in `packages/cli/bin/valis.ts` (extend)
 - [ ] T075 [P] [US10] Unit tests for billing limits: free tier block, paid overage tracking, enterprise unlimited, fail-open on error in `packages/cli/test/billing/limits.test.ts`
 
 **Checkpoint**: Free tier limits enforced. Paid overages tracked. Stripe webhooks update subscription. Fail-open guaranteed.

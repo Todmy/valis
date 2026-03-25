@@ -9,7 +9,7 @@ Decision stored (Supabase INSERT)
   → Channel push to local IDE session
 ```
 
-Each `teamind serve` process subscribes to:
+Each `valis serve` process subscribes to:
 ```typescript
 supabase.channel(`org:${orgId}`).on('postgres_changes', {
   event: 'INSERT',
@@ -29,7 +29,7 @@ supabase.channel(`org:${orgId}`).on('postgres_changes', {
 **Channel push** (to local IDE session):
 
 ```xml
-<channel source="teamind" event="new_decision" author="andriy" type="decision" origin="remote">
+<channel source="valis" event="new_decision" author="andriy" type="decision" origin="remote">
 Use gRPC for inter-service communication — better performance
 for high-throughput internal APIs
 </channel>
@@ -50,7 +50,7 @@ avoid duplicate notifications.
 **Channel push**:
 
 ```xml
-<channel source="teamind" event="contradiction_detected" author="andriy" type="warning">
+<channel source="valis" event="contradiction_detected" author="andriy" type="warning">
 Potential contradiction: "Use GraphQL for public API" by Andriy
 conflicts with "Use REST for all APIs" by Olena (area: api).
 Both remain active — resolve via deprecation or replacement.
@@ -75,7 +75,7 @@ supabase.channel(`org:${orgId}`).on('postgres_changes', {
 **Channel push**:
 
 ```xml
-<channel source="teamind" event="decision_deprecated" author="olena" type="info">
+<channel source="valis" event="decision_deprecated" author="olena" type="info">
 Decision deprecated by Olena: "Use REST for all APIs"
 Reason: Replaced by gRPC decision
 </channel>
@@ -89,7 +89,7 @@ deprecated.
 **Channel push**:
 
 ```xml
-<channel source="teamind" event="dependency_flagged" author="system" type="warning">
+<channel source="valis" event="dependency_flagged" author="system" type="warning">
 Decision "Caching strategy uses Redis" may need review —
 its dependency "Use PostgreSQL for user data" was deprecated.
 </channel>
@@ -97,10 +97,10 @@ its dependency "Use PostgreSQL for user data" was deprecated.
 
 ## Connection Lifecycle
 
-1. On `teamind serve` startup: subscribe to org channel
+1. On `valis serve` startup: subscribe to org channel
 2. On Realtime disconnect: log warning, pull-based tools continue
 3. On reconnect: resubscribe automatically (supabase-js handles this)
-4. On `teamind serve` exit: unsubscribe, close channel
+4. On `valis serve` exit: unsubscribe, close channel
 5. No message buffering — missed events recovered via search
 
 ## Tenant Isolation

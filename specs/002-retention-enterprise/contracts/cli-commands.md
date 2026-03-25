@@ -1,20 +1,20 @@
 # CLI Command Contract Changes: Phase 2
 
-Extends `/specs/001-teamind-mvp/contracts/cli-commands.md`.
+Extends `/specs/001-valis-mvp/contracts/cli-commands.md`.
 
-## teamind admin metrics
+## valis admin metrics
 
 Platform operator command. Requires `service_role` key (not
 per-member auth).
 
 ```
-teamind admin metrics [--json] [--period 7d|30d]
+valis admin metrics [--json] [--period 7d|30d]
 ```
 
 **Output (table)**:
 
 ```
-Teamind Metrics (last 7 days)
+Valis Metrics (last 7 days)
 ─────────────────────────────
 Total orgs:         12
 Active orgs (7d):   8  (67%)
@@ -39,12 +39,12 @@ At-risk (30d idle): 2
 **Auth**: Uses `SUPABASE_SERVICE_ROLE_KEY` from config or env.
 Does NOT use per-member JWT — this is a platform operator command.
 
-## teamind admin audit
+## valis admin audit
 
 View audit trail for an org.
 
 ```
-teamind admin audit [--org ORG_ID] [--member AUTHOR] [--limit 50]
+valis admin audit [--org ORG_ID] [--member AUTHOR] [--limit 50]
 ```
 
 **Output**:
@@ -59,7 +59,7 @@ Audit Trail — Acme Engineering
 2026-03-23 09:00 Olena   member_joined         Andriy (member)
 ```
 
-## teamind dashboard (extended)
+## valis dashboard (extended)
 
 New sections in dashboard output:
 
@@ -72,7 +72,7 @@ Lifecycle:
   Active: 42  Deprecated: 5  Superseded: 3  Proposed: 0
 ```
 
-## teamind status (extended)
+## valis status (extended)
 
 New fields:
 
@@ -82,12 +82,12 @@ Realtime:      connected (push active)
 Member key:    tmm_****abcd
 ```
 
-## teamind migrate-auth
+## valis migrate-auth
 
 One-time migration from org-level to per-member auth.
 
 ```
-teamind migrate-auth
+valis migrate-auth
 ```
 
 **Flow**:

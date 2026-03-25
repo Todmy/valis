@@ -1,4 +1,4 @@
-# Teamind — Design Specification
+# Valis — Design Specification
 
 **Date:** 2026-03-17
 **Author:** Dmytro + Claude
@@ -8,7 +8,7 @@
 
 ## 1. Product Overview
 
-**Teamind** — decision intelligence platform for engineering managers leading AI-augmented teams.
+**Valis** — decision intelligence platform for engineering managers leading AI-augmented teams.
 
 **One-liner:** MCP server that doesn't just store knowledge — it understands decisions, builds relationships, and alerts about drift.
 
@@ -18,7 +18,7 @@
 
 **Differentiator vs memctl (closest competitor):**
 - memctl = flat text memory store (store text, search text, sync text)
-- Teamind = decision intelligence layer (typed decision objects with relationships, extraction intelligence, contradiction detection)
+- Valis = decision intelligence layer (typed decision objects with relationships, extraction intelligence, contradiction detection)
 
 **Business model:**
 - Open source core (BSL 1.1, Change Date: 2029-03-17 → Apache 2.0)
@@ -26,8 +26,8 @@
 - Paid cloud: hosted storage, team sync, dashboard, security, integrations, analytics
 
 **Eng Manager value prop:**
-- Without Teamind: "What did my 5 devs decide this week with AI agents?" → "I don't know, need to ask each one"
-- With Teamind: Dashboard → 47 decisions this week → 3 contradictions (red) → auth module = 12 decisions, payments = 0 (gap!) → API naming convention drift 23% over 2 weeks
+- Without Valis: "What did my 5 devs decide this week with AI agents?" → "I don't know, need to ask each one"
+- With Valis: Dashboard → 47 decisions this week → 3 contradictions (red) → auth module = 12 decisions, payments = 0 (gap!) → API naming convention drift 23% over 2 weeks
 
 ---
 
@@ -37,8 +37,8 @@
 
 - Pure MCP — no proxy, no BASE_URL redirect, no stream interception
 - IDE works directly with API as always
-- If Teamind process fails → IDE works normally, just without team knowledge
-- `teamind uninstall` → zero residue, IDE as before
+- If Valis process fails → IDE works normally, just without team knowledge
+- `valis uninstall` → zero residue, IDE as before
 
 ### System Diagram
 
@@ -48,13 +48,13 @@
 │          (Claude Code, Cursor, Codex)                │
 │                                                       │
 │  CLAUDE.md / AGENTS.md / .cursorrules                │
-│  "Store decisions via teamind MCP tools"             │
+│  "Store decisions via valis MCP tools"             │
 └──────────────┬────────────────────────┬──────────────┘
                │ MCP (stdio)           │ MCP (stdio)
           write/store              read/search
                │                        │
 ┌──────────────▼────────────────────────▼──────────────┐
-│                 Teamind MCP Server                    │
+│                 Valis MCP Server                    │
 │                 (Node.js process)                     │
 │                                                       │
 │  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐ │
@@ -73,7 +73,7 @@
 │  │            Storage Adapter                      │  │
 │  │                                                 │  │
 │  │  ┌─────────────────┐  ┌──────────────────────┐ │  │
-│  │  │ Teamind Cloud   │  │ Local Qdrant (BYOB)  │ │  │
+│  │  │ Valis Cloud   │  │ Local Qdrant (BYOB)  │ │  │
 │  │  │ (default)       │  │ (free, self-hosted)  │ │  │
 │  │  └─────────────────┘  └──────────────────────┘ │  │
 │  └─────────────────────────────────────────────────┘  │
@@ -84,12 +84,12 @@
 
 | Tool | Purpose | Input | Output |
 |------|---------|-------|--------|
-| `teamind_store` | Store decision/pattern/constraint/lesson | `{text, type?, affects?, context?}` | `{id, structured_decision}` |
-| `teamind_search` | Find relevant knowledge | `{query, type?, limit?}` | `[{decision, score, relationships}]` |
-| `teamind_context` | Auto-context for current task | `{task_description, files?}` | `[{relevant_decisions}]` + summary |
-| `teamind_relate` | Link decisions | `{source_id, target_id, relation_type}` | `{relationship}` |
-| `teamind_status` | Change decision status | `{id, status: active/deprecated/superseded, reason?}` | `{updated_decision}` |
-| `teamind_list` | List decisions by filter | `{type?, status?, author?, affects?}` | `[{decisions}]` |
+| `valis_store` | Store decision/pattern/constraint/lesson | `{text, type?, affects?, context?}` | `{id, structured_decision}` |
+| `valis_search` | Find relevant knowledge | `{query, type?, limit?}` | `[{decision, score, relationships}]` |
+| `valis_context` | Auto-context for current task | `{task_description, files?}` | `[{relevant_decisions}]` + summary |
+| `valis_relate` | Link decisions | `{source_id, target_id, relation_type}` | `{relationship}` |
+| `valis_status` | Change decision status | `{id, status: active/deprecated/superseded, reason?}` | `{updated_decision}` |
+| `valis_list` | List decisions by filter | `{type?, status?, author?, affects?}` | `[{decisions}]` |
 
 ### Decision Object Schema
 
@@ -124,7 +124,7 @@ interface Decision {
 
 ### Extraction Engine
 
-When agent calls `teamind_store({text: "We decided to use Redis for caching because..."})`:
+When agent calls `valis_store({text: "We decided to use Redis for caching because..."})`:
 
 1. **Classification** (Claude Haiku, user's API key):
    - Input: raw text
@@ -169,20 +169,20 @@ interface StorageAdapter {
 }
 
 // Two implementations:
-class TeamindCloudAdapter implements StorageAdapter { /* Qdrant Cloud */ }
+class ValisCloudAdapter implements StorageAdapter { /* Qdrant Cloud */ }
 class LocalQdrantAdapter implements StorageAdapter { /* Local Qdrant */ }
 ```
 
 ### Setup Flow
 
 ```bash
-$ npm install -g teamind
-$ teamind init
+$ npm install -g valis
+$ valis init
 
   Detected: Claude Code, Cursor
 
   Storage:
-  → [1] Teamind Cloud (recommended, zero setup)
+  → [1] Valis Cloud (recommended, zero setup)
     [2] Local Qdrant (requires Docker)
     [3] Custom Qdrant URL
 
@@ -197,11 +197,11 @@ $ teamind init
   ✅ Installed Claude Code Stop hook (optional extraction)
 
   Ready! Your agents now share a team brain.
-  Dashboard: https://app.teamind.dev (after cloud signup)
+  Dashboard: https://app.valis.dev (after cloud signup)
 ```
 
 ```bash
-$ teamind uninstall
+$ valis uninstall
   ✅ Removed MCP configs
   ✅ Removed instructions from CLAUDE.md
   ✅ Removed hooks
@@ -217,12 +217,12 @@ $ teamind uninstall
 **Goal:** Working product that a team of 3-5 devs can install and get value in 10 minutes.
 
 **In scope:**
-- `teamind` CLI (init, uninstall, status)
+- `valis` CLI (init, uninstall, status)
 - MCP server with 6 tools
 - Extraction engine (Haiku → structured decisions)
 - Relationship detection (contradicts, replaces)
 - Local Qdrant adapter (BYOB)
-- Teamind Cloud adapter (hosted Qdrant)
+- Valis Cloud adapter (hosted Qdrant)
 - Auto-setup for Claude Code + Cursor + Codex
 - Claude Code Stop hook (bonus extraction)
 - Embedding: FastEmbed local (English + multilingual)
@@ -241,8 +241,8 @@ $ teamind uninstall
 - Advanced search filters
 
 **Acceptance criteria:**
-1. `npm install -g teamind && teamind init` works in <2 minutes
-2. Agent stores a decision → another agent in different IDE sees it via `teamind_search`
+1. `npm install -g valis && valis init` works in <2 minutes
+2. Agent stores a decision → another agent in different IDE sees it via `valis_search`
 3. Extraction correctly classifies type + affects + confidence in >60% of cases
 4. Contradiction detection finds obvious conflicts (same `affects`, opposite `summary`)
 5. Uninstall cleanly removes everything, IDEs work as before
@@ -336,15 +336,15 @@ $ teamind uninstall
 ## 7. Repo Structure
 
 ```
-teamind/
+valis/
 ├── packages/
-│   ├── cli/              # teamind init, uninstall, status
+│   ├── cli/              # valis init, uninstall, status
 │   ├── mcp-server/       # MCP tools (store, search, context, relate, status, list)
 │   ├── extraction/       # Haiku extraction + classification + relationship detection
 │   ├── storage/          # StorageAdapter interface + CloudAdapter + LocalQdrantAdapter
 │   └── shared/           # Types, Decision schema, constants
 ├── LICENSE               # BSL 1.1
-├── AGENTS.md             # Teamind eats its own dogfood
+├── AGENTS.md             # Valis eats its own dogfood
 ├── package.json          # pnpm workspace
 └── README.md
 ```
@@ -355,7 +355,7 @@ teamind/
 
 ### Direct competitors (Pure MCP team knowledge):
 
-| Product | Stars | Approach | Differentiator vs Teamind |
+| Product | Stars | Approach | Differentiator vs Valis |
 |---|---|---|---|
 | memctl | 11 | Flat text memory, MCP, team sync | No structured decisions, no extraction intelligence, no relationships |
 | ContextStream | 30 | MCP + integrations (Slack/Notion) | More integrations, but no decision typing or contradiction detection |
@@ -378,7 +378,7 @@ teamind/
 | Cursor Memories | IDE-specific, no cross-tool | LOW — walled garden |
 | Anthropic Claude | MEMORY.md, auto-memory | LOW — individual, not team |
 
-### Teamind's moat:
+### Valis's moat:
 1. **Structured decisions** (not flat text) — every competitor stores raw text
 2. **Relationship graph** (depends_on, contradicts, replaces) — nobody does this
 3. **Extraction intelligence** — raw text → classified, related decision object

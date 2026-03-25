@@ -1,4 +1,4 @@
-# Supabase Edge Function Contracts: Teamind MVP
+# Supabase Edge Function Contracts: Valis MVP
 
 All functions are unauthenticated (public) — they create or validate
 credentials, so they can't require them.

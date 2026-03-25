@@ -1,8 +1,8 @@
-# Teamind MVP — User Stories
+# Valis MVP — User Stories
 
 **Date:** 2026-03-18
 **Scope:** Phase 1 (MVP, weeks 1-8)
-**Spec:** teamind-design-spec-v5.md
+**Spec:** valis-design-spec-v5.md
 
 ---
 
@@ -21,18 +21,18 @@
 
 ### US-1.1: Create organization
 **As** Olena (Tech Lead),
-**I want** to run `teamind init` and create a new org in under 3 minutes,
+**I want** to run `valis init` and create a new org in under 3 minutes,
 **so that** my team has a shared knowledge space from Day 1.
 
 **Acceptance:**
 - Interactive prompt: org name → create → returns org_id + API key + invite code
 - Org created via Supabase Edge Function (create-org)
-- Config saved to `~/.teamind/config.json` (0600 permissions)
+- Config saved to `~/.valis/config.json` (0600 permissions)
 - Invite code displayed and copyable (format: `XXXX-XXXX`)
 
 ### US-1.2: Join existing organization
 **As** Andriy (Developer),
-**I want** to run `teamind init --join ACME-7X3K` with my team's invite code,
+**I want** to run `valis init --join ACME-7X3K` with my team's invite code,
 **so that** I instantly access all existing team decisions.
 
 **Acceptance:**
@@ -43,13 +43,13 @@
 
 ### US-1.3: Auto-detect and configure IDEs
 **As** Olena or Andriy,
-**I want** init to automatically configure my installed IDEs for Teamind,
+**I want** init to automatically configure my installed IDEs for Valis,
 **so that** I don't manually edit MCP configs.
 
 **Acceptance:**
 - Detects installed: Claude Code, Codex (Cursor → Phase 2)
 - Adds MCP server config to each detected IDE
-- Injects teamind instruction block into CLAUDE.md / AGENTS.md (between `<!-- teamind:start -->` / `<!-- teamind:end -->` markers)
+- Injects valis instruction block into CLAUDE.md / AGENTS.md (between `<!-- valis:start -->` / `<!-- valis:end -->` markers)
 - Instructions tell agent to include type, summary, affects when storing
 - Creates project-level config file if none exists; appends to existing; never modifies parent-level
 - Idempotent: re-running doesn't duplicate entries
@@ -60,13 +60,13 @@
 
 ### US-2.1: Channel-driven capture reminders
 **As** Andriy,
-**I want** Teamind to periodically remind my agent to store important decisions,
+**I want** Valis to periodically remind my agent to store important decisions,
 **so that** I get high-quality captured decisions without doing anything manually.
 
 **Acceptance:**
 - Activity watcher monitors `~/.claude/projects/` for JSONL changes (detects work activity)
 - After significant activity (15 min debounce), pushes channel reminder to agent
-- Agent reviews recent work with full context and calls `teamind_store` with type, summary, affects
+- Agent reviews recent work with full context and calls `valis_store` with type, summary, affects
 - Captured decisions are high-quality (agent-classified, not raw text noise)
 - Dedup by content hash + session_id
 - Non-blocking: if watcher or channel fails, IDE works normally
@@ -74,41 +74,41 @@
 
 ### US-2.2: Session-end capture reminder (Stop Hook)
 **As** Andriy,
-**I want** Teamind to remind my agent to store decisions when my session ends,
+**I want** Valis to remind my agent to store decisions when my session ends,
 **so that** nothing is lost at the end of a work session.
 
 **Acceptance:**
 - HTTP handler on localhost receives stop hook event
 - Pushes channel reminder: "Session ending — store any remaining decisions"
-- Agent reviews session and stores important decisions via `teamind_store`
+- Agent reviews session and stores important decisions via `valis_store`
 - Non-blocking: if hook doesn't fire (30-40% miss rate), activity watcher + keyword triggers cover
 
 ### US-2.3: Startup sweep for missed sessions
 **As** Andriy,
-**I want** Teamind to catch up on sessions I had while it wasn't running,
-**so that** no decisions are lost even if I forgot to start Teamind.
+**I want** Valis to catch up on sessions I had while it wasn't running,
+**so that** no decisions are lost even if I forgot to start Valis.
 
 **Acceptance:**
-- On every `teamind serve` launch, scans `~/.claude/projects/` for unprocessed JSONL content
+- On every `valis serve` launch, scans `~/.claude/projects/` for unprocessed JSONL content
 - Processes content modified since last processed timestamp
 - Dual writes decisions before entering MCP event loop
 - Handles gracefully: empty files, corrupt JSONL, already-processed content
 
 ### US-2.4: Explicit store via MCP tool (structured) + keyword triggers
 **As** an AI Agent,
-**I want** to call `teamind_store` when I make a decision, OR when the user says trigger words, OR when I receive a capture reminder,
+**I want** to call `valis_store` when I make a decision, OR when the user says trigger words, OR when I receive a capture reminder,
 **so that** the team brain captures classified decisions from all paths.
 
 **Acceptance:**
 - Input: `{text: string, type?: string, summary?: string, affects?: string[]}` (text min 10 chars)
-- Three triggers for `teamind_store`:
+- Three triggers for `valis_store`:
   1. Agent decides proactively (CLAUDE.md instructions)
   2. User says keywords: "запам'ятай", "збережи", "remember this", "store this"
   3. Channel capture reminder arrives (from activity watcher or stop hook)
 - Agent provides type/summary/affects with full session context
 - Secret detection runs before storage → blocks if pattern matched
 - Dual write: INSERT Postgres + UPSERT Qdrant → returns `{id, status: "stored"}` in <200ms
-- If cloud unreachable → queues to `~/.teamind/pending.jsonl`, returns `{stored: true, synced: false}`
+- If cloud unreachable → queues to `~/.valis/pending.jsonl`, returns `{stored: true, synced: false}`
 
 ### US-2.5: Real-time decision broadcast (Channel push)
 **As** an AI Agent in Dev B's session,
@@ -116,8 +116,8 @@
 **so that** I have up-to-date team context without explicitly searching.
 
 **Acceptance:**
-- When Dev A stores a decision, all other connected Teamind sessions receive a push notification
-- Notification appears as `<channel source="teamind" event="new_decision" author="dev_a">` in context
+- When Dev A stores a decision, all other connected Valis sessions receive a push notification
+- Notification appears as `<channel source="valis" event="new_decision" author="dev_a">` in context
 - Agent reads the notification and incorporates into current task context
 - Non-blocking: if channel push fails, store still succeeds
 - Graceful degradation: sessions without channel support work normally via pull-based tools
@@ -129,7 +129,7 @@
 
 ### US-3.1: Search team decisions (with keyword triggers)
 **As** an AI Agent,
-**I want** to call `teamind_search` before making architectural choices, AND when the user says search-related words,
+**I want** to call `valis_search` before making architectural choices, AND when the user says search-related words,
 **so that** I don't contradict or duplicate existing team decisions.
 
 **Acceptance:**
@@ -142,19 +142,19 @@
 
 ### US-3.2: Load context for current task
 **As** an AI Agent,
-**I want** to call `teamind_context` at the start of a task,
+**I want** to call `valis_context` at the start of a task,
 **so that** I have all relevant prior decisions loaded before I begin.
 
 **Acceptance:**
 - Input: `{task_description: string, files?: string[]}`
 - Searches by task description + file names via Qdrant
 - Returns relevant decisions grouped by type + summary of key constraints
-- First call in session includes: "N total decisions in team brain. Use teamind_search for specific queries."
+- First call in session includes: "N total decisions in team brain. Use valis_search for specific queries."
 - Offline: empty results, no crash
 
 ### US-3.3: Search from CLI
 **As** Viktor (Eng Manager),
-**I want** to run `teamind search "authentication"` from terminal,
+**I want** to run `valis search "authentication"` from terminal,
 **so that** I can check what my team decided about auth without opening an IDE.
 
 **Acceptance:**
@@ -184,7 +184,7 @@
 
 ### US-5.1: Secret detection before storage
 **As** Andriy,
-**I want** Teamind to block storage of any text containing API keys or secrets,
+**I want** Valis to block storage of any text containing API keys or secrets,
 **so that** sensitive credentials never reach the cloud.
 
 **Acceptance:**
@@ -214,10 +214,10 @@
 **so that** nothing is lost and everything syncs when I reconnect.
 
 **Acceptance:**
-- If Supabase or Qdrant unreachable: append to `~/.teamind/pending.jsonl`
+- If Supabase or Qdrant unreachable: append to `~/.valis/pending.jsonl`
 - Returns `{stored: true, synced: false}` to agent
 - Flushes queue on next successful connection
-- Shows pending count in `teamind status`
+- Shows pending count in `valis status`
 
 ### US-6.2: Graceful degradation for search
 **As** an AI Agent,
@@ -237,7 +237,7 @@
 **Acceptance:**
 - If Postgres succeeds, Qdrant fails: decision is safe in Postgres, queue Qdrant upsert for retry
 - If Qdrant succeeds, Postgres fails: log warning, retry Postgres insert
-- `teamind status` shows sync state between Postgres and Qdrant
+- `valis status` shows sync state between Postgres and Qdrant
 
 ---
 
@@ -245,7 +245,7 @@
 
 ### US-7.1: Check system health
 **As** Olena,
-**I want** to run `teamind status` to see if everything is working,
+**I want** to run `valis status` to see if everything is working,
 **so that** I can troubleshoot issues quickly.
 
 **Acceptance:**
@@ -255,7 +255,7 @@
 
 ### US-7.2: View team dashboard
 **As** Viktor,
-**I want** to run `teamind dashboard` to see aggregated team activity,
+**I want** to run `valis dashboard` to see aggregated team activity,
 **so that** I have a high-level view of what my team is deciding.
 
 **Acceptance:**
@@ -265,7 +265,7 @@
 
 ### US-7.3: Export decisions
 **As** Viktor,
-**I want** to run `teamind export --json` to get all team decisions in a portable format,
+**I want** to run `valis export --json` to get all team decisions in a portable format,
 **so that** I can analyze them externally or create reports.
 
 **Acceptance:**
@@ -276,12 +276,12 @@
 
 ### US-7.4: Clean uninstall
 **As** Andriy,
-**I want** to run `teamind uninstall` to cleanly remove all local configs,
-**so that** my machine is clean if I stop using Teamind.
+**I want** to run `valis uninstall` to cleanly remove all local configs,
+**so that** my machine is clean if I stop using Valis.
 
 **Acceptance:**
-- Removes: MCP configs from IDEs, CLAUDE.md/AGENTS.md teamind markers, `~/.teamind/` directory
-- Uses manifest (`~/.teamind/manifest.json`) to track what was created during init
+- Removes: MCP configs from IDEs, CLAUDE.md/AGENTS.md valis markers, `~/.valis/` directory
+- Uses manifest (`~/.valis/manifest.json`) to track what was created during init
 - Warns: "Cloud data preserved. Contact org admin to delete."
 - Confirms before proceeding
 

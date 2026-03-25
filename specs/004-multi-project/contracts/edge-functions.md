@@ -107,7 +107,7 @@ then adds project membership.
 
 **Backward compatibility**: This replaces `join-org` as the primary join
 mechanism. The `join-org` endpoint remains functional for org-level
-admin invites but is no longer used by `teamind init --join`.
+admin invites but is no longer used by `valis init --join`.
 
 ## POST /functions/v1/exchange-token (modified)
 
@@ -150,7 +150,7 @@ includes a `project_id` claim for project-scoped RLS.
   "role": "authenticated",
   "exp": "<now + 3600>",
   "iat": "<now>",
-  "iss": "teamind",
+  "iss": "valis",
   "org_id": "<org_id>",
   "project_id": "<project_id>",
   "member_role": "admin",
@@ -219,7 +219,7 @@ level.
 ALTER TABLE rate_limits ADD COLUMN project_id UUID REFERENCES projects(id);
 ```
 
-This allows `teamind admin metrics --project frontend-app` to show
+This allows `valis admin metrics --project frontend-app` to show
 per-project usage, while limits are still checked at the org level
 (`WHERE org_id = $1 AND day = CURRENT_DATE`).
 

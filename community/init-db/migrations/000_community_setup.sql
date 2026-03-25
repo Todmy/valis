@@ -14,7 +14,7 @@ BEGIN
 END
 $$;
 
--- Grant access to the teamind database
+-- Grant access to the valis database
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;

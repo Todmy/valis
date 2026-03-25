@@ -1,9 +1,9 @@
-# MCP Tool Contracts: Teamind MVP
+# MCP Tool Contracts: Valis MVP
 
 **Transport**: stdio
 **Capabilities**: `{ tools: {}, experimental: { 'claude/channel': {} } }`
 
-## teamind_store
+## valis_store
 
 Store a team decision into the shared team brain.
 
@@ -57,7 +57,7 @@ Store a team decision into the shared team brain.
 2. Secret detection (10 patterns) → block if match
 3. Content hash + session_id dedup → skip if duplicate
 4. Dual write: INSERT Postgres + UPSERT Qdrant
-5. If offline: queue to `~/.teamind/pending.jsonl`
+5. If offline: queue to `~/.valis/pending.jsonl`
 6. Channel push: notify other active sessions
 
 **Success response**: `{ "id": "uuid", "status": "stored" }`
@@ -67,7 +67,7 @@ Store a team decision into the shared team brain.
 
 **Latency target**: <200ms (cloud), <10ms (offline queue)
 
-## teamind_search
+## valis_search
 
 Search the team's shared decision history.
 
@@ -126,7 +126,7 @@ Search the team's shared decision history.
 
 **Offline response**: `{ "results": [], "offline": true, "note": "Cloud unavailable. Search offline." }`
 
-## teamind_context
+## valis_context
 
 Load relevant team decisions for the current task.
 
@@ -166,7 +166,7 @@ Load relevant team decisions for the current task.
   "patterns": [...],
   "lessons": [...],
   "total_in_brain": 47,
-  "note": "47 total decisions in team brain. Use teamind_search for specific queries."
+  "note": "47 total decisions in team brain. Use valis_search for specific queries."
 }
 ```
 

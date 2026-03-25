@@ -37,13 +37,13 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Implement per-directory project config module (findProjectConfig: walk-up from startDir to filesystem root looking for .teamind.json, first match wins; loadProjectConfig: read and validate with zod schema project_id UUID + project_name 1-100 chars; writeProjectConfig: write .teamind.json with project_id/project_name to target dir; resolveConfig: load global config + findProjectConfig, return ResolvedConfig) in packages/cli/src/config/project.ts (new file)
+- [ ] T004 Implement per-directory project config module (findProjectConfig: walk-up from startDir to filesystem root looking for .valis.json, first match wins; loadProjectConfig: read and validate with zod schema project_id UUID + project_name 1-100 chars; writeProjectConfig: write .valis.json with project_id/project_name to target dir; resolveConfig: load global config + findProjectConfig, return ResolvedConfig) in packages/cli/src/config/project.ts (new file)
 - [ ] T005 Extend config store (add loadProjectConfig import, extend loadConfig to call resolveConfig, export merged ResolvedConfig type, keep existing loadConfig/saveConfig backward compatible for global config) in packages/cli/src/config/store.ts (extend)
 - [ ] T006 [P] Implement Edge Function create-project (Deno runtime, authenticate via Bearer token API key, verify member belongs to org, validate project_name 1-100 chars unique within org, check plan limits for max projects, generate XXXX-XXXX invite code, INSERT into projects, INSERT creator into project_members as project_admin, create audit entry project_created, return project metadata) in supabase/functions/create-project/index.ts (new file)
 - [ ] T007 [P] Implement Edge Function join-project (Deno runtime, look up project by invite_code case-insensitive, resolve org from project.org_id, check org member limit for plan, if author exists in org skip member creation else create with per-member API key, check if already project member return 409, INSERT into project_members as project_member, create audit entries member_joined + project_member_added, return org + project metadata + credentials) in supabase/functions/join-project/index.ts (new file)
 - [ ] T008 Extend Edge Function exchange-token (accept optional project_id in request body, if provided: verify project exists in member's org, verify member in project_members OR member.role='admin', return 403 no_project_access if no access, resolve project_role from project_members.role, add project_id + project_role claims to JWT, return project_id/project_name/project_role in response; if project_id omitted: mint org-level JWT without project_id claim for cross-project search) in supabase/functions/exchange-token/index.ts (extend)
 - [ ] T009 Extend JWT client (exchangeToken: pass project_id from resolved config, cache JWTs per-project keyed by project_id, refreshToken: refresh per-project, getToken: return cached for active project_id, add getOrgToken: exchange without project_id for cross-project search) in packages/cli/src/auth/jwt.ts (extend)
-- [ ] T010 [P] Test per-directory config resolution (test findProjectConfig walk-up: finds .teamind.json in parent, stops at root, closest wins in nested; test loadProjectConfig: valid/invalid JSON, missing fields, UUID validation; test writeProjectConfig: writes correct JSON; test resolveConfig: all 4 states from config contract — ready/no-project/no-org/unconfigured) in packages/cli/test/config/project.test.ts (new file)
+- [ ] T010 [P] Test per-directory config resolution (test findProjectConfig walk-up: finds .valis.json in parent, stops at root, closest wins in nested; test loadProjectConfig: valid/invalid JSON, missing fields, UUID validation; test writeProjectConfig: writes correct JSON; test resolveConfig: all 4 states from config contract — ready/no-project/no-org/unconfigured) in packages/cli/test/config/project.test.ts (new file)
 
 **Checkpoint**: Config resolution works, create-project and join-project Edge Functions deployed, exchange-token mints project-scoped JWTs
 
@@ -51,17 +51,17 @@
 
 ## Phase 3: US1 — Create Project in Init, Select Existing, Per-Directory Config
 
-**Goal**: `teamind init` supports creating/selecting projects, `.teamind.json` written per directory
+**Goal**: `valis init` supports creating/selecting projects, `.valis.json` written per directory
 
-**Independent Test**: Run `teamind init` in two directories, create two different projects in the same org. Verify each directory has its own `.teamind.json`.
+**Independent Test**: Run `valis init` in two directories, create two different projects in the same org. Verify each directory has its own `.valis.json`.
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Extend init command: Case 1 fresh install — after org creation, prompt for project name (default: directory name), call create-project EF, write .teamind.json; Case 2 org exists, no .teamind.json — show "Org: X (already configured)", list existing projects via list_member_projects RPC with decision counts, allow select existing or create new, call create-project if new, write .teamind.json; Case 3 init --join <invite-code> — call join-project EF instead of join-org, save global config if missing, write .teamind.json with returned project_id/name; Case 4 reconfigure (both configs exist) — show current org+project, options: switch project / reconfigure org / cancel in packages/cli/src/commands/init.ts (extend)
+- [ ] T011 [US1] Extend init command: Case 1 fresh install — after org creation, prompt for project name (default: directory name), call create-project EF, write .valis.json; Case 2 org exists, no .valis.json — show "Org: X (already configured)", list existing projects via list_member_projects RPC with decision counts, allow select existing or create new, call create-project if new, write .valis.json; Case 3 init --join <invite-code> — call join-project EF instead of join-org, save global config if missing, write .valis.json with returned project_id/name; Case 4 reconfigure (both configs exist) — show current org+project, options: switch project / reconfigure org / cancel in packages/cli/src/commands/init.ts (extend)
 - [ ] T012 [US1] Extend Supabase client: add listMemberProjects RPC call (p_member_id), add createProject method (calls create-project EF via fetch), add joinProject method (calls join-project EF via fetch) in packages/cli/src/cloud/supabase.ts (extend)
-- [ ] T013 [P] [US1] Test init command project flow (test Case 2: org exists shows project list; test Case 3: --join writes .teamind.json; test fresh init creates project + writes .teamind.json; verify global config unchanged when only project changes) in packages/cli/test/commands/init.test.ts (extend or new)
+- [ ] T013 [P] [US1] Test init command project flow (test Case 2: org exists shows project list; test Case 3: --join writes .valis.json; test fresh init creates project + writes .valis.json; verify global config unchanged when only project changes) in packages/cli/test/commands/init.test.ts (extend or new)
 
-**Checkpoint**: `teamind init` creates projects, writes `.teamind.json`. Two directories can point to different projects in the same org.
+**Checkpoint**: `valis init` creates projects, writes `.valis.json`. Two directories can point to different projects in the same org.
 
 ---
 
@@ -93,9 +93,9 @@
 
 - [ ] T019 [US3] Extend Qdrant client (upsertDecision: include project_id in payload, createPayloadIndex for project_id keyword field on ensureCollection; searchDecisions: add project_id to must filter clause alongside org_id; add searchDecisionsAllProjects: accept array of project_ids, use should clause for project_id matching; handle legacy points without project_id via should fallback filter during migration) in packages/cli/src/cloud/qdrant.ts (extend)
 - [ ] T020 [US3] Extend Supabase client queries (all decision queries add project_id parameter: searchDecisions, getDashboardStats, findContradictionCandidates; add cross-project query variant that omits project_id filter and uses org-level JWT) in packages/cli/src/cloud/supabase.ts (extend)
-- [ ] T021 [US3] Extend teamind_search MCP tool (resolve project from config, pass project_id to Qdrant + Supabase search; add all_projects boolean parameter, when true: get member's project list via list_member_projects, exchange org-level JWT, search across all accessible projects via Qdrant should clause, label results with [project-name] prefix; respect access control — only search projects member has access to) in packages/cli/src/mcp/tools/search.ts (extend)
-- [ ] T022 [US3] Extend teamind_context MCP tool (resolve project from config, pass project_id to all context queries, filter decisions to active project only by default; add all_projects parameter for cross-project context loading) in packages/cli/src/mcp/tools/context.ts (extend)
-- [ ] T023 [US3] Extend teamind_store MCP tool (resolve project from config, include project_id in all store calls to both Supabase and Qdrant, reject store if no project configured with clear error message) in packages/cli/src/mcp/tools/store.ts (extend)
+- [ ] T021 [US3] Extend valis_search MCP tool (resolve project from config, pass project_id to Qdrant + Supabase search; add all_projects boolean parameter, when true: get member's project list via list_member_projects, exchange org-level JWT, search across all accessible projects via Qdrant should clause, label results with [project-name] prefix; respect access control — only search projects member has access to) in packages/cli/src/mcp/tools/search.ts (extend)
+- [ ] T022 [US3] Extend valis_context MCP tool (resolve project from config, pass project_id to all context queries, filter decisions to active project only by default; add all_projects parameter for cross-project context loading) in packages/cli/src/mcp/tools/context.ts (extend)
+- [ ] T023 [US3] Extend valis_store MCP tool (resolve project from config, include project_id in all store calls to both Supabase and Qdrant, reject store if no project configured with clear error message) in packages/cli/src/mcp/tools/store.ts (extend)
 - [ ] T024 [US3] Extend MCP server (resolve project config before tool dispatch using resolveConfig, pass project_id to all tool handlers, handle missing project gracefully with error message) in packages/cli/src/mcp/server.ts (extend)
 - [ ] T025 [US3] Extend CLI search command (add --all-projects flag, when set pass all_projects=true to search handler, format output with [project-name] prefix for cross-project results) in packages/cli/src/commands/search-cmd.ts (extend)
 - [ ] T026 [P] [US3] Extend contradiction detection (pass project_id to findContradictionCandidates and detectContradictions, contradictions are scoped within a single project — cross-project contradictions are not possible by design) in packages/cli/src/contradiction/detect.ts (extend)
@@ -115,28 +115,28 @@
 ### Implementation for User Story 4
 
 - [ ] T029 [US4] Extend Realtime subscription client (change channel name from `org:${orgId}` to `project:${projectId}`, change filter from `org_id=eq.${orgId}` to `project_id=eq.${projectId}`, subscribe to active project channel, unsubscribe on project switch, handle missing project_id gracefully — fall back to org-level subscription during migration) in packages/cli/src/cloud/realtime.ts (extend)
-- [ ] T030 [US4] Extend serve command (resolve project config before subscribing, subscribe to project-scoped Realtime channel using project_id from .teamind.json, log active project on startup, on project switch — unsubscribe from old channel, subscribe to new) in packages/cli/src/commands/serve.ts (extend)
+- [ ] T030 [US4] Extend serve command (resolve project config before subscribing, subscribe to project-scoped Realtime channel using project_id from .valis.json, log active project on startup, on project switch — unsubscribe from old channel, subscribe to new) in packages/cli/src/commands/serve.ts (extend)
 - [ ] T031 [P] [US4] Extend channel push events (add project_id and project_name to remote decision events, add project_id to contradiction events, include project context in push notification formatting) in packages/cli/src/channel/push.ts (extend)
 - [ ] T032 [P] [US4] Test project-scoped Realtime (test subscription uses project channel not org; test filter uses project_id; test unsubscribe on project switch; test fallback to org-level when no project_id) in packages/cli/test/cloud/realtime.test.ts (extend)
 
-**Checkpoint**: `teamind serve` subscribes to project channel. Cross-session push is project-scoped. No cross-project notification leakage.
+**Checkpoint**: `valis serve` subscribes to project channel. Cross-session push is project-scoped. No cross-project notification leakage.
 
 ---
 
 ## Phase 7: US5 — Switch Between Projects
 
-**Goal**: Auto-detection via per-directory config + manual `teamind switch --project` command
+**Goal**: Auto-detection via per-directory config + manual `valis switch --project` command
 
-**Independent Test**: Init project A in /frontend, project B in /backend. `cd /frontend && teamind status` shows A. `cd /backend && teamind status` shows B.
+**Independent Test**: Init project A in /frontend, project B in /backend. `cd /frontend && valis status` shows A. `cd /backend && valis status` shows B.
 
 ### Implementation for User Story 5
 
-- [ ] T033 [US5] Implement switch command (teamind switch --project <name-or-id>: load global config, list member's projects via list_member_projects RPC, find match by name or UUID, update .teamind.json in cwd, print confirmation; interactive mode with no flags: show project list, prompt for selection; handle no match with clear error) in packages/cli/src/commands/switch.ts (new file)
-- [ ] T034 [US5] Extend status command (show active project from resolved .teamind.json: "Project: frontend-app (active)"; show "Project: (not configured)" when no .teamind.json found; show project-scoped decision count "Brain: N decisions in this project"; show Realtime subscription project name) in packages/cli/src/commands/status.ts (extend)
+- [ ] T033 [US5] Implement switch command (valis switch --project <name-or-id>: load global config, list member's projects via list_member_projects RPC, find match by name or UUID, update .valis.json in cwd, print confirmation; interactive mode with no flags: show project list, prompt for selection; handle no match with clear error) in packages/cli/src/commands/switch.ts (new file)
+- [ ] T034 [US5] Extend status command (show active project from resolved .valis.json: "Project: frontend-app (active)"; show "Project: (not configured)" when no .valis.json found; show project-scoped decision count "Brain: N decisions in this project"; show Realtime subscription project name) in packages/cli/src/commands/status.ts (extend)
 - [ ] T035 [US5] Register switch command in CLI entry point (add "switch" command with --project option to commander setup) in packages/cli/src/index.ts (extend)
-- [ ] T036 [P] [US5] Test switch command (test switch by name updates .teamind.json; test switch by UUID; test interactive mode; test invalid project name error; test status shows correct project per directory) in packages/cli/test/commands/switch.test.ts (new file)
+- [ ] T036 [P] [US5] Test switch command (test switch by name updates .valis.json; test switch by UUID; test interactive mode; test invalid project name error; test status shows correct project per directory) in packages/cli/test/commands/switch.test.ts (new file)
 
-**Checkpoint**: `cd` between repos auto-switches project. `teamind switch` manual switch works. `teamind status` shows active project.
+**Checkpoint**: `cd` between repos auto-switches project. `valis switch` manual switch works. `valis status` shows active project.
 
 ---
 
@@ -148,8 +148,8 @@
 
 ### Implementation for User Story 6
 
-- [ ] T037 [US6] Implement Qdrant background migration (iterate all Qdrant points missing project_id, look up project_id from Postgres decisions table, update Qdrant payload with project_id; can run as a one-time CLI command `teamind admin migrate-qdrant` or lazily on next upsert/search; handle legacy filter during transition: include points with matching project_id OR missing project_id field) in packages/cli/src/cloud/qdrant.ts (extend) or packages/cli/src/commands/admin-migrate-qdrant.ts (new file)
-- [ ] T038 [US6] Extend init command migration path (when upgraded CLI detects global config but no .teamind.json: prompt user, look up default project in org via list_member_projects, if default project exists write .teamind.json pointing to it, if no default project exists call create-project to create one; commands that require project print "No project configured. Run teamind init." until .teamind.json exists) in packages/cli/src/commands/init.ts (extend)
+- [ ] T037 [US6] Implement Qdrant background migration (iterate all Qdrant points missing project_id, look up project_id from Postgres decisions table, update Qdrant payload with project_id; can run as a one-time CLI command `valis admin migrate-qdrant` or lazily on next upsert/search; handle legacy filter during transition: include points with matching project_id OR missing project_id field) in packages/cli/src/cloud/qdrant.ts (extend) or packages/cli/src/commands/admin-migrate-qdrant.ts (new file)
+- [ ] T038 [US6] Extend init command migration path (when upgraded CLI detects global config but no .valis.json: prompt user, look up default project in org via list_member_projects, if default project exists write .valis.json pointing to it, if no default project exists call create-project to create one; commands that require project print "No project configured. Run valis init." until .valis.json exists) in packages/cli/src/commands/init.ts (extend)
 - [ ] T039 [P] [US6] Test migration scenarios (test migration 004 SQL creates default projects per org; test all existing decisions get project_id after migration; test existing members become project_members of default project; test search still works after migration; test init detects legacy config and offers migration) in packages/cli/test/migration/default-project.test.ts (new file)
 
 **Checkpoint**: Existing installations upgrade seamlessly. All pre-existing decisions in default project. Zero data loss. Search works as before.
@@ -175,9 +175,9 @@
 - **Foundational (Phase 2)**: Depends on Phase 1 (types + migration). BLOCKS all user stories.
 - **US1 (Phase 3)**: Depends on Foundational. First user-facing increment.
 - **US2 (Phase 4)**: Depends on Foundational + US1 partially (init creates projects that RBAC protects). Can start after T008 (exchange-token with project_id).
-- **US3 (Phase 5)**: Depends on Foundational + US1 (init creates projects, .teamind.json exists). Core search/store scoping.
+- **US3 (Phase 5)**: Depends on Foundational + US1 (init creates projects, .valis.json exists). Core search/store scoping.
 - **US4 (Phase 6)**: Depends on Foundational. Can parallel with US3 (different files: realtime.ts vs search.ts).
-- **US5 (Phase 7)**: Depends on Foundational + US1 (needs .teamind.json to exist). Can parallel with US3/US4.
+- **US5 (Phase 7)**: Depends on Foundational + US1 (needs .valis.json to exist). Can parallel with US3/US4.
 - **US6 (Phase 8)**: Depends on Phase 1 (migration 004) + Foundational. Can start after T002 + T004.
 - **Polish (Phase 9)**: Depends on all user stories complete.
 
@@ -215,7 +215,7 @@ Foundational ──┬── US1 (init/project creation)
                │     └── US3 (search/store scoping, needs projects to exist)
                ├── US2 (RBAC, needs project_id in JWT)
                ├── US4 (Realtime scoping)
-               ├── US5 (switch, needs .teamind.json)
+               ├── US5 (switch, needs .valis.json)
                └── US6 (migration, needs default project + config)
 ```
 
@@ -259,7 +259,7 @@ Cross-phase parallelism:
 
 1. Complete Phase 1: Setup (types, migration, errors)
 2. Complete Phase 2: Foundational (config, Edge Functions, JWT)
-3. Complete Phase 3: US1 — Init creates projects, .teamind.json written
+3. Complete Phase 3: US1 — Init creates projects, .valis.json written
 4. Complete Phase 5: US3 — Search/store/context project-scoped
 5. **STOP and VALIDATE**: Projects created, decisions scoped, search filtered
 
@@ -302,12 +302,12 @@ Cross-phase parallelism:
 | FR-004 | search/context filter by active project by default | T019, T020, T021, T022, T024, T028 | FULL — Qdrant filter, Supabase filter, MCP tools, server resolution, tests |
 | FR-005 | Cross-project search via all_projects with access control | T021, T025, T028 | FULL — search tool, CLI flag, tests for access control |
 | FR-006 | Push notifications scoped to active project | T029, T030, T031, T032 | FULL — Realtime channel, serve command, push events, tests |
-| FR-007 | teamind init creates/selects project, stores in local config | T004, T011, T013 | FULL — config module, init command, tests |
+| FR-007 | valis init creates/selects project, stores in local config | T004, T011, T013 | FULL — config module, init command, tests |
 | FR-008 | Invite codes project-scoped | T006, T007, T011, T016 | FULL — create-project generates code, join-project uses code, init uses it, rotate supports it |
 | FR-009 | JWT includes project_id alongside org_id | T008, T009 | FULL — exchange-token extended, JWT client caches per-project |
 | FR-010 | Realtime subscriptions filter by project_id | T029, T032 | FULL — Realtime client, tests |
 | FR-011 | Existing decisions migrated to default project | T002, T037, T038, T039 | FULL — SQL migration, Qdrant migration, init migration path, tests |
-| FR-012 | Per-directory config via .teamind.json | T004, T005, T010, T011 | FULL — project.ts module, store integration, tests, init writes it |
+| FR-012 | Per-directory config via .valis.json | T004, T005, T010, T011 | FULL — project.ts module, store integration, tests, init writes it |
 | FR-013 | RBAC: org admin / project admin / project member | T014, T015, T018 | FULL — RBAC module, change-status uses it, tests |
 | FR-014 | All Edge Functions validate project_id from JWT | T008, T015, T016, T017 | FULL — exchange-token, change-status, rotate-key, check-usage |
 | FR-015 | Dashboard/contradictions/patterns/cleanup project-scoped | T026, T027 | FULL — contradiction detection scoped, dashboard scoped |
@@ -319,8 +319,8 @@ Cross-phase parallelism:
 | # | Principle | Status | Evidence |
 |---|-----------|--------|----------|
 | I | Cloud-First | PASS | Projects/project_members in Supabase. Edge Functions for CRUD. No local-only project management. |
-| II | Minimally Invasive | PASS | .teamind.json is passive, read on demand. No IDE interception. Same MCP channel integration. |
-| III | Non-Blocking | PASS | Missing .teamind.json degrades to "no project" message (T034, T038). Realtime fallback to org-level (T029). |
+| II | Minimally Invasive | PASS | .valis.json is passive, read on demand. No IDE interception. Same MCP channel integration. |
+| III | Non-Blocking | PASS | Missing .valis.json degrades to "no project" message (T034, T038). Realtime fallback to org-level (T029). |
 | IV | No LLM Dependency | PASS | All operations deterministic. No LLM calls for project creation, membership, or filtering. |
 | V | Zero Native Dependencies | PASS | No new deps. Config resolution uses Node.js built-in fs/path. |
 | VI | Auto-Capture by Default | PASS | Auto-capture layers include project_id from resolved config (T023, T024). |

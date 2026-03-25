@@ -1,4 +1,4 @@
-# Data Model: Teamind MVP
+# Data Model: Valis MVP
 
 **Phase**: 1 — Design & Contracts
 **Date**: 2026-03-22

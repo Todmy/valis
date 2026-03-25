@@ -3,7 +3,7 @@
 /**
  * sqlite-prototype.js
  *
- * Validates: Is SQLite + FTS5 (+ optional sqlite-vec) good enough for Teamind MVP?
+ * Validates: Is SQLite + FTS5 (+ optional sqlite-vec) good enough for Valis MVP?
  *
  * Tests:
  * 1. Create SQLite DB with decisions table + FTS5 index
@@ -26,7 +26,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // --- Config ---
-const DB_PATH = path.join(__dirname, 'teamind-test.db');
+const DB_PATH = path.join(__dirname, 'valis-test.db');
 
 // --- Sample decisions (realistic engineering team data) ---
 const SAMPLE_DECISIONS = [
@@ -372,7 +372,7 @@ function benchmark(name, fn, iterations) {
 
 // --- Main ---
 function main() {
-  console.log('=== Teamind SQLite + FTS5 Prototype ===\n');
+  console.log('=== Valis SQLite + FTS5 Prototype ===\n');
 
   // 1. Create database
   console.log('1. Creating database...');
@@ -524,7 +524,7 @@ function main() {
 
   // 9. Verdict
   console.log('\n' + repeat('=', 70));
-  console.log('VERDICT: SQLite + FTS5 vs Qdrant for Teamind MVP (<500 decisions)');
+  console.log('VERDICT: SQLite + FTS5 vs Qdrant for Valis MVP (<500 decisions)');
   console.log(repeat('=', 70));
   console.log([
     '',
@@ -549,7 +549,7 @@ function main() {
     '-> sqlite-vec for local vector search when user provides embedding API key',
     '-> Qdrant as upgrade path (paid tier, cloud-managed)',
     '',
-    'This gives Teamind a genuinely free tier with zero Docker dependency.',
+    'This gives Valis a genuinely free tier with zero Docker dependency.',
     'FTS5 is "good enough" for <500 decisions where users search with explicit',
     'keywords ("PostgreSQL", "payment service", "circuit breaker").',
     '',

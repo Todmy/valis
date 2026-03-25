@@ -2,18 +2,18 @@
 
 ## Prerequisites
 
-- Teamind MVP installed and working (`teamind status` shows OK)
+- Valis MVP installed and working (`valis status` shows OK)
 - Supabase project with Realtime enabled
-- Two machines/terminals with separate Teamind sessions
+- Two machines/terminals with separate Valis sessions
 
 ## 1. Migrate to Per-Member Auth (US4)
 
 ```bash
 # On machine A (admin)
-teamind migrate-auth
+valis migrate-auth
 # Expected: "Migrated to per-member auth."
 
-teamind status
+valis status
 # Expected: Auth mode: jwt (per-member)
 ```
 
@@ -21,36 +21,36 @@ teamind status
 
 ```bash
 # Store a decision
-teamind search "database"
+valis search "database"
 # → Should find existing decisions
 
 # Via MCP tool in IDE session:
-# teamind_store({ text: "Use PostgreSQL for user data", type: "decision", affects: ["database"] })
+# valis_store({ text: "Use PostgreSQL for user data", type: "decision", affects: ["database"] })
 # → stored
 
 # Deprecate it:
-# teamind_lifecycle({ action: "deprecate", decision_id: "<id>", reason: "Switching to CockroachDB" })
+# valis_lifecycle({ action: "deprecate", decision_id: "<id>", reason: "Switching to CockroachDB" })
 # → deprecated, flagged_dependents shown
 
 # Store replacement:
-# teamind_store({ text: "Use CockroachDB for user data", type: "decision", affects: ["database"], replaces: "<old_id>" })
+# valis_store({ text: "Use CockroachDB for user data", type: "decision", affects: ["database"], replaces: "<old_id>" })
 # → stored, superseded info in response
 
-teamind search "database"
+valis search "database"
 # → CockroachDB decision first, PostgreSQL labeled "superseded"
 ```
 
 ## 3. Cross-Session Push (US2)
 
 ```bash
-# Terminal A: teamind serve (running)
-# Terminal B: teamind serve (running, same org)
+# Terminal A: valis serve (running)
+# Terminal B: valis serve (running, same org)
 
 # In Terminal A's IDE session:
-# teamind_store({ text: "We chose gRPC for inter-service", type: "decision", affects: ["api"] })
+# valis_store({ text: "We chose gRPC for inter-service", type: "decision", affects: ["api"] })
 
 # Terminal B should receive channel notification within 5 seconds:
-# <channel source="teamind" event="new_decision" author="olena" type="decision" origin="remote">
+# <channel source="valis" event="new_decision" author="olena" type="decision" origin="remote">
 ```
 
 ## 4. Contradiction Detection (US3)
@@ -61,7 +61,7 @@ teamind search "database"
 # → Second store returns contradiction warning
 # → Both sessions get contradiction notification
 
-teamind dashboard
+valis dashboard
 # → Shows "Contradictions: 1 open"
 ```
 
@@ -73,13 +73,13 @@ teamind dashboard
 # → Old key immediately invalid
 
 # Admin views audit trail
-teamind admin audit --limit 10
+valis admin audit --limit 10
 ```
 
 ## 6. Metrics (US5)
 
 ```bash
-teamind admin metrics --period 7d
+valis admin metrics --period 7d
 # → Shows active orgs, COGS, activation funnel
 ```
 
@@ -95,5 +95,5 @@ teamind admin metrics --period 7d
 - [ ] Dashboard shows contradictions count
 - [ ] Key rotation invalidates immediately
 - [ ] Audit trail records all operations
-- [ ] `teamind admin metrics` shows correct data
+- [ ] `valis admin metrics` shows correct data
 - [ ] Realtime failure doesn't break store/search

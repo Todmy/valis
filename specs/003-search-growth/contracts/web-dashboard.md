@@ -46,7 +46,7 @@ packages/web/
 │   ├── lib/
 │   │   ├── supabase.ts      # Supabase client factory with JWT
 │   │   ├── auth.ts          # Token exchange + refresh logic
-│   │   └── types.ts         # Re-export from @teamind/cli types
+│   │   └── types.ts         # Re-export from @valis/cli types
 │   └── hooks/
 │       ├── use-auth.ts      # Auth context hook
 │       ├── use-decisions.ts # Decision list query hook
@@ -120,7 +120,7 @@ JWT tokens expire after 1 hour. The dashboard refreshes automatically:
 async function refreshToken(session: AuthSession): Promise<AuthSession> {
   // Re-exchange using the stored API key
   // API key is stored in sessionStorage (not localStorage for security)
-  const apiKey = sessionStorage.getItem('teamind_api_key');
+  const apiKey = sessionStorage.getItem('valis_api_key');
   if (!apiKey) throw new AuthError('Session expired. Please re-enter your API key.');
   return exchangeToken(apiKey);
 }
@@ -211,7 +211,7 @@ const { data } = await supabase
 - Resolution status indicator (all are open — resolved ones filtered out).
 
 **Read-only**: No "Resolve" button. Resolution happens through CLI
-(`teamind dismiss-contradiction` or by deprecating one of the decisions).
+(`valis dismiss-contradiction` or by deprecating one of the decisions).
 
 ### /proposed — Proposed Queue
 
@@ -223,7 +223,7 @@ const { data } = await supabase
 - Count badge in navigation: "Proposed (N)".
 
 **Read-only**: No "Approve" or "Reject" buttons. Promotion/deprecation
-happens through CLI or MCP `teamind_lifecycle` tool.
+happens through CLI or MCP `valis_lifecycle` tool.
 
 ## Tenant Isolation
 
@@ -265,7 +265,7 @@ The dashboard enforces read-only at multiple levels:
 - **Platform**: Vercel (automatic from `packages/web` directory).
 - **Environment variables**: `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- **Domain**: `dashboard.teamind.dev` (or similar).
+- **Domain**: `dashboard.valis.dev` (or similar).
 - **Build**: `next build` in `packages/web`.
 - **Preview**: Vercel preview deployments per PR.
 

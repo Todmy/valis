@@ -17,24 +17,24 @@ passes only when all scenarios pass.
 | # | Scenario | Expected | Status |
 |---|----------|----------|--------|
 | 1.1 | Store decision with `status: 'proposed'` | Stored as proposed, visible in search with "proposed" label | [ ] |
-| 1.2 | Run `teamind dashboard` with proposed decisions | "Proposed (N)" section listing decisions awaiting review | [ ] |
-| 1.3 | Call `teamind_lifecycle({ action: 'promote', decision_id })` on proposed decision | Transitions to `active` with audit entry | [ ] |
-| 1.4 | Call `teamind_lifecycle({ action: 'deprecate', decision_id })` on proposed decision | Proposal rejected (deprecated) with audit entry | [ ] |
+| 1.2 | Run `valis dashboard` with proposed decisions | "Proposed (N)" section listing decisions awaiting review | [ ] |
+| 1.3 | Call `valis_lifecycle({ action: 'promote', decision_id })` on proposed decision | Transitions to `active` with audit entry | [ ] |
+| 1.4 | Call `valis_lifecycle({ action: 'deprecate', decision_id })` on proposed decision | Proposal rejected (deprecated) with audit entry | [ ] |
 | 1.5 | Store proposed decision with cross-session push active | All team members receive notification about new proposal | [ ] |
 
 **Validation commands**:
 ```bash
 # 1.1: Store a proposed decision
-teamind store --status proposed "Use Redis for session caching"
+valis store --status proposed "Use Redis for session caching"
 
 # 1.2: Check dashboard
-teamind dashboard
+valis dashboard
 
 # 1.3: Promote (get decision_id from store output)
-teamind lifecycle --action promote --decision-id <id>
+valis lifecycle --action promote --decision-id <id>
 
 # 1.4: Reject (store another proposed, then deprecate)
-teamind lifecycle --action deprecate --decision-id <id> --reason "Team chose alternative"
+valis lifecycle --action deprecate --decision-id <id> --reason "Team chose alternative"
 ```
 
 ---
@@ -43,30 +43,30 @@ teamind lifecycle --action deprecate --decision-id <id> --reason "Team chose alt
 
 | # | Scenario | Expected | Status |
 |---|----------|----------|--------|
-| 2.1 | Run `teamind init` with Cursor installed (`~/.cursor/` exists) | Cursor detected and listed in IDE list | [ ] |
+| 2.1 | Run `valis init` with Cursor installed (`~/.cursor/` exists) | Cursor detected and listed in IDE list | [ ] |
 | 2.2 | After init, check Cursor MCP config and `.cursorrules` | MCP server config in `~/.cursor/mcp.json`, instruction markers in `.cursorrules` | [ ] |
-| 2.3 | Start Cursor with Teamind MCP server | All 4 tools available: `teamind_store`, `teamind_search`, `teamind_context`, `teamind_lifecycle` | [ ] |
-| 2.4 | Run `teamind init` again (idempotency) | No duplicate entries in MCP config or `.cursorrules` | [ ] |
-| 2.5 | Run `teamind uninstall` | Cursor MCP config and `.cursorrules` markers cleanly removed | [ ] |
+| 2.3 | Start Cursor with Valis MCP server | All 4 tools available: `valis_store`, `valis_search`, `valis_context`, `valis_lifecycle` | [ ] |
+| 2.4 | Run `valis init` again (idempotency) | No duplicate entries in MCP config or `.cursorrules` | [ ] |
+| 2.5 | Run `valis uninstall` | Cursor MCP config and `.cursorrules` markers cleanly removed | [ ] |
 
 **Validation commands**:
 ```bash
 # 2.1: Init with Cursor present
 mkdir -p ~/.cursor  # Simulate Cursor installation
-teamind init
+valis init
 
 # 2.2: Verify config files
 cat ~/.cursor/mcp.json
 cat .cursorrules
 
 # 2.4: Idempotency check
-teamind init
+valis init
 diff <(cat ~/.cursor/mcp.json) <(cat ~/.cursor/mcp.json)  # Should be identical
 
 # 2.5: Uninstall
-teamind uninstall
-cat ~/.cursor/mcp.json  # teamind entry should be gone
-cat .cursorrules         # teamind markers should be gone
+valis uninstall
+cat ~/.cursor/mcp.json  # valis entry should be gone
+cat .cursorrules         # valis markers should be gone
 ```
 
 ---
@@ -78,25 +78,25 @@ cat .cursorrules         # teamind markers should be gone
 | 3.1 | Store 5 decisions with identical content, run cleanup | Duplicates identified, newest kept, others deprecated with "auto-dedup" reason | [ ] |
 | 3.2 | Store 5 decisions with cosine similarity >0.9, run cleanup | Near-duplicates flagged for review (not auto-deprecated) | [ ] |
 | 3.3 | Have `pending` decisions older than 30 days, run cleanup | Flagged as stale orphans in report | [ ] |
-| 3.4 | Run `teamind admin cleanup --dry-run` | Shows what would be cleaned without making changes | [ ] |
-| 3.5 | Run `teamind admin cleanup --apply` | Changes applied, audit entries created for each action | [ ] |
+| 3.4 | Run `valis admin cleanup --dry-run` | Shows what would be cleaned without making changes | [ ] |
+| 3.5 | Run `valis admin cleanup --apply` | Changes applied, audit entries created for each action | [ ] |
 | 3.6 | Verify scheduled cleanup executes same logic as `--apply` | Runs periodically, logs results | [ ] |
 
 **Validation commands**:
 ```bash
 # 3.1: Create exact duplicates
 for i in 1 2 3 4 5; do
-  teamind store "Use PostgreSQL for user data"
+  valis store "Use PostgreSQL for user data"
 done
 
 # 3.4: Dry run
-teamind admin cleanup --dry-run
+valis admin cleanup --dry-run
 
 # 3.5: Apply
-teamind admin cleanup --apply
+valis admin cleanup --apply
 
 # Verify audit trail
-teamind admin audit --action decision_auto_deduped
+valis admin audit --action decision_auto_deduped
 ```
 
 ---
@@ -115,7 +115,7 @@ teamind admin audit --action decision_auto_deduped
 
 **Validation steps**:
 ```
-1. Open https://dashboard.teamind.dev
+1. Open https://dashboard.valis.dev
 2. Enter member API key (tmm_...)
 3. Verify decisions list loads with status badges
 4. Use search bar — compare results with CLI search
@@ -143,13 +143,13 @@ teamind admin audit --action decision_auto_deduped
 # Search and compare scores
 
 # 5.4: Pin as admin
-teamind lifecycle --action pin --decision-id <old-decision-id>
+valis lifecycle --action pin --decision-id <old-decision-id>
 
 # 5.5: Unpin
-teamind lifecycle --action unpin --decision-id <old-decision-id>
+valis lifecycle --action unpin --decision-id <old-decision-id>
 
 # Verify audit
-teamind admin audit --target <decision-id>
+valis admin audit --target <decision-id>
 ```
 
 ---
@@ -167,7 +167,7 @@ teamind admin audit --target <decision-id>
 **Validation commands**:
 ```bash
 # 6.1: Search with verbose output
-teamind search "database choice" --verbose
+valis search "database choice" --verbose
 # Output should show: composite_score, semantic, bm25, recency, importance, graph
 
 # 6.5: Performance test (via test suite)
@@ -182,21 +182,21 @@ npm test -- --grep "reranking.*performance"
 |---|----------|----------|--------|
 | 7.1 | 5 decisions in same affects area, one dominant (>1.5x) | Lower-ranked ones suppressed from default results | [ ] |
 | 7.2 | Search with `--all` flag | All results including suppressed ones returned with `suppressed: true` label | [ ] |
-| 7.3 | MCP `teamind_search` response | Includes `suppressed_count` field | [ ] |
+| 7.3 | MCP `valis_search` response | Includes `suppressed_count` field | [ ] |
 | 7.4 | Decisions in different affects areas both match query | Cross-area results not suppressed | [ ] |
 
 **Validation commands**:
 ```bash
 # 7.1: Default search
-teamind search "database"
+valis search "database"
 # Should show top 1-2 results from same area
 
 # 7.2: Full search
-teamind search "database" --all
+valis search "database" --all
 # Should show all results with suppression labels
 
 # 7.4: Cross-area query
-teamind search "architecture"
+valis search "architecture"
 # Results from different areas should all appear
 ```
 
@@ -206,31 +206,31 @@ teamind search "architecture"
 
 | # | Scenario | Expected | Status |
 |---|----------|----------|--------|
-| 8.1 | Run `teamind enrich` with LLM key and pending decisions | Pending decisions classified with type, summary, affects | [ ] |
-| 8.2 | Run `teamind enrich` without LLM key | Exits with "No LLM provider configured. Pending decisions unchanged." | [ ] |
-| 8.3 | Run `teamind serve` without LLM key | All core operations work normally | [ ] |
+| 8.1 | Run `valis enrich` with LLM key and pending decisions | Pending decisions classified with type, summary, affects | [ ] |
+| 8.2 | Run `valis enrich` without LLM key | Exits with "No LLM provider configured. Pending decisions unchanged." | [ ] |
+| 8.3 | Run `valis serve` without LLM key | All core operations work normally | [ ] |
 | 8.4 | Verify enriched decision metadata | Marked with `enriched_by: 'llm'` and audit entry created | [ ] |
 | 8.5 | Hit daily cost ceiling ($1 default) | Enrichment stops, resumes tomorrow | [ ] |
-| 8.6 | Run `teamind enrich --dry-run` | Shows what would be classified without making changes | [ ] |
+| 8.6 | Run `valis enrich --dry-run` | Shows what would be classified without making changes | [ ] |
 
 **Validation commands**:
 ```bash
 # 8.1: With LLM key configured
 export ENRICHMENT_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=sk-...
-teamind enrich
+valis enrich
 
 # 8.2: Without key
 unset ANTHROPIC_API_KEY
 unset ENRICHMENT_PROVIDER
-teamind enrich
+valis enrich
 
 # 8.3: Core operations without enrichment
-teamind serve  # Should start normally
+valis serve  # Should start normally
 # Store, search, context, lifecycle should all work
 
 # 8.6: Dry run
-teamind enrich --dry-run
+valis enrich --dry-run
 ```
 
 ---
@@ -244,25 +244,25 @@ teamind enrich --dry-run
 | 9.3 | View dashboard patterns section | "Patterns" section shows trends with decision counts | [ ] |
 | 9.4 | Run synthesis twice on same cluster | No duplicate pattern created (idempotent) | [ ] |
 | 9.5 | Deprecate all source decisions, re-run synthesis | Pattern auto-deprecated | [ ] |
-| 9.6 | Run `teamind admin patterns` manually | Synthesis executes immediately and reports results | [ ] |
+| 9.6 | Run `valis admin patterns` manually | Synthesis executes immediately and reports results | [ ] |
 
 **Validation commands**:
 ```bash
 # 9.1: Create a cluster
-teamind store --affects auth "Use JWT for API authentication"
-teamind store --affects auth "Use JWT for session management"
-teamind store --affects auth "Use JWT for service-to-service auth"
-teamind store --affects auth "Use JWT for webhook verification"
+valis store --affects auth "Use JWT for API authentication"
+valis store --affects auth "Use JWT for session management"
+valis store --affects auth "Use JWT for service-to-service auth"
+valis store --affects auth "Use JWT for webhook verification"
 
 # 9.6: Run synthesis
-teamind admin patterns
+valis admin patterns
 
 # 9.4: Run again (idempotent)
-teamind admin patterns
+valis admin patterns
 # Should report "0 new patterns (1 existing)"
 
 # Verify pattern
-teamind search "auth pattern" --type pattern
+valis search "auth pattern" --type pattern
 ```
 
 ---
@@ -281,14 +281,14 @@ teamind search "auth pattern" --type pattern
 **Validation commands**:
 ```bash
 # 10.1: (requires test org at limit)
-teamind store "One more decision"
+valis store "One more decision"
 # Should show: "Free tier limit reached (500/500). Upgrade to Team ($25/mo)..."
 
 # 10.3: Upgrade
-teamind upgrade --plan team
+valis upgrade --plan team
 
 # 10.6: Check usage
-teamind dashboard
+valis dashboard
 # Should show usage metrics section
 ```
 

@@ -24,21 +24,21 @@ requested workflow gap from beta testers.
 
 **Independent Test**: Store a decision with `status: proposed`. Verify
 it appears in search results labeled as "proposed." Promote it via
-`teamind_lifecycle`. Verify it transitions to `active` with audit trail.
+`valis_lifecycle`. Verify it transitions to `active` with audit trail.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer, **When** they call `teamind_store` with
+1. **Given** a developer, **When** they call `valis_store` with
    `status: 'proposed'`, **Then** the decision is stored as proposed
    and visible in search with a "proposed" label.
 2. **Given** proposed decisions exist, **When** a member runs
-   `teamind dashboard`, **Then** they see a "Proposed (N)" section
+   `valis dashboard`, **Then** they see a "Proposed (N)" section
    listing decisions awaiting review.
 3. **Given** a proposed decision, **When** any member calls
-   `teamind_lifecycle({ action: 'promote', decision_id })`, **Then**
+   `valis_lifecycle({ action: 'promote', decision_id })`, **Then**
    the decision transitions to `active` with an audit entry.
 4. **Given** a proposed decision, **When** any member calls
-   `teamind_lifecycle({ action: 'deprecate', decision_id })`, **Then**
+   `valis_lifecycle({ action: 'deprecate', decision_id })`, **Then**
    the proposal is rejected (deprecated) with an audit entry.
 5. **Given** a new proposed decision, **When** cross-session push is
    active, **Then** all team members receive a notification about the
@@ -48,8 +48,8 @@ it appears in search results labeled as "proposed." Promote it via
 
 ### User Story 2 - Cursor IDE Integration (Priority: P2)
 
-A developer using Cursor as their AI coding IDE runs `teamind init`
-and Cursor is auto-detected alongside Claude Code and Codex. Teamind
+A developer using Cursor as their AI coding IDE runs `valis init`
+and Cursor is auto-detected alongside Claude Code and Codex. Valis
 configures Cursor's MCP settings, injects decision-awareness
 instructions into `.cursorrules`, and seeds the brain. From that point,
 Cursor's AI agent can store, search, and receive decisions just like
@@ -60,23 +60,23 @@ IDEs. Not supporting Cursor cuts off the biggest addressable audience.
 The integration pattern already exists for Claude Code and Codex — this
 is a copy-adapt exercise.
 
-**Independent Test**: Install Teamind on a machine with Cursor. Run
-`teamind init`. Verify Cursor MCP config is created, `.cursorrules`
-has Teamind instructions, and the MCP server works with Cursor.
+**Independent Test**: Install Valis on a machine with Cursor. Run
+`valis init`. Verify Cursor MCP config is created, `.cursorrules`
+has Valis instructions, and the MCP server works with Cursor.
 
 **Acceptance Scenarios**:
 
 1. **Given** Cursor is installed (`~/.cursor/` exists), **When** the
-   user runs `teamind init`, **Then** Cursor is detected and listed.
+   user runs `valis init`, **Then** Cursor is detected and listed.
 2. **Given** Cursor detected, **When** init configures IDEs, **Then**
    MCP server config is added to Cursor's settings and `.cursorrules`
-   receives Teamind instruction markers between delimiters.
+   receives Valis instruction markers between delimiters.
 3. **Given** Cursor configured, **When** the user starts Cursor with
-   Teamind MCP server, **Then** `teamind_store`, `teamind_search`,
-   `teamind_context`, and `teamind_lifecycle` tools are available.
-4. **Given** Teamind already configured for Cursor, **When** init
+   Valis MCP server, **Then** `valis_store`, `valis_search`,
+   `valis_context`, and `valis_lifecycle` tools are available.
+4. **Given** Valis already configured for Cursor, **When** init
    runs again, **Then** no duplicate entries are created (idempotent).
-5. **Given** `teamind uninstall`, **When** it runs, **Then** Cursor
+5. **Given** `valis uninstall`, **When** it runs, **Then** Cursor
    MCP config and `.cursorrules` markers are cleanly removed.
 
 ---
@@ -97,7 +97,7 @@ clean. This also establishes the scheduled-job pattern reused by
 pattern synthesis and LLM enrichment later.
 
 **Independent Test**: Store 5 near-duplicate decisions. Run
-`teamind admin cleanup --dry-run`. Verify it identifies the duplicates
+`valis admin cleanup --dry-run`. Verify it identifies the duplicates
 and suggests which to keep.
 
 **Acceptance Scenarios**:
@@ -110,9 +110,9 @@ and suggests which to keep.
    review (not auto-deprecated — only exact dupes are auto-handled).
 3. **Given** `pending` decisions older than 30 days, **When** cleanup
    runs, **Then** they are flagged as stale orphans in the report.
-4. **Given** `teamind admin cleanup --dry-run`, **When** it runs,
+4. **Given** `valis admin cleanup --dry-run`, **When** it runs,
    **Then** it shows what would be cleaned without making changes.
-5. **Given** `teamind admin cleanup --apply`, **When** it runs,
+5. **Given** `valis admin cleanup --apply`, **When** it runs,
    **Then** changes are applied and audit entries created for each
    action.
 6. **Given** a scheduled cleanup, **When** it runs periodically,
@@ -122,7 +122,7 @@ and suggests which to keep.
 
 ### User Story 4 - Web Dashboard (Priority: P4)
 
-An Engineering Manager opens the Teamind web dashboard in their
+An Engineering Manager opens the Valis web dashboard in their
 browser to see the team's decision brain without using the CLI. They
 see a searchable list of all decisions with status labels, a
 contradiction view, lifecycle statistics, team activity timeline, and
@@ -187,7 +187,7 @@ one. Search again — verify the pinned one is now at the top.
    180 days old, **Then** its effective relevance is ~25% of original.
 3. **Given** a pinned decision, **When** it is 180 days old, **Then**
    its effective relevance does not decay — it ranks as if fresh.
-4. **Given** an admin, **When** they call `teamind_lifecycle` with
+4. **Given** an admin, **When** they call `valis_lifecycle` with
    `action: 'pin'`, **Then** the decision is pinned with an audit
    entry. Only admins can pin.
 5. **Given** a pinned decision, **When** an admin unpins it, **Then**
@@ -263,7 +263,7 @@ Search — verify that only the top 2 appear in default results. Use
 2. **Given** suppressed results, **When** the user searches with
    `--all` flag, **Then** all results including suppressed ones are
    returned with a `suppressed: true` label.
-3. **Given** suppressed results, **When** the MCP `teamind_search`
+3. **Given** suppressed results, **When** the MCP `valis_search`
    tool is called, **Then** the response includes a
    `suppressed_count` field indicating how many were hidden.
 4. **Given** decisions in different `affects` areas, **When** both
@@ -288,19 +288,19 @@ searchable decisions. This dramatically improves search quality for
 auto-captured content.
 
 **Independent Test**: Store 5 `type: 'pending'` decisions via file
-watcher. Run `teamind enrich`. Verify each gets a type, summary, and
+watcher. Run `valis enrich`. Verify each gets a type, summary, and
 affects assigned. Verify the system works without any LLM key
 configured.
 
 **Acceptance Scenarios**:
 
 1. **Given** pending decisions and an LLM API key configured, **When**
-   `teamind enrich` runs, **Then** pending decisions are classified
+   `valis enrich` runs, **Then** pending decisions are classified
    with type, summary, and affects.
-2. **Given** no LLM API key, **When** `teamind enrich` runs, **Then**
+2. **Given** no LLM API key, **When** `valis enrich` runs, **Then**
    it exits with "No LLM provider configured. Pending decisions
    unchanged."
-3. **Given** no LLM API key, **When** `teamind serve` runs, **Then**
+3. **Given** no LLM API key, **When** `valis serve` runs, **Then**
    all core operations (store, search, context, lifecycle) work
    normally — enrichment is fully independent.
 4. **Given** enrichment runs, **When** a decision is classified,
@@ -309,7 +309,7 @@ configured.
 5. **Given** a daily cost ceiling (configurable, default $1), **When**
    the ceiling is hit, **Then** enrichment stops for the day and
    resumes tomorrow.
-6. **Given** `teamind enrich --dry-run`, **When** it runs, **Then**
+6. **Given** `valis enrich --dry-run`, **When** it runs, **Then**
    it shows what would be classified without making changes.
 
 ---
@@ -325,7 +325,7 @@ sessions. The dashboard shows a "Patterns" section with auto-detected
 trends.
 
 **Why this priority**: Emergent insights from decision clusters are
-the "wow" feature that differentiates Teamind from a simple database.
+the "wow" feature that differentiates Valis from a simple database.
 This is the Mímir-inspired "Völva's Vision" — the system discovers
 patterns that no individual developer noticed.
 
@@ -347,7 +347,7 @@ pattern decision.
    **Then** no duplicate pattern is created (idempotent).
 5. **Given** a pattern's source decisions are all deprecated, **When**
    synthesis re-runs, **Then** the pattern is automatically deprecated.
-6. **Given** `teamind admin patterns`, **When** it runs manually,
+6. **Given** `valis admin patterns`, **When** it runs manually,
    **Then** synthesis executes immediately and reports results.
 
 ---
@@ -519,7 +519,7 @@ the limit increases.
 - **SC-001**: Proposed decisions are visible in search and dashboard
   within 1 second of being stored.
 - **SC-002**: Cursor IDE integration works end-to-end (init → serve →
-  store → search) with zero manual configuration beyond `teamind init`.
+  store → search) with zero manual configuration beyond `valis init`.
 - **SC-003**: Cleanup identifies 95%+ of exact duplicates and flags
   90%+ of near-duplicates (measured against a test corpus).
 - **SC-004**: Web dashboard loads decision list and stats within 3

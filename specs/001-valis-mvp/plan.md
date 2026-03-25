@@ -1,11 +1,11 @@
-# Implementation Plan: Teamind MVP
+# Implementation Plan: Valis MVP
 
-**Branch**: `001-teamind-mvp` | **Date**: 2026-03-22 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-teamind-mvp/spec.md`
+**Branch**: `001-valis-mvp` | **Date**: 2026-03-22 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/001-valis-mvp/spec.md`
 
 ## Summary
 
-Build Teamind MVP — shared decision intelligence for AI-augmented
+Build Valis MVP — shared decision intelligence for AI-augmented
 engineering teams. A CLI + MCP server that captures, stores, searches,
 and pushes team decisions across developer sessions. Dual storage
 (Supabase Postgres + Qdrant Cloud), channel-driven auto-capture, agent-
@@ -55,7 +55,7 @@ server-side org management.
 ### Documentation (this feature)
 
 ```text
-specs/001-teamind-mvp/
+specs/001-valis-mvp/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
@@ -71,29 +71,29 @@ specs/001-teamind-mvp/
 ### Source Code (repository root)
 
 ```text
-teamind/
+valis/
 ├── packages/
 │   └── cli/
-│       ├── package.json            # "teamind" bin, deps, scripts
+│       ├── package.json            # "valis" bin, deps, scripts
 │       ├── tsconfig.json           # extends ../../tsconfig.base.json
 │       ├── bin/
-│       │   └── teamind.ts          # CLI entry (#!/usr/bin/env node)
+│       │   └── valis.ts          # CLI entry (#!/usr/bin/env node)
 │       ├── src/
 │       │   ├── commands/
-│       │   │   ├── init.ts         # teamind init + init --join
-│       │   │   ├── serve.ts        # teamind serve (unified process)
-│       │   │   ├── status.ts       # teamind status
-│       │   │   ├── dashboard.ts    # teamind dashboard
-│       │   │   ├── search-cmd.ts   # teamind search (CLI wrapper)
-│       │   │   ├── export-cmd.ts   # teamind export --json/--markdown
-│       │   │   ├── config-cmd.ts   # teamind config set/get
-│       │   │   └── uninstall.ts    # teamind uninstall
+│       │   │   ├── init.ts         # valis init + init --join
+│       │   │   ├── serve.ts        # valis serve (unified process)
+│       │   │   ├── status.ts       # valis status
+│       │   │   ├── dashboard.ts    # valis dashboard
+│       │   │   ├── search-cmd.ts   # valis search (CLI wrapper)
+│       │   │   ├── export-cmd.ts   # valis export --json/--markdown
+│       │   │   ├── config-cmd.ts   # valis config set/get
+│       │   │   └── uninstall.ts    # valis uninstall
 │       │   ├── mcp/
 │       │   │   ├── server.ts       # MCP + Channel server setup
 │       │   │   └── tools/
-│       │   │       ├── store.ts    # teamind_store handler
-│       │   │       ├── search.ts   # teamind_search handler
-│       │   │       └── context.ts  # teamind_context handler
+│       │   │       ├── store.ts    # valis_store handler
+│       │   │       ├── search.ts   # valis_search handler
+│       │   │       └── context.ts  # valis_context handler
 │       │   ├── capture/
 │       │   │   ├── watcher.ts      # JSONL activity watcher (triggers reminders)
 │       │   │   ├── hook-handler.ts # Stop hook HTTP handler
@@ -116,7 +116,7 @@ teamind/
 │       │   ├── offline/
 │       │   │   └── queue.ts        # pending.jsonl read/write/flush
 │       │   ├── config/
-│       │   │   ├── store.ts        # ~/.teamind/config.json CRUD
+│       │   │   ├── store.ts        # ~/.valis/config.json CRUD
 │       │   │   └── manifest.ts     # Track what init created
 │       │   ├── channel/
 │       │   │   └── push.ts         # Channel notification emitter

@@ -28,7 +28,7 @@ tiers. Existing rows are migrated via UPDATE.
 | enriched_by | text | nullable, CHECK in ('llm', 'manual') | ADD |
 
 **pinned**: When `true`, the decision is exempt from confidence decay
-in search ranking. Only admins can set this via `teamind_lifecycle`
+in search ranking. Only admins can set this via `valis_lifecycle`
 with `action: 'pin'`. Audit entry created on change.
 
 **enriched_by**: Tracks how a pending decision was classified. `'llm'`

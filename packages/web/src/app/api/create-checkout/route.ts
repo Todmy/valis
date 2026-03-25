@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { org_id, plan, billing_cycle: cycle },
-      success_url: success_url ?? 'https://dashboard.teamind.dev/billing/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: cancel_url ?? 'https://dashboard.teamind.dev/billing/cancel',
+      success_url: success_url ?? 'https://dashboard.valis.dev/billing/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: cancel_url ?? 'https://dashboard.valis.dev/billing/cancel',
     });
 
     return jsonResponse({ checkout_url: session.url }, 200);

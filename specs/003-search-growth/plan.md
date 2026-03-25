@@ -5,7 +5,7 @@
 
 ## Summary
 
-Extend the Teamind platform with multi-signal search reranking (5
+Extend the Valis platform with multi-signal search reranking (5
 signals: semantic, BM25, recency decay, importance, graph connectivity),
 within-area result suppression, data quality tooling (dedup, orphan
 cleanup, LLM enrichment for pending decisions, pattern synthesis from
@@ -116,10 +116,10 @@ packages/cli/src/
 │   ├── init.ts                 # Extended: Cursor IDE configuration
 │   ├── uninstall.ts            # Extended: Cursor cleanup
 │   ├── dashboard.ts            # Extended: proposed count, patterns section, usage metrics
-│   ├── admin-cleanup.ts        # NEW: teamind admin cleanup command
-│   ├── admin-patterns.ts       # NEW: teamind admin patterns command
-│   ├── enrich.ts               # NEW: teamind enrich command
-│   └── upgrade.ts              # NEW: teamind upgrade command
+│   ├── admin-cleanup.ts        # NEW: valis admin cleanup command
+│   ├── admin-patterns.ts       # NEW: valis admin patterns command
+│   ├── enrich.ts               # NEW: valis enrich command
+│   └── upgrade.ts              # NEW: valis upgrade command
 ├── auth/                       # Unchanged (Phase 2)
 ├── contradiction/              # Unchanged (Phase 2)
 └── ...                         # Remaining MVP files unchanged

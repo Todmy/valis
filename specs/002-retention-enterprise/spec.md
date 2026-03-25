@@ -3,7 +3,7 @@
 **Feature Branch**: `002-retention-enterprise`
 **Created**: 2026-03-23
 **Status**: Draft
-**Input**: Post-MVP roadmap — Phase 2 features deferred from 001-teamind-mvp
+**Input**: Post-MVP roadmap — Phase 2 features deferred from 001-valis-mvp
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -36,7 +36,7 @@ context, and the old one is still findable with a superseded label.
 **Acceptance Scenarios**:
 
 1. **Given** an active decision, **When** an admin or the original
-   author calls `teamind_store` with `replaces: <decision_id>`,
+   author calls `valis_store` with `replaces: <decision_id>`,
    **Then** the new decision is stored as `active` and the replaced
    decision transitions to `superseded` automatically.
 2. **Given** an active decision, **When** any member changes its
@@ -74,7 +74,7 @@ When Dev B's session is offline or channels are unavailable, nothing
 breaks. They still find the decision via search on next query.
 
 **Why this priority**: In the MVP, push only works within the local
-session. Cross-session push is what transforms Teamind from "shared
+session. Cross-session push is what transforms Valis from "shared
 database with search" into "real-time team awareness" — the core
 differentiator for retention and the "team brain" promise.
 
@@ -227,9 +227,9 @@ identifies at-risk orgs (low activity = churn risk).
 **Why this priority**: The MVP rate_limits table tracks daily operation
 counts but no tooling exists to analyze them. Without instrumentation,
 the team is blind to activation, engagement, and cost — the three
-metrics that determine whether Teamind is a viable business.
+metrics that determine whether Valis is a viable business.
 
-**Independent Test**: Run `teamind admin metrics` and verify it shows:
+**Independent Test**: Run `valis admin metrics` and verify it shows:
 active orgs this week, avg decisions per org, avg searches per org,
 estimated COGS per org, and activation funnel (orgs created →
 first store → weekly active).
@@ -237,7 +237,7 @@ first store → weekly active).
 **Acceptance Scenarios**:
 
 1. **Given** an org with activity, **When** the platform operator runs
-   `teamind admin metrics` (requires service_role key), **Then** they
+   `valis admin metrics` (requires service_role key), **Then** they
    see: total orgs, active orgs (7d/30d), avg decisions/org, avg
    searches/org.
 2. **Given** rate_limits data, **When** metrics are computed, **Then**
@@ -334,7 +334,7 @@ first store → weekly active).
   search count, active members, and compute activation and churn
   indicators.
 - **FR-019**: System MUST provide a platform operator CLI command
-  (`teamind admin metrics`, requires service_role key) for internal
+  (`valis admin metrics`, requires service_role key) for internal
   metrics reporting (active orgs, COGS estimates, activation funnel,
   churn risk). This is not an org-level feature.
 - **FR-020**: Client authentication MUST use member-scoped tokens
@@ -362,7 +362,7 @@ first store → weekly active).
 ### Session 2026-03-23
 
 - Q: Who can change a decision's status (deprecate, promote, replace)? → A: Any member can deprecate or promote; only admin or original author can replace (supersede).
-- Q: Is `teamind admin metrics` org-scoped or platform-scoped? → A: Platform-scoped (requires service_role key, not per-member auth). This is an operator command for the Teamind deployer, not an org admin feature.
+- Q: Is `valis admin metrics` org-scoped or platform-scoped? → A: Platform-scoped (requires service_role key, not per-member auth). This is an operator command for the Valis deployer, not an org admin feature.
 
 ## Assumptions
 
@@ -397,7 +397,7 @@ first store → weekly active).
   period.
 - **SC-005**: The audit trail records 100% of state-changing
   operations with correct member attribution.
-- **SC-006**: `teamind admin metrics` returns activation funnel, active
+- **SC-006**: `valis admin metrics` returns activation funnel, active
   org counts, and COGS estimates within 5 seconds.
 - **SC-007**: Existing MVP installations continue to function without
   changes after Phase 2 deployment (backward compatibility).

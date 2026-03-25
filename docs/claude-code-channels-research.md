@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-22
 **Status:** Research notes — architecture, protocol, source code analysis
-**Relevance:** Channels are a potential transport layer for Teamind's event-driven capture and inter-session communication
+**Relevance:** Channels are a potential transport layer for Valis's event-driven capture and inter-session communication
 
 ---
 
@@ -387,45 +387,45 @@ ngrok http 8788
 
 ---
 
-## 12. Relevance to Teamind
+## 12. Relevance to Valis
 
-### Current Teamind Capture Architecture
+### Current Valis Capture Architecture
 
-Teamind uses three capture layers (JSONL watcher, stop hook, MCP store) — all are **pull-based** or fire on session lifecycle events.
+Valis uses three capture layers (JSONL watcher, stop hook, MCP store) — all are **pull-based** or fire on session lifecycle events.
 
 ### What Channels Enable
 
 Channels open a **push-based** pathway:
 
-1. **Real-time decision broadcast.** When one Claude session stores a decision via `teamind_store`, Teamind could push a notification to other running sessions:
+1. **Real-time decision broadcast.** When one Claude session stores a decision via `valis_store`, Valis could push a notification to other running sessions:
    ```xml
-   <channel source="teamind" type="decision" author="dev-alice">
+   <channel source="valis" type="decision" author="dev-alice">
    Chose PostgreSQL over MongoDB for user data — need ACID for payment transactions
    </channel>
    ```
    Other sessions immediately have context without re-querying.
 
-2. **Cross-session coordination.** A Teamind channel could push "conflicting decision detected" alerts when two sessions make contradictory decisions simultaneously.
+2. **Cross-session coordination.** A Valis channel could push "conflicting decision detected" alerts when two sessions make contradictory decisions simultaneously.
 
-3. **Team notifications via Telegram/Discord.** Teamind could bridge to existing channels — when a critical decision is stored, it posts to a team channel where the engineering manager sees it.
+3. **Team notifications via Telegram/Discord.** Valis could bridge to existing channels — when a critical decision is stored, it posts to a team channel where the engineering manager sees it.
 
-4. **CI/CD integration.** Build failures push to Claude via webhook channel. Claude has Teamind context (past decisions, patterns) and can diagnose issues with full team knowledge.
+4. **CI/CD integration.** Build failures push to Claude via webhook channel. Claude has Valis context (past decisions, patterns) and can diagnose issues with full team knowledge.
 
 ### Architecture Consideration
 
-Channels run per-session (subprocess of Claude Code). Teamind's `teamind serve` is also per-session. They could coexist:
+Channels run per-session (subprocess of Claude Code). Valis's `valis serve` is also per-session. They could coexist:
 
 ```
 Claude Code session
-├── teamind serve (MCP server — store/search/context tools)
-└── teamind-channel (channel server — push notifications from other sessions)
+├── valis serve (MCP server — store/search/context tools)
+└── valis-channel (channel server — push notifications from other sessions)
 ```
 
-Or Teamind could become a hybrid MCP+channel server:
+Or Valis could become a hybrid MCP+channel server:
 
 ```ts
 const mcp = new Server(
-  { name: 'teamind', version: '1.0.0' },
+  { name: 'valis', version: '1.0.0' },
   {
     capabilities: {
       experimental: { 'claude/channel': {} },  // channel capability
@@ -436,15 +436,15 @@ const mcp = new Server(
 )
 ```
 
-This would let Teamind both respond to tool calls (store, search, context) AND push events (new decisions from other team members, conflict alerts).
+This would let Valis both respond to tool calls (store, search, context) AND push events (new decisions from other team members, conflict alerts).
 
 ### Key Limitation
 
-Channels don't buffer. If the session isn't running, events are lost. For Teamind, this means push notifications are supplementary to the existing pull-based capture — they improve real-time awareness but can't replace the JSONL watcher or startup sweep.
+Channels don't buffer. If the session isn't running, events are lost. For Valis, this means push notifications are supplementary to the existing pull-based capture — they improve real-time awareness but can't replace the JSONL watcher or startup sweep.
 
 ### Inter-Agent Communication
 
-Channels are NOT designed for agent-to-agent communication. Claude Code has a separate **Agent Teams** feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) that uses shared task lists and mailbox messaging. If Teamind needs direct agent-to-agent coordination, Agent Teams is the intended mechanism — channels are for external-system-to-Claude only.
+Channels are NOT designed for agent-to-agent communication. Claude Code has a separate **Agent Teams** feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) that uses shared task lists and mailbox messaging. If Valis needs direct agent-to-agent coordination, Agent Teams is the intended mechanism — channels are for external-system-to-Claude only.
 
 ---
 

@@ -9,7 +9,7 @@
 
 import type { AuthSession, ExchangeTokenResponse } from './types';
 
-const API_KEY_STORAGE_KEY = 'teamind_api_key';
+const API_KEY_STORAGE_KEY = 'valis_api_key';
 
 /** Minimum remaining lifetime before we trigger a token refresh. */
 const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes

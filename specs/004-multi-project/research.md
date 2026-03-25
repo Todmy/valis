@@ -6,22 +6,22 @@
 ## Per-Directory Config Resolution
 
 **Decision**: Use a two-tier config model. Global config at
-`~/.teamind/config.json` stores org credentials (shared across all
-projects). Per-directory config at `.teamind.json` in the project root
+`~/.valis/config.json` stores org credentials (shared across all
+projects). Per-directory config at `.valis.json` in the project root
 stores `project_id` and `project_name`. The CLI resolves the active
-project by walking up from `process.cwd()` to find `.teamind.json`.
+project by walking up from `process.cwd()` to find `.valis.json`.
 
 **Resolution algorithm**:
 ```
 1. Start at process.cwd()
-2. Check for .teamind.json in current directory
+2. Check for .valis.json in current directory
 3. If not found, walk up to parent directory
 4. Repeat until found or filesystem root reached
-5. If found: merge with global ~/.teamind/config.json
+5. If found: merge with global ~/.valis/config.json
 6. If not found: return global config only (no active project)
 ```
 
-**`.teamind.json` schema**:
+**`.valis.json` schema**:
 ```json
 {
   "project_id": "uuid",
@@ -29,7 +29,7 @@ project by walking up from `process.cwd()` to find `.teamind.json`.
 }
 ```
 
-**Global `~/.teamind/config.json`** (unchanged fields):
+**Global `~/.valis/config.json`** (unchanged fields):
 ```json
 {
   "org_id": "uuid",
@@ -58,52 +58,52 @@ already expect.
 
 **Alternatives considered**:
 - **Single config file with project array**: Complex merging, no
-  automatic per-directory switching, forces manual `teamind switch`.
+  automatic per-directory switching, forces manual `valis switch`.
 - **Symlinks**: Fragile, platform-dependent, confusing for users.
-- **Environment variable `TEAMIND_PROJECT_ID`**: Works for CI but
+- **Environment variable `VALIS_PROJECT_ID`**: Works for CI but
   forces manual setup per terminal. Per-directory file is set-and-forget.
 
 **Edge cases**:
-- Nested repos: the closest `.teamind.json` wins (child overrides parent).
-- No `.teamind.json` found: CLI reports "No project configured" and
-  prompts user to run `teamind init`.
-- `.teamind.json` exists but global config missing: CLI reports
-  "Run `teamind init` to configure org credentials."
+- Nested repos: the closest `.valis.json` wins (child overrides parent).
+- No `.valis.json` found: CLI reports "No project configured" and
+  prompts user to run `valis init`.
+- `.valis.json` exists but global config missing: CLI reports
+  "Run `valis init` to configure org credentials."
 
 ## Config Split: Global vs Per-Directory
 
 **Decision**: Remove `project_id` from global config. The existing
-`TeamindConfig` type keeps all org-level fields. A new `ProjectConfig`
-type represents the per-directory `.teamind.json`. The effective runtime
-config is `ResolvedConfig = TeamindConfig & { project?: ProjectConfig }`.
+`ValisConfig` type keeps all org-level fields. A new `ProjectConfig`
+type represents the per-directory `.valis.json`. The effective runtime
+config is `ResolvedConfig = ValisConfig & { project?: ProjectConfig }`.
 
 **Why not put `project_id` in global config?**
 - A developer may work on 5+ repos in different terminals simultaneously.
-  Global config would require a `teamind switch` before each context
+  Global config would require a `valis switch` before each context
   change.
 - Per-directory config makes `cd` the switch command. No additional
   mental overhead.
 
 **Migration from pre-project config**: Existing installations have no
-`.teamind.json` anywhere. After upgrade, `teamind init` detects the
+`.valis.json` anywhere. After upgrade, `valis init` detects the
 global config, creates a default project in the org, and writes
-`.teamind.json` in the current directory. See Migration Strategy below.
+`.valis.json` in the current directory. See Migration Strategy below.
 
 ## Project-Scoped Invite Codes
 
 **Decision**: Invite codes move from org-level (`orgs.invite_code`) to
 project-level (`projects.invite_code`). Each project gets its own unique
-invite code. `teamind init --join <code>` now resolves to a specific
+invite code. `valis init --join <code>` now resolves to a specific
 project (and its parent org).
 
 **Flow**:
 ```
-1. New member runs: teamind init --join ABCD-1234
+1. New member runs: valis init --join ABCD-1234
 2. CLI calls POST /functions/v1/join-project { invite_code, author_name }
 3. Edge Function resolves project from invite_code
 4. Creates member in org (if not already) + project_member in project
 5. Returns org_id, org_name, project_id, project_name, api_key
-6. CLI saves global config (org creds) + .teamind.json (project)
+6. CLI saves global config (org creds) + .valis.json (project)
 ```
 
 **Backward compatibility**: Existing `orgs.invite_code` column is kept
@@ -218,7 +218,7 @@ the org is cheap (keyword index) and provides exact project scoping.
   "role": "authenticated",
   "exp": "<now + 3600>",
   "iat": "<now>",
-  "iss": "teamind",
+  "iss": "valis",
   "org_id": "<org_id>",
   "project_id": "<project_id>",
   "member_role": "admin|project_admin|project_member",
