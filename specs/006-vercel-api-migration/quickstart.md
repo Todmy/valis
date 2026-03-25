@@ -188,6 +188,29 @@ time curl -s -X POST https://teamind.krukit.co/api/exchange-token \
 # Expected: < 200ms
 ```
 
+## 9. Stripe Webhook URL Migration (T041)
+
+After deploying the Vercel API routes, the Stripe dashboard webhook endpoint
+must be updated from the old Supabase Edge Function URL to the new Vercel
+API route URL.
+
+**Old URL (Supabase EF — deprecated for hosted):**
+```
+https://rmawxpdaudinbansjfpd.supabase.co/functions/v1/stripe-webhook
+```
+
+**New URL (Vercel API route):**
+```
+https://teamind.krukit.co/api/stripe-webhook
+```
+
+Steps:
+1. Go to https://dashboard.stripe.com/webhooks
+2. Select the existing teamind webhook endpoint
+3. Update the endpoint URL from the old to the new URL above
+4. Verify events are received by checking Vercel function logs
+5. Community/self-hosted deployments continue using the Supabase EF URL
+
 ## Validation Checklist
 
 ### US1 — Migrate Edge Functions to API Routes
@@ -235,3 +258,24 @@ time curl -s -X POST https://teamind.krukit.co/api/exchange-token \
 - [ ] Each EF has deprecation header
 - [ ] Stripe webhook URL documented for update
 - [ ] EFs kept in repo for community use
+
+---
+
+## Stripe Webhook URL Migration (T041)
+
+After deploying the Vercel API routes, update the Stripe dashboard webhook
+endpoint to point at the new Vercel URL:
+
+| Setting | Old (Supabase EF) | New (Vercel API) |
+|---------|-------------------|------------------|
+| Webhook URL | `https://rmawxpdaudinbansjfpd.supabase.co/functions/v1/stripe-webhook` | `https://teamind.krukit.co/api/stripe-webhook` |
+
+Steps:
+1. Open the [Stripe Dashboard -> Developers -> Webhooks](https://dashboard.stripe.com/webhooks).
+2. Find the existing webhook endpoint for `rmawxpdaudinbansjfpd.supabase.co`.
+3. Update the URL to `https://teamind.krukit.co/api/stripe-webhook`.
+4. Verify the signing secret (`STRIPE_WEBHOOK_SECRET`) is configured in Vercel env vars.
+5. Send a test event from Stripe dashboard to confirm delivery.
+
+**Note**: The community/self-hosted deployment continues to use the Supabase
+Edge Function URL. Only the hosted deployment needs this change.

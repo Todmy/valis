@@ -1,3 +1,7 @@
+/**
+ * @deprecated Migrated to Vercel API route: packages/web/src/app/api/create-checkout/route.ts
+ * This Edge Function is kept for community/self-hosted deployments only.
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14";
