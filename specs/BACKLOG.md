@@ -1,68 +1,77 @@
 # Teamind Product Backlog
 
-Items not yet specified. Ordered by strategic priority.
-
 ## Current: Deploy + Dog Fooding
 
-| # | Item | Status | Owner |
+| # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Deploy Supabase (migrations 001-005 + 13 Edge Functions + env vars) | Not started | Dev |
-| 2 | Set HOSTED_SUPABASE_URL + HOSTED_QDRANT_URL constants | Not started | Dev |
-| 3 | npm link + test `teamind init` end-to-end | Not started | Dev |
-| 4 | **Dog fooding on real project** (several weeks) | Not started | Todmy |
+| 1 | Deploy Supabase migrations (001-005) | Not started | `supabase db push` |
+| 2 | Deploy 13 Edge Functions | Not started | `supabase functions deploy` |
+| 3 | Set EF env vars (JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_*) | Not started | Via Supabase Dashboard or `supabase secrets set` |
+| 4 | ~~Set HOSTED URLs~~ | ✅ Done | Real URLs now in types.ts |
+| 5 | Enable Supabase Realtime | Not started | Dashboard → Settings → API → Realtime |
+| 6 | npm link + rebuild + test `teamind init` e2e | Not started | |
+| 7 | **Dog fooding** (several weeks) | Not started | Owner: Todmy. Real project testing. |
+
+**Domain**: `teamind.krukket.co` (subdomain of main domain)
+
+## Blockers Found During Review
+
+| # | Issue | Priority | Notes |
+|---|-------|----------|-------|
+| 8 | **rate_limits not incremented** — check-usage EF checks limits but nobody inserts/increments daily counters after store/search. Limits never trigger. | HIGH | Need to add increment call after each store/search operation (in CLI or via EF) |
+| 9 | **Qdrant hosted mode** — MCP search calls Qdrant directly but hosted mode has no qdrant_api_key on client. Search fails silently. | HIGH | Options: (a) expose read-only Qdrant key to hosted clients, (b) proxy search through EF, (c) return Qdrant read key from register response |
+| 10 | **Enrichment for hosted** — hosted users should use OUR LLM keys (included in plan), not their own. Need server-side enrichment EF that uses our Anthropic key. | MEDIUM | Community users enter their own keys in global config |
 
 ## Phase 4B: Go to Market (after dog fooding)
 
-| # | Feature | Effort | Status | Notes |
-|---|---------|--------|--------|-------|
-| 5 | Billing integration (Stripe) | 3-5 days | Deferred | Code exists but untested. Deploy after dog fooding confirms product-market fit |
-| 6 | Pricing page / website | 3-5 days | Not started | Needs domain (teamind.dev) |
-| 7 | Annual prepay discount (20%) | 1-2 days | Not started | Depends on #5 (Stripe) |
-| 8 | Device Authorization Grant (RFC 8628) for dashboard auth | 2-3 days | Not started | Better UX than API key entry |
-| 9 | Vercel deploy web dashboard | 1 day | Not started | packages/web ready, needs Vercel project |
-
-## Phase 5: Platform
-
-| # | Feature | Effort | Status |
-|---|---------|--------|--------|
-| 10 | **Task Marketplace** — project owners post tasks, external developers claim and execute them. Knowledge base controls which decisions the freelancer can see (via per-task access policy/prompt). KB validates submitted work against existing constraints. Simpler than Upwork — post task, wait for taker. Revenue: commission or premium. | Large | Idea |
-| 11 | Selective Knowledge Sharing — per-task scoped access to decisions (subset of project knowledge). Owner defines a policy prompt: "share API conventions but not security architecture." | Medium | Idea (prerequisite for #10) |
-| 12 | External member invites with task-scoped access | Medium | Idea (prerequisite for #10) |
-| 13 | Validation pipeline — KB checks PR against existing decisions/constraints before merge | Medium | Idea |
+| # | Feature | Effort | Notes |
+|---|---------|--------|-------|
+| 11 | Billing integration (Stripe) | 3-5 days | Code exists, deploy after dog fooding |
+| 12 | Pricing page at teamind.krukket.co | 3-5 days | |
+| 13 | Annual prepay discount (20%) | 1-2 days | Depends on Stripe |
+| 14 | Device Authorization Grant (RFC 8628) | 2-3 days | Better dashboard auth UX |
+| 15 | Deploy web dashboard to Vercel | 1 day | packages/web ready |
 
 ## Infrastructure Optimization
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 14 | **Analyze Edge Functions costs** — Supabase charges per execution time. Evaluate moving high-frequency EFs (check-usage, exchange-token) to Vercel Edge Functions where included in plan. Keep low-frequency EFs (register, create-project) on Supabase. | High | Do before scaling beyond beta |
-| 15 | **Realtime push cost analysis** — Supabase Realtime has connection limits (200 free, 500 pro). Evaluate if this is sufficient for beta or if we need to optimize subscription fan-out. | Medium | Monitor during dog fooding |
-| 16 | **Qdrant hosted mode** — currently CLI has empty qdrant_api_key in hosted mode. Search uses Qdrant via server-side seed EF but MCP search calls Qdrant directly (fails). Need: either expose Qdrant read-only key to hosted clients, or proxy search through an EF. | High | Blocks hosted mode search quality |
+| 16 | **Move high-frequency EFs to Vercel** — check-usage, exchange-token called on every store/search. Supabase charges per invocation after 500K/mo. Vercel Edge Functions included in plan (free/pro). Keep low-frequency EFs on Supabase (register, create-project, seed). | HIGH | Evaluate during dog fooding |
+| 17 | **Realtime push cost** — Supabase: 200 connections (free), 500 (pro). Monitor during dog fooding. | MEDIUM | |
+| 18 | **Server-side enrichment** — move enrichment to EF using our Anthropic key for hosted users. Community users use own keys via global config (~/.teamind/config.json). | MEDIUM | |
 
 ## Conversion Flows
 
-| # | Item | Effort | Status |
-|---|------|--------|--------|
-| 17 | **Community → Hosted migration** — user running community Docker Compose wants to switch to hosted. Auto-migrate: export local Postgres data → import to Supabase hosted → update CLI config → verify. Must preserve all decisions, members, audit trail. | Medium | Backlog |
-| 18 | **Hosted → Community migration** — user wants to self-host. Export from Supabase → import to local Docker Compose. | Medium | Backlog |
+| # | Item | Effort | Notes |
+|---|------|--------|-------|
+| 19 | **Community → Hosted migration** — export local Postgres → import to Supabase → update config. Preserve decisions, members, audit. | Medium | Backlog |
+| 20 | **Hosted → Community** — export from Supabase → import to local Docker. | Medium | Backlog |
+
+## Phase 5: Platform
+
+| # | Feature | Effort | Status |
+|---|---------|--------|--------|
+| 21 | **Task Marketplace** — freelance platform on Teamind KB. KB controls access, validates work. | Large | Idea |
+| 22 | Selective Knowledge Sharing — per-task scoped access | Medium | Prerequisite for #21 |
+| 23 | External member invites with task-scoped access | Medium | Prerequisite for #21 |
+| 24 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
 
 ## Documentation Gaps
 
 | # | Item | Priority |
 |---|------|----------|
-| 19 | **Community Edition spec** — formal spec for Docker Compose setup, direct SQL fallback, limitations vs hosted | Medium |
-| 20 | **Audit decisions log** — document the 28 issues found across 3 audit rounds as architectural decision records (ADRs) | Medium |
-| 21 | **Deploy runbook** — step-by-step for Supabase deploy (migrations, EFs, env vars, Qdrant) | High |
+| 25 | Community Edition formal spec (Docker Compose, limitations vs hosted) | Medium |
+| 26 | Audit decisions log — 28 issues as ADRs | Medium |
+| 27 | Deploy runbook (step-by-step Supabase + Qdrant + Vercel) | HIGH |
 
 ## Technical Debt
 
 | # | Item | Priority |
 |---|------|----------|
-| 22 | Delete `export-cmd.ts` (command unregistered, file is dead code) | Low |
-| 23 | Golden test set — 50 query-result pairs for reranking NDCG evaluation | Medium |
-| 24 | E2E tests per quickstart.md for each phase | Medium |
-| 25 | Hosted mode Qdrant verification endpoint (`/functions/v1/verify-qdrant`) | Low |
-| 26 | `.gitignore` — add `.teamind.json` to prevent accidental commits | Low |
-| 27 | `rate_limits` row creation — who inserts/increments daily counters? | Medium |
+| 28 | Delete `export-cmd.ts` dead code | Low |
+| 29 | Golden test set — 50 query-result pairs for NDCG | Medium |
+| 30 | E2E tests per quickstart.md | Medium |
+| 31 | ~~`.gitignore` for `.teamind.json`~~ | ✅ Done |
 
 ## Completed Phases
 
@@ -70,8 +79,8 @@ Items not yet specified. Ordered by strategic priority.
 |-------|---------|------|
 | 001 | MVP — CLI + MCP + dual storage | `specs/001-teamind-mvp/` |
 | 002 | Retention & Enterprise — lifecycle, push, auth, RBAC | `specs/002-retention-enterprise/` |
-| 003 | Search Intelligence & Growth — reranking, dashboard, enrichment, billing | `specs/003-search-growth/` |
+| 003 | Search Intelligence & Growth | `specs/003-search-growth/` |
 | 004 | Multi-Project — project-scoped isolation | `specs/004-multi-project/` |
-| 005 | Registration API — zero-config hosted onboarding | `specs/005-registration-api/` |
-| — | Community Edition — Docker Compose self-hosted | `community/` |
-| — | 3 Audit Rounds — 28 issues found and resolved | committed on main |
+| 005 | Registration API — zero-config hosted | `specs/005-registration-api/` |
+| — | Community Edition — Docker Compose | `community/` |
+| — | 3 Audit Rounds — 28 issues resolved | main branch |

@@ -28,3 +28,6 @@ coverage/
 # Temp
 *.tmp
 *.swp
+
+# Teamind local config (per-directory, not shared)
+.teamind.json
