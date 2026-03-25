@@ -224,6 +224,7 @@ describe('POST /api/check-usage', () => {
 describe('POST /api/create-checkout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     process.env.STRIPE_SECRET_KEY = 'sk_test_123';
     process.env.STRIPE_PRICE_TEAM_MONTHLY = 'price_team_monthly';
     process.env.SUPABASE_URL = 'https://test.supabase.co';
