@@ -61,11 +61,12 @@ serve(async (req: Request) => {
       });
     }
 
-    // Check member limit
+    // Check member limit (exclude revoked members)
     const { count: memberCount } = await supabase
       .from("members")
       .select("*", { count: "exact", head: true })
-      .eq("org_id", org.id);
+      .eq("org_id", org.id)
+      .is("revoked_at", null);
 
     const limit = MEMBER_LIMITS[org.plan] || 5;
     if ((memberCount || 0) >= limit) {
@@ -75,12 +76,13 @@ serve(async (req: Request) => {
       });
     }
 
-    // Check if already a member
+    // Check if already an active member (exclude revoked)
     const { data: existingMember } = await supabase
       .from("members")
       .select("id")
       .eq("org_id", org.id)
       .eq("author_name", author_name.trim())
+      .is("revoked_at", null)
       .single();
 
     if (existingMember) {
