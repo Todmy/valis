@@ -45,9 +45,9 @@
 
 ---
 
-## Phase 2: US1 — Migrate 13 Edge Functions to API Routes
+## Phase 2: US1 — Migrate 14 Edge Functions to API Routes
 
-**Goal**: All 13 Supabase Deno EFs rewritten as Next.js API routes with identical contracts
+**Goal**: All 14 Supabase Deno EFs rewritten as Next.js API routes with identical contracts
 
 **Independent Test**: Deploy to Vercel. `curl` each route with the same inputs as the EF. Verify identical responses.
 
@@ -85,6 +85,8 @@
 
 - [ ] T020 [P] [US1] Migrate seed EF to packages/web/src/app/api/seed/route.ts: export `POST(request: NextRequest)`. Replace Deno patterns. Preserve member authentication via API key, decision deduplication by content_hash, dual-write to Postgres + Qdrant (using QDRANT_URL and QDRANT_API_KEY from process.env). Preserve batch processing of decisions array.
 
+- [ ] T020b [P] [US1] Migrate create-project Edge Function to packages/web/src/app/api/create-project/route.ts per api-routes contract
+
 ### Route Tests
 
 - [ ] T021 [P] [US1] Create contract tests for registration routes in packages/web/src/app/api/__tests__/register.test.ts: test register returns 201 with all required fields, test validation errors (400), test rate limiting (429), test org name conflict (409). Mock createServerClient.
@@ -95,7 +97,7 @@
 
 - [ ] T024 [P] [US1] Create contract tests for admin routes in packages/web/src/app/api/__tests__/admin.test.ts: test change-status valid/invalid transitions, test rotate-key for all targets, test revoke-member with admin checks. Mock Supabase client.
 
-**Checkpoint**: All 13 API routes deployed. Contract tests pass. Each route produces identical output to its EF.
+**Checkpoint**: All 14 API routes deployed. Contract tests pass. Each route produces identical output to its EF.
 
 ---
 
@@ -118,6 +120,14 @@
 - [ ] T030 [P] [US2] Unit tests for URL resolution in packages/cli/test/cloud/api-url.test.ts (new file): test `resolveApiUrl` returns HOSTED_API_URL when supabaseUrl matches HOSTED_SUPABASE_URL, test it returns supabaseUrl for community mode. Test `resolveApiPath` returns `/api/<name>` for hosted, `/functions/v1/<name>` for community. Test `isHostedMode` detects hosted config correctly.
 
 - [ ] T031 [P] [US2] Integration test: verify all CLI EF call sites use resolveApiPath in packages/cli/test/cloud/api-url.test.ts (extend): grep codebase for `/functions/v1/` in packages/cli/src/ — each occurrence should be in a community-mode code path or use resolveApiPath. No hardcoded `/functions/v1/` calls in hosted mode.
+
+- [ ] T031b [US2] Update packages/cli/src/commands/upgrade.ts to use resolveApiUrl() for create-checkout calls
+
+- [ ] T031c [US2] Update packages/cli/src/mcp/tools/store.ts supersedeDecision to use resolveApiUrl() for change-status calls
+
+- [ ] T031d [US2] Update packages/cli/src/seed/index.ts runHostedSeed to use resolveApiUrl() for seed calls
+
+- [ ] T031e [US2] Update packages/cli/src/commands/switch-org.ts to use resolveApiUrl() for join-org calls
 
 **Checkpoint**: CLI hosted-mode API calls route to `https://teamind.krukit.co/api/<name>`. Community mode unchanged.
 
@@ -152,6 +162,8 @@
 - [ ] T036 [US4] Verify community mode path in packages/cli/src/commands/init.ts: confirm community mode createOrg() still falls through to direct SQL for non-Supabase-EF cases. Confirm community mode prompts for 4 credentials. Confirm community mode config saves supabase_service_role_key. Confirm no HOSTED_API_URL references in community code paths.
 
 - [ ] T037 [P] [US4] Integration test for community mode in packages/cli/test/commands/init-community.test.ts (new file): test that community init prompts for Supabase URL, Service Role Key, Qdrant URL, Qdrant API Key. Test that saved config includes supabase_service_role_key. Test that no calls to HOSTED_API_URL are made. Test that EF calls use /functions/v1/ path.
+
+- [ ] T037b [US2] Update packages/web/src/lib/auth.ts to call /api/exchange-token instead of /functions/v1/exchange-token (co-located Vercel route)
 
 ### EF Deprecation (US5)
 
@@ -207,9 +219,9 @@
 ### Parallel Opportunities
 
 - T001-T008 (Phase 1) — all parallel, different files
-- T009-T020 (Phase 2 routes) — mostly parallel after T009 (register may set patterns others follow)
+- T009-T020, T020b (Phase 2 routes) — mostly parallel after T009 (register may set patterns others follow)
 - T021-T024 (Phase 2 tests) — parallel with each other, after their route implementations
-- T025-T029 (Phase 3 CLI updates) — sequential within each file, but different files are parallel
+- T025-T029, T031b-T031e (Phase 3 CLI updates) — sequential within each file, but different files are parallel
 - T032-T034 (Phase 4 enrich) — T033 and T034 parallel, T032 depends on both
 - T036-T041 (Phase 5) — all parallel
 - T042-T047 (Phase 6) — parallel tests, sequential final validation
@@ -234,8 +246,8 @@
 ### Incremental Delivery
 
 1. Phase 1 + 3 critical routes -> Hosted init + auth works (MVP)
-2. Remaining 10 routes (T010-T012, T015-T020) -> Full API parity
-3. Phase 3 CLI updates (T025-T031) -> CLI fully migrated
+2. Remaining 11 routes (T010-T012, T015-T020, T020b) -> Full API parity
+3. Phase 3 CLI updates (T025-T031, T031b-T031e) -> CLI fully migrated
 4. Phase 4 enrich (T032-T035) -> Hosted enrichment available
 5. Phase 5 cleanup (T036-T041) -> EFs deprecated, community verified
 6. Phase 6 polish (T042-T047) -> Full test suite + validation
@@ -244,7 +256,7 @@
 
 ## Notes
 
-- Total: 47 tasks (T001-T047)
+- Total: 53 tasks (T001-T047 + T020b, T031b-T031e, T037b)
 - [P] tasks = different files, no dependencies
 - [USX] label maps task to specific user story
 - The register and exchange-token routes are the critical path — migrate and test them first
@@ -258,7 +270,7 @@
 
 | FR | Description | Task IDs | Coverage |
 |----|-------------|----------|----------|
-| FR-001 | 14 Next.js API routes in packages/web/src/app/api/ | T009-T020, T032 | FULL — 13 migrated routes (T009-T020) + 1 new enrich route (T032) |
+| FR-001 | 14 Next.js API routes in packages/web/src/app/api/ | T009-T020, T020b, T032 | FULL — 14 migrated routes (T009-T020, T020b) + 1 new enrich route (T032) |
 | FR-002 | Each route preserves exact request/response contract | T009-T020, T021-T024 | FULL — each route preserves contract, tests verify (T021-T024) |
 | FR-003 | Routes use process.env (not Deno.env.get) | T009-T020 | FULL — every route task specifies Deno.env.get -> process.env |
 | FR-004 | Imports from npm (not esm.sh/deno.land) | T001, T009-T020 | FULL — T001 adds deps, each route replaces imports |
@@ -295,8 +307,8 @@
 - **All 11 constitution principles pass.** No regressions.
 - **All 5 user stories have dedicated phases** with independent tests.
 - **Success criteria coverage**:
-  - SC-001 (13 EF contracts replicated): T009-T020 + T021-T024 (contract tests)
-  - SC-002 (full hosted flow via Vercel): T025-T029 + T042 (e2e test)
+  - SC-001 (14 EF contracts replicated): T009-T020, T020b + T021-T024 (contract tests)
+  - SC-002 (full hosted flow via Vercel): T025-T029, T031b-T031e + T042 (e2e test)
   - SC-003 (hosted enrichment works): T032-T035
   - SC-004 (community unchanged): T036-T037
   - SC-005 (cold-start < 500ms): T046 (quickstart validation)
