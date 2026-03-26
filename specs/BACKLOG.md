@@ -68,7 +68,7 @@
 
 | # | Item | Priority |
 |---|------|----------|
-| 28 | Delete `export-cmd.ts` dead code | Low |
+| 28 | ~~Delete `export-cmd.ts` dead code~~ | ✅ Done |
 | 29 | Golden test set — 50 query-result pairs for NDCG | Medium |
 | 30 | E2E tests per quickstart.md | Medium |
 | 31 | ~~`.gitignore` for `.valis.json`~~ | ✅ Done |
