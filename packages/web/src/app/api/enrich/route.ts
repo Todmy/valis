@@ -88,33 +88,75 @@ export async function POST(request: NextRequest) {
   }
 
   // 4. Parse request body
-  let body: { decision_ids?: unknown };
+  let body: { decision_ids?: unknown; auto?: unknown };
   try {
-    body = (await request.json()) as { decision_ids?: unknown };
+    body = (await request.json()) as { decision_ids?: unknown; auto?: unknown };
   } catch {
     return badRequest('decision_ids_required');
   }
 
-  const decisionIds = body.decision_ids;
-  if (!Array.isArray(decisionIds) || decisionIds.length === 0) {
-    return badRequest('decision_ids_required');
-  }
-
-  if (decisionIds.length > MAX_DECISIONS_PER_CALL) {
-    return badRequest(
-      `max_${MAX_DECISIONS_PER_CALL}_decisions_per_call`,
-    );
-  }
-
-  // Validate all IDs are strings
-  const validIds = decisionIds.filter(
-    (id): id is string => typeof id === 'string' && id.length > 0,
-  );
-  if (validIds.length === 0) {
-    return badRequest('decision_ids_required');
-  }
-
   const supabase = createServerClient();
+
+  // 4a. Auto-discovery mode: find unenriched decisions server-side
+  const isAuto =
+    body.auto === true ||
+    !Array.isArray(body.decision_ids) ||
+    (body.decision_ids as unknown[]).length === 0;
+
+  let validIds: string[];
+
+  if (isAuto) {
+    let autoQuery = supabase
+      .from('decisions')
+      .select('id')
+      .eq('org_id', orgId)
+      .is('enriched_by', null)
+      .order('created_at', { ascending: true })
+      .limit(MAX_DECISIONS_PER_CALL);
+
+    if (projectId) {
+      autoQuery = autoQuery.eq('project_id', projectId);
+    }
+
+    const { data: autoRows, error: autoError } = await autoQuery;
+
+    if (autoError) {
+      return jsonResponse(
+        { error: 'fetch_failed', message: autoError.message },
+        500,
+      );
+    }
+
+    if (!autoRows || autoRows.length === 0) {
+      return jsonResponse(
+        {
+          enriched: [],
+          skipped: [],
+          total_cost_cents: 0,
+          daily_budget_remaining_cents: 0,
+          auto_discovered: true,
+        },
+        200,
+      );
+    }
+
+    validIds = autoRows.map((r) => r.id as string);
+  } else {
+    const decisionIds = body.decision_ids as unknown[];
+    if (decisionIds.length > MAX_DECISIONS_PER_CALL) {
+      return badRequest(
+        `max_${MAX_DECISIONS_PER_CALL}_decisions_per_call`,
+      );
+    }
+
+    // Validate all IDs are strings
+    validIds = decisionIds.filter(
+      (id): id is string => typeof id === 'string' && id.length > 0,
+    );
+    if (validIds.length === 0) {
+      return badRequest('decision_ids_required');
+    }
+  }
 
   // 5. Check daily enrichment budget
   const dailyBudgetCents =
@@ -275,13 +317,16 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return jsonResponse(
-    {
-      enriched: enrichedResults,
-      skipped,
-      total_cost_cents: totalCostCents,
-      daily_budget_remaining_cents: Math.max(0, runningBudget),
-    },
-    200,
-  );
+  const responseBody: Record<string, unknown> = {
+    enriched: enrichedResults,
+    skipped,
+    total_cost_cents: totalCostCents,
+    daily_budget_remaining_cents: Math.max(0, runningBudget),
+  };
+
+  if (isAuto) {
+    responseBody.auto_discovered = true;
+  }
+
+  return jsonResponse(responseBody, 200);
 }

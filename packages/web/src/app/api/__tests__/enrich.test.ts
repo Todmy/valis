@@ -95,7 +95,7 @@ function createChainMock(resolvedValue: unknown): Record<string, ReturnType<type
     return obj;
   };
 
-  for (const method of ['select', 'eq', 'in', 'update', 'maybeSingle']) {
+  for (const method of ['select', 'eq', 'in', 'update', 'maybeSingle', 'is', 'order', 'limit']) {
     chain[method] = vi.fn().mockImplementation(() => makeThenable({ ...chain }));
   }
 
@@ -197,20 +197,34 @@ describe('POST /api/enrich', () => {
 
   // ---- 400 validation ----
 
-  it('returns 400 when decision_ids is missing', async () => {
+  it('auto-discovers when decision_ids is missing (treated as auto mode)', async () => {
+    const autoChain = createChainMock({ data: [], error: null });
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'decisions') return autoChain;
+      return createChainMock({ data: [], error: null });
+    });
+
     const req = makeRequest({}, HOSTED_JWT);
     const res = await POST(req as never);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.error).toBe('decision_ids_required');
+    expect(json.auto_discovered).toBe(true);
+    expect(json.enriched).toHaveLength(0);
   });
 
-  it('returns 400 when decision_ids is empty', async () => {
+  it('auto-discovers when decision_ids is empty (treated as auto mode)', async () => {
+    const autoChain = createChainMock({ data: [], error: null });
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'decisions') return autoChain;
+      return createChainMock({ data: [], error: null });
+    });
+
     const req = makeRequest({ decision_ids: [] }, HOSTED_JWT);
     const res = await POST(req as never);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.error).toBe('decision_ids_required');
+    expect(json.auto_discovered).toBe(true);
+    expect(json.enriched).toHaveLength(0);
   });
 
   it('returns 400 when more than 20 decision_ids', async () => {
@@ -443,5 +457,94 @@ describe('POST /api/enrich', () => {
     expect(json.enriched).toHaveLength(0);
     expect(json.skipped).toContain('non-existent-id');
     expect(json.total_cost_cents).toBe(0);
+  });
+
+  // ---- Auto-discovery mode ----
+
+  it('auto-discovers unenriched decisions when body has auto: true', async () => {
+    // First decisions call: auto-discovery query (select id, is enriched_by null)
+    const autoDiscoveryChain = createChainMock({
+      data: [{ id: 'auto-1' }, { id: 'auto-2' }],
+      error: null,
+    });
+    // Second decisions call: fetch full records by IDs
+    const decisionsSelectChain = createChainMock({
+      data: [
+        {
+          id: 'auto-1',
+          org_id: ORG_ID,
+          project_id: PROJECT_ID,
+          detail: 'Auto discovered decision 1',
+          enriched_by: null,
+        },
+        {
+          id: 'auto-2',
+          org_id: ORG_ID,
+          project_id: PROJECT_ID,
+          detail: 'Auto discovered decision 2',
+          enriched_by: null,
+        },
+      ],
+      error: null,
+    });
+    const decisionsUpdateChain = createChainMock({
+      data: null,
+      error: null,
+    });
+    const usageChain = createChainMock({ data: [], error: null });
+
+    let decisionsCallCount = 0;
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'enrichment_usage') return usageChain;
+      if (table === 'decisions') {
+        decisionsCallCount++;
+        if (decisionsCallCount === 1) return autoDiscoveryChain;
+        if (decisionsCallCount === 2) return decisionsSelectChain;
+        return decisionsUpdateChain;
+      }
+      return createChainMock({ data: [], error: null });
+    });
+
+    mockEnrichDecision.mockResolvedValue({
+      type: 'decision',
+      summary: 'Auto enriched',
+      affects: ['infra'],
+      confidence: 0.85,
+      tokens_used: 200,
+      cost_cents: 1,
+    });
+
+    const req = makeRequest({ auto: true }, HOSTED_JWT);
+    const res = await POST(req as never);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.auto_discovered).toBe(true);
+    expect(json.enriched).toHaveLength(2);
+    expect(json.enriched[0].decision_id).toBe('auto-1');
+    expect(json.enriched[1].decision_id).toBe('auto-2');
+    expect(mockEnrichDecision).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns empty result with auto_discovered when no unenriched decisions exist', async () => {
+    const autoDiscoveryChain = createChainMock({
+      data: [],
+      error: null,
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'decisions') return autoDiscoveryChain;
+      return createChainMock({ data: [], error: null });
+    });
+
+    const req = makeRequest({ auto: true }, HOSTED_JWT);
+    const res = await POST(req as never);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.auto_discovered).toBe(true);
+    expect(json.enriched).toHaveLength(0);
+    expect(json.skipped).toHaveLength(0);
+    expect(mockEnrichDecision).not.toHaveBeenCalled();
   });
 });
