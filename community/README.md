@@ -29,7 +29,7 @@ valis init
 | PostgreSQL 16 | 5432 | Decision storage, RLS, audit trail |
 | Qdrant 1.12 | 6333 (REST), 6334 (gRPC) | Vector search with BM25 |
 
-All 5 database migrations (001-005) are applied automatically on first start.
+All 7 database migrations (001-007) are applied automatically on first start.
 
 ## Configuration
 

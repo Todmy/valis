@@ -40,12 +40,16 @@ See [community/README.md](community/README.md) for full self-hosted setup guide.
 
 - **Zero-config onboarding**: `valis init` registers via public API — no credentials, no `.env` files
 - **Auto-capture**: Decisions captured automatically through channel reminders, keyword triggers, and session sweep
+- **DESIGN.md seeding**: On init, parses DESIGN.md files alongside CLAUDE.md, AGENTS.md, and git history to pre-populate the knowledge base
 - **Hybrid search**: Dense + BM25 sparse search via Qdrant Cloud with server-side embeddings
+- **Search intelligence**: Content-aware decay, two-stage reranking (multi-signal scoring), query analysis, graph-augmented search, contextual retrieval, HyPE indexing, and query expansion
+- **Knowledge compression**: Decision clustering with `valis admin clusters`, pattern consolidation with `valis admin consolidate`
 - **Dual storage**: Supabase Postgres (source of truth) + Qdrant Cloud (search)
 - **MCP tools**: `valis_store`, `valis_search`, `valis_context`, `valis_lifecycle` — works with Claude Code, Codex, Cursor
 - **Offline resilient**: Decisions queued locally when offline, synced on reconnect
 - **Secure**: Per-member API keys (`tmm_` prefix), no service_role keys on client machines. 10 secret detection patterns block API keys/passwords before storage
 - **Zero native deps**: Pure JS/TS, installs everywhere without node-gyp
+- **Free tier**: 2 members, 100 decisions/mo, 100 searches/day. Paid plans: Team ($29/mo), Business ($99/mo), Enterprise (custom)
 
 ## CLI Commands
 
@@ -67,6 +71,8 @@ See [community/README.md](community/README.md) for full self-hosted setup guide.
 | `valis admin audit` | View audit trail for an org |
 | `valis admin cleanup` | Detect and clean duplicate/orphan decisions |
 | `valis admin patterns` | Detect decision patterns from clusters |
+| `valis admin clusters` | View decision clusters and similarity groups |
+| `valis admin consolidate` | Merge redundant decisions into consolidated entries |
 | `valis admin migrate-qdrant` | Backfill project_id into Qdrant points |
 | `valis uninstall` | Clean removal |
 
@@ -82,7 +88,7 @@ See [community/README.md](community/README.md) for full self-hosted setup guide.
 
 ## How It Works
 
-1. **Init**: Registers with Valis hosted (or self-hosted Supabase), configures your IDE's MCP server, seeds initial decisions from CLAUDE.md and git history
+1. **Init**: Registers with Valis hosted (or self-hosted Supabase), configures your IDE's MCP server, seeds initial decisions from CLAUDE.md, DESIGN.md, AGENTS.md, and git history
 2. **Capture**: Your AI agent calls `valis_store` when decisions are made. Activity watcher sends reminders. Session-end hooks catch what was missed.
 3. **Search**: `valis_search` and `valis_context` query the team brain via hybrid search. Results ranked by relevance.
 4. **Push**: New decisions push notifications to active team sessions via channels.

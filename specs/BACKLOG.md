@@ -4,9 +4,9 @@
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Deploy Supabase migrations (001-005) | Not started | `supabase db push` |
-| 2 | Deploy 13 Edge Functions | Not started | `supabase functions deploy` |
-| 3 | Set EF env vars (JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_*) | Not started | Via Supabase Dashboard or `supabase secrets set` |
+| 1 | Deploy Supabase migrations (001-007) | Not started | `supabase db push` |
+| 2 | Deploy Vercel API routes (replaces Edge Functions for hosted) | Not started | `vercel deploy` |
+| 3 | Set env vars (JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_*) | Not started | Via Vercel Dashboard |
 | 4 | ~~Set HOSTED URLs~~ | ✅ Done | Real URLs now in types.ts |
 | 5 | Enable Supabase Realtime | Not started | Dashboard → Settings → API → Realtime |
 | 6 | npm link + rebuild + test `valis init` e2e | Not started | |
@@ -18,9 +18,9 @@
 
 | # | Issue | Priority | Notes |
 |---|-------|----------|-------|
-| 8 | **rate_limits not incremented** — check-usage EF checks limits but nobody inserts/increments daily counters after store/search. Limits never trigger. | HIGH | Need to add increment call after each store/search operation (in CLI or via EF) |
-| 9 | **Qdrant hosted mode** — MCP search calls Qdrant directly but hosted mode has no qdrant_api_key on client. Search fails silently. | HIGH | Options: (a) expose read-only Qdrant key to hosted clients, (b) proxy search through EF, (c) return Qdrant read key from register response |
-| 10 | **Enrichment for hosted** — hosted users should use OUR LLM keys (included in plan), not their own. Need server-side enrichment EF that uses our Anthropic key. | MEDIUM | Community users enter their own keys in global config |
+| 8 | ~~**rate_limits not incremented**~~ | ✅ Done | Fixed in 006: Vercel API routes increment rate_limits on store/search (migration 007) |
+| 9 | ~~**Qdrant hosted mode**~~ | ✅ Done | Fixed in 006: search proxied through Vercel API route `/api/search` |
+| 10 | ~~**Enrichment for hosted**~~ | ✅ Done | Fixed in 006: server-side enrichment via `/api/enrich` using platform Anthropic key |
 
 ## Phase 4B: Go to Market (after dog fooding)
 
@@ -36,9 +36,9 @@
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 16 | **Move high-frequency EFs to Vercel** — check-usage, exchange-token called on every store/search. Supabase charges per invocation after 500K/mo. Vercel Edge Functions included in plan (free/pro). Keep low-frequency EFs on Supabase (register, create-project, seed). | HIGH | Evaluate during dog fooding |
+| 16 | ~~**Move high-frequency EFs to Vercel**~~ | ✅ Done | All 14 API routes migrated to Vercel in phase 006 |
 | 17 | **Realtime push cost** — Supabase: 200 connections (free), 500 (pro). Monitor during dog fooding. | MEDIUM | |
-| 18 | **Server-side enrichment** — move enrichment to EF using our Anthropic key for hosted users. Community users use own keys via global config (~/.valis/config.json). | MEDIUM | |
+| 18 | ~~**Server-side enrichment**~~ | ✅ Done | `/api/enrich` route in phase 006 |
 
 ## Conversion Flows
 
@@ -77,11 +77,11 @@
 
 | Phase | Feature | Spec |
 |-------|---------|------|
-| 001 | MVP — CLI + MCP + dual storage | `specs/001-valis-mvp/` |
-| 002 | Retention & Enterprise — lifecycle, push, auth, RBAC | `specs/002-retention-enterprise/` |
-| 003 | Search Intelligence & Growth | `specs/003-search-growth/` |
-| 004 | Multi-Project — project-scoped isolation | `specs/004-multi-project/` |
-| 005 | Registration API — zero-config hosted | `specs/005-registration-api/` |
-| 006 | Vercel API Migration | `specs/006-vercel-api-migration/` |
-| — | Community Edition — Docker Compose | `community/` |
+| Q1 (001) | MVP — CLI + MCP + dual storage | `specs/001-valis-mvp/` |
+| Q2 (002) | Retention & Enterprise — lifecycle, push, auth, RBAC | `specs/002-retention-enterprise/` |
+| Q3 (003) | Search Intelligence & Growth — reranking, billing, cleanup | `specs/003-search-growth/` |
+| Q4 (004) | Multi-Project — project-scoped isolation | `specs/004-multi-project/` |
+| Q5 (005) | Registration API — zero-config hosted onboarding | `specs/005-registration-api/` |
+| Q8 (006) | Vercel API Migration — 14 routes, rate limit increment, server enrichment | `specs/006-vercel-api-migration/` |
+| Q9 | Community Edition — Docker Compose self-hosted | `community/` |
 | — | 3 Audit Rounds — 28 issues resolved | main branch |

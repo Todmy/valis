@@ -142,7 +142,7 @@ describe('POST /api/check-usage', () => {
 
     const subChain = chainable({ data: { plan: 'free' }, error: null });
     const usageChain = chainable({
-      data: { store_count: 500, search_count: 5, 0 /* member_count removed */: 2 },
+      data: { store_count: 100, search_count: 5, 0 /* member_count removed */: 2 },
       error: null,
     });
 
