@@ -132,13 +132,13 @@ serve(async (req: Request) => {
     // 3. Get current usage from rate_limits
     const { data: usage } = await supabase
       .from("rate_limits")
-      .select("decision_count, search_count_today, member_count")
+      .select("store_count, search_count")
       .eq("org_id", orgId)
       .single();
 
-    const decisionCount = usage?.decision_count ?? 0;
-    const searchCount = usage?.search_count_today ?? 0;
-    const memberCount = usage?.member_count ?? 0;
+    const decisionCount = usage?.store_count ?? 0;
+    const searchCount = usage?.search_count ?? 0;
+    const memberCount = usage?.0 /* member_count removed */ ?? 0;
 
     // 4. Enterprise — always allowed, no limit checks
     if (plan === "enterprise") {

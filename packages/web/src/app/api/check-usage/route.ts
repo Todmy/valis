@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
     // Get current usage
     const { data: usage } = await supabase
       .from('rate_limits')
-      .select('decision_count, search_count_today, member_count')
+      .select('store_count, search_count')
       .eq('org_id', orgId)
       .single();
 
-    const decisionCount = usage?.decision_count ?? 0;
-    const searchCount = usage?.search_count_today ?? 0;
+    const decisionCount = usage?.store_count ?? 0;
+    const searchCount = usage?.search_count ?? 0;
 
     // Enterprise — always allowed
     if (plan === 'enterprise') {

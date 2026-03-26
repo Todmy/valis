@@ -111,7 +111,7 @@ describe('POST /api/check-usage', () => {
     const subChain = chainable({ data: { plan: 'free', status: 'active' }, error: null });
     // rate_limits lookup
     const usageChain = chainable({
-      data: { decision_count: 10, search_count_today: 5, member_count: 2 },
+      data: { store_count: 10, search_count: 5, 0 /* member_count removed */: 2 },
       error: null,
     });
 
@@ -142,7 +142,7 @@ describe('POST /api/check-usage', () => {
 
     const subChain = chainable({ data: { plan: 'free' }, error: null });
     const usageChain = chainable({
-      data: { decision_count: 500, search_count_today: 5, member_count: 2 },
+      data: { store_count: 500, search_count: 5, 0 /* member_count removed */: 2 },
       error: null,
     });
 
@@ -179,7 +179,7 @@ describe('POST /api/check-usage', () => {
       error: null,
     });
     const usageChain = chainable({
-      data: { decision_count: 5000, search_count_today: 10, member_count: 5 },
+      data: { store_count: 5000, search_count: 10, 0 /* member_count removed */: 5 },
       error: null,
     });
 
