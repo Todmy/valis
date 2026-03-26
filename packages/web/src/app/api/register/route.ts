@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         member_api_key: memberApiKey,
         supabase_url: publicSupabaseUrl,
         qdrant_url: qdrantUrl,
-        qdrant_api_key: process.env.QDRANT_API_KEY || '',
+        qdrant_api_key: '',
         org_id: orgId,
         org_name: trimmedOrgName,
         project_id: projectId,

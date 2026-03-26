@@ -32,3 +32,4 @@ coverage/
 
 # Valis local config (per-directory, not shared)
 .valis.json
+.claude/worktrees/

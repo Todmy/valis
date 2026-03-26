@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         member_id: memberId,
         supabase_url: publicSupabaseUrl,
         qdrant_url: publicQdrantUrl,
-        qdrant_api_key: process.env.QDRANT_API_KEY || '',
+        qdrant_api_key: '',
         member_count: currentMemberCount + (isNewOrgMember ? 1 : 0),
         decision_count: decisionCount ?? 0,
         role: 'project_member',
