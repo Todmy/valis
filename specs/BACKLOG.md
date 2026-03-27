@@ -55,23 +55,24 @@
 | 22 | Selective Knowledge Sharing — per-task scoped access | Medium | Prerequisite for #21 |
 | 23 | External member invites with task-scoped access | Medium | Prerequisite for #21 |
 | 24 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
+| 25 | **Auto-consolidation via Claude Code hooks** — SessionEnd hook writes flag + timestamp to ~/.valis/consolidation-state.json; SessionStart hook checks 24h+5 sessions elapsed → runs `valis admin consolidate --auto-merge` as background process. Mimics Auto Dream pattern. Also explore Desktop Scheduled Tasks (persistent, cross-session). | Medium | Idea |
 
 ## Documentation Gaps
 
 | # | Item | Priority |
 |---|------|----------|
-| 25 | Community Edition formal spec (Docker Compose, limitations vs hosted) | Medium |
-| 26 | Audit decisions log — 28 issues as ADRs | Medium |
-| 27 | Deploy runbook (step-by-step Supabase + Qdrant + Vercel) | HIGH |
+| 26 | Community Edition formal spec (Docker Compose, limitations vs hosted) | Medium |
+| 27 | Audit decisions log — 28 issues as ADRs | Medium |
+| 28 | Deploy runbook (step-by-step Supabase + Qdrant + Vercel) | HIGH |
 
 ## Technical Debt
 
 | # | Item | Priority |
 |---|------|----------|
-| 28 | ~~Delete `export-cmd.ts` dead code~~ | ✅ Done |
-| 29 | Golden test set — 50 query-result pairs for NDCG | Medium |
-| 30 | E2E tests per quickstart.md | Medium |
-| 31 | ~~`.gitignore` for `.valis.json`~~ | ✅ Done |
+| 29 | ~~Delete `export-cmd.ts` dead code~~ | ✅ Done |
+| 30 | Golden test set — 50 query-result pairs for NDCG | Medium |
+| 31 | E2E tests per quickstart.md | Medium |
+| 32 | ~~`.gitignore` for `.valis.json`~~ | ✅ Done |
 
 ## Completed Phases
 
