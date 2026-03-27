@@ -16,7 +16,7 @@ docker compose ps
 npm install -g valis
 valis init
 # Choose: Community
-# Supabase URL: http://localhost:5432
+# Supabase URL: http://localhost:54321
 # Service Role Key: valis_local_dev
 # Qdrant URL: http://localhost:6333
 # Qdrant API Key: (leave empty for local)
@@ -49,7 +49,7 @@ After `valis init` with Community mode, your config is at `~/.valis/config.json`
 
 ```json
 {
-  "supabase_url": "http://localhost:5432",
+  "supabase_url": "http://localhost:54321",
   "supabase_service_role_key": "valis_local_dev",
   "qdrant_url": "http://localhost:6333",
   "qdrant_api_key": ""

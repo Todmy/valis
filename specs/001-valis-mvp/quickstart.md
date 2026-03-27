@@ -71,10 +71,6 @@ valis search "authentication"
 # Dashboard
 valis dashboard
 
-# Export
-valis export --json --output decisions.json
-```
-
 ## 6. Test with MCP Inspector
 
 ```bash
