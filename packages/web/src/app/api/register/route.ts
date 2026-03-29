@@ -30,10 +30,11 @@ function getClientIp(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { org_name, project_name, author_name } = body as {
+    const { org_name, project_name, author_name, email } = body as {
       org_name?: string;
       project_name?: string;
       author_name?: string;
+      email?: string;
     };
 
     if (!org_name || typeof org_name !== 'string' || org_name.trim().length === 0) {
@@ -183,14 +184,19 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'creation_failed', message: orgError.message }, 500);
     }
 
+    const memberInsert: Record<string, unknown> = {
+      org_id: orgId,
+      author_name: trimmedAuthorName,
+      role: 'admin',
+      api_key: memberApiKey,
+    };
+    if (email && email.trim()) {
+      memberInsert.email = email.trim();
+    }
+
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .insert({
-        org_id: orgId,
-        author_name: trimmedAuthorName,
-        role: 'admin',
-        api_key: memberApiKey,
-      })
+      .insert(memberInsert)
       .select('id')
       .single();
 
@@ -200,6 +206,18 @@ export async function POST(request: NextRequest) {
     }
 
     const memberId = memberData.id;
+
+    // Create Supabase Auth user (best-effort, for dashboard magic link login)
+    if (email && email.trim()) {
+      try {
+        await supabase.auth.admin.createUser({
+          email: email.trim(),
+          email_confirm: true,
+        });
+      } catch {
+        // Auth user creation is non-critical — user can still use API key
+      }
+    }
 
     const { error: projectError } = await supabase.from('projects').insert({
       id: projectId,
