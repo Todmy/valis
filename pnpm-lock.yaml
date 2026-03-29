@@ -13,6 +13,9 @@ importers:
       '@inquirer/input':
         specifier: ^5.0.10
         version: 5.0.10(@types/node@20.19.37)
+      '@inquirer/password':
+        specifier: ^5.0.10
+        version: 5.0.10(@types/node@20.19.37)
       '@inquirer/select':
         specifier: ^5.1.2
         version: 5.1.2(@types/node@20.19.37)
@@ -421,6 +424,15 @@ packages:
 
   '@inquirer/input@5.0.10':
     resolution: {integrity: sha512-nvZ6qEVeX/zVtZ1dY2hTGDQpVGD3R7MYPLODPgKO8Y+RAqxkrP3i/3NwF3fZpLdaMiNuK0z2NaYIx9tPwiSegQ==}
+    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+
+  '@inquirer/password@5.0.10':
+    resolution: {integrity: sha512-QbNyvIE8q2GTqKLYSsA8ATG+eETo+m31DSR0+AU7x3d2FhaTWzqQek80dj3JGTo743kQc6mhBR0erMjYw5jQ0A==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
     peerDependencies:
       '@types/node': '>=18'
@@ -1907,6 +1919,14 @@ snapshots:
 
   '@inquirer/input@5.0.10(@types/node@20.19.37)':
     dependencies:
+      '@inquirer/core': 11.1.7(@types/node@20.19.37)
+      '@inquirer/type': 4.0.4(@types/node@20.19.37)
+    optionalDependencies:
+      '@types/node': 20.19.37
+
+  '@inquirer/password@5.0.10(@types/node@20.19.37)':
+    dependencies:
+      '@inquirer/ansi': 2.0.4
       '@inquirer/core': 11.1.7(@types/node@20.19.37)
       '@inquirer/type': 4.0.4(@types/node@20.19.37)
     optionalDependencies:
