@@ -77,19 +77,93 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'rate_limit_exceeded' }, 429);
     }
 
-    // Check org name uniqueness
+    // Check if org already exists
     const { data: existingOrg } = await supabase
       .from('orgs')
-      .select('id')
+      .select('id, invite_code')
       .ilike('name', trimmedOrgName)
       .limit(1)
       .single();
 
     if (existingOrg) {
-      return jsonResponse({ error: 'org_name_taken' }, 409);
+      // Org exists — check if this author is already a member (idempotent re-registration)
+      const { data: existingMember } = await supabase
+        .from('members')
+        .select('id, api_key, role')
+        .eq('org_id', existingOrg.id)
+        .eq('author_name', trimmedAuthorName)
+        .is('revoked_at', null)
+        .limit(1)
+        .single();
+
+      if (!existingMember) {
+        return jsonResponse({ error: 'org_name_taken' }, 409);
+      }
+
+      // Member exists — find or create project, return credentials
+      let projectId: string;
+      let projectInviteCode: string;
+      const { data: existingProject } = await supabase
+        .from('projects')
+        .select('id, invite_code')
+        .eq('org_id', existingOrg.id)
+        .eq('name', trimmedProjectName)
+        .limit(1)
+        .single();
+
+      if (existingProject) {
+        projectId = existingProject.id;
+        projectInviteCode = existingProject.invite_code;
+      } else {
+        projectId = crypto.randomUUID();
+        projectInviteCode = generateInviteCode();
+        const { error: newProjErr } = await supabase.from('projects').insert({
+          id: projectId,
+          org_id: existingOrg.id,
+          name: trimmedProjectName,
+          invite_code: projectInviteCode,
+        });
+        if (newProjErr) {
+          return jsonResponse({ error: 'creation_failed', message: newProjErr.message }, 500);
+        }
+        await supabase.from('project_members').insert({
+          project_id: projectId,
+          member_id: existingMember.id,
+          role: 'project_admin',
+        });
+      }
+
+      // Ensure project membership
+      const { data: pm } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('member_id', existingMember.id)
+        .limit(1)
+        .single();
+      if (!pm) {
+        await supabase.from('project_members').insert({
+          project_id: projectId,
+          member_id: existingMember.id,
+          role: 'project_admin',
+        });
+      }
+
+      return jsonResponse({
+        member_api_key: existingMember.api_key,
+        supabase_url: process.env.SUPABASE_URL!,
+        qdrant_url: process.env.QDRANT_URL ?? '',
+        qdrant_api_key: '',
+        org_id: existingOrg.id,
+        org_name: trimmedOrgName,
+        project_id: projectId,
+        project_name: trimmedProjectName,
+        invite_code: projectInviteCode,
+        member_id: existingMember.id,
+      }, 200);
     }
 
-    // Generate keys and IDs
+    // Generate keys and IDs for new org
     const orgId = crypto.randomUUID();
     const orgApiKey = generateOrgApiKey();
     const orgInviteCode = generateInviteCode();
