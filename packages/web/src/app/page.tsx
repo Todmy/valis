@@ -22,7 +22,7 @@ export default function HomePage() {
   // AuthGate shows login when no session; this is the post-login redirect
   return (
     <div className="flex items-center justify-center h-full">
-      <p className="text-gray-500">Redirecting to dashboard...</p>
+      <p className="text-gray-400">Redirecting to dashboard...</p>
     </div>
   );
 }

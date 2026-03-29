@@ -7,10 +7,10 @@
 import type { DecisionStatus } from '@/lib/types';
 
 const STATUS_STYLES: Record<DecisionStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  proposed: 'bg-yellow-100 text-yellow-800',
-  deprecated: 'bg-red-100 text-red-700',
-  superseded: 'bg-gray-100 text-gray-600',
+  active: 'bg-green-950 text-green-300',
+  proposed: 'bg-yellow-950 text-yellow-300',
+  deprecated: 'bg-red-950 text-red-400',
+  superseded: 'bg-gray-950 text-gray-400',
 };
 
 export function StatusBadge({ status }: { status: DecisionStatus }) {

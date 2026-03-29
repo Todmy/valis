@@ -18,10 +18,10 @@ interface StatsGridProps {
 }
 
 const VARIANT_STYLES = {
-  default: 'bg-white',
-  warning: 'bg-yellow-50 border-yellow-200',
-  success: 'bg-green-50 border-green-200',
-  info: 'bg-blue-50 border-blue-200',
+  default: 'bg-gray-900',
+  warning: 'bg-yellow-950 border-yellow-800',
+  success: 'bg-green-950 border-green-800',
+  info: 'bg-blue-950 border-blue-800',
 };
 
 export function StatsGrid({ items }: StatsGridProps) {
@@ -32,10 +32,10 @@ export function StatsGrid({ items }: StatsGridProps) {
         const content = (
           <div
             key={item.label}
-            className={`border rounded-lg p-4 ${style}`}
+            className={`border border-gray-800 rounded-lg p-4 ${style}`}
           >
-            <div className="text-2xl font-bold text-gray-900">{item.value}</div>
-            <div className="text-sm text-gray-600 mt-1">{item.label}</div>
+            <div className="text-2xl font-bold text-gray-100">{item.value}</div>
+            <div className="text-sm text-gray-400 mt-1">{item.label}</div>
           </div>
         );
 

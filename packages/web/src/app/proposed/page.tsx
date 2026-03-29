@@ -48,26 +48,26 @@ export default function ProposedPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Proposed Decisions</h1>
-        <span className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-100">Proposed Decisions</h1>
+        <span className="text-sm text-gray-400">
           {decisions.length} awaiting review
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-gray-400 mb-6">
         Proposed decisions are awaiting team review. Promotion or rejection happens through
-        the CLI via <code className="text-xs bg-gray-100 px-1 rounded">teamind_lifecycle</code> with action &quot;promote&quot; or &quot;deprecate&quot;.
+        the CLI via <code className="text-xs bg-gray-950 px-1 rounded">teamind_lifecycle</code> with action &quot;promote&quot; or &quot;deprecate&quot;.
       </p>
 
       {loading && (
-        <div className="text-center py-8 text-gray-500">Loading proposed decisions...</div>
+        <div className="text-center py-8 text-gray-400">Loading proposed decisions...</div>
       )}
 
       {!loading && decisions.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-4xl mb-3">&#10003;</div>
-          <p className="text-gray-600 font-medium">No proposed decisions</p>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-400 font-medium">No proposed decisions</p>
+          <p className="text-gray-400 text-sm mt-1">
             All proposals have been reviewed.
           </p>
         </div>

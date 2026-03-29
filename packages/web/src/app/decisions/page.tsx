@@ -79,7 +79,7 @@ export default function DecisionsPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Decisions</h1>
+      <h1 className="text-2xl font-bold text-gray-100 mb-6">Decisions</h1>
 
       {/* Search */}
       <div className="mb-4">
@@ -94,7 +94,7 @@ export default function DecisionsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as DecisionStatus | '')}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100"
         >
           <option value="">All statuses</option>
           <option value="active">Active</option>
@@ -106,7 +106,7 @@ export default function DecisionsPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as DecisionType | '')}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100"
         >
           <option value="">All types</option>
           <option value="decision">Decision</option>
@@ -121,7 +121,7 @@ export default function DecisionsPage() {
           placeholder="Author..."
           value={authorFilter}
           onChange={(e) => setAuthorFilter(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm w-36"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100 placeholder-gray-600 w-36"
         />
 
         <input
@@ -129,13 +129,13 @@ export default function DecisionsPage() {
           placeholder="Affects area..."
           value={affectsFilter}
           onChange={(e) => setAffectsFilter(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm w-36"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100 placeholder-gray-600 w-36"
         />
 
         <select
           value={sortField}
           onChange={(e) => setSortField(e.target.value as SortField)}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100"
         >
           <option value="created_at">Sort: Newest</option>
           <option value="confidence">Sort: Confidence</option>
@@ -151,11 +151,11 @@ export default function DecisionsPage() {
 
       {/* Loading / empty / load more */}
       {loading && (
-        <div className="text-center py-8 text-gray-500">Loading decisions...</div>
+        <div className="text-center py-8 text-gray-400">Loading decisions...</div>
       )}
 
       {!loading && decisions.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-400">
           No decisions found matching your filters.
         </div>
       )}
@@ -164,7 +164,7 @@ export default function DecisionsPage() {
         <div className="text-center py-6">
           <button
             onClick={loadMore}
-            className="px-4 py-2 text-sm text-brand-600 border border-brand-600 rounded-md hover:bg-brand-50 transition-colors"
+            className="px-4 py-2 text-sm text-brand-400 border border-brand-600 rounded-md hover:bg-brand-950 transition-colors"
           >
             Load more
           </button>

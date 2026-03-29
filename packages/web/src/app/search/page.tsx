@@ -90,7 +90,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Search</h1>
+      <h1 className="text-2xl font-bold text-gray-100 mb-6">Search</h1>
 
       <div className="mb-4">
         <SearchBar onSearch={doSearch} placeholder="Search your team's decision brain..." />
@@ -101,7 +101,7 @@ export default function SearchPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white"
+          className="px-3 py-1.5 border border-gray-700 rounded-md text-sm bg-gray-800 text-gray-100"
         >
           <option value="">All types</option>
           <option value="decision">Decision</option>
@@ -112,12 +112,12 @@ export default function SearchPage() {
         </select>
 
         {suppressedCount > 0 && (
-          <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <label className="flex items-center gap-1.5 text-sm text-gray-400">
             <input
               type="checkbox"
               checked={showSuppressed}
               onChange={(e) => setShowSuppressed(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-gray-700"
             />
             Show {suppressedCount} suppressed results
           </label>
@@ -126,11 +126,11 @@ export default function SearchPage() {
 
       {/* Results */}
       {loading && (
-        <div className="text-center py-8 text-gray-500">Searching...</div>
+        <div className="text-center py-8 text-gray-400">Searching...</div>
       )}
 
       {!loading && searched && visibleResults.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-400">
           No results found. Try a different query.
         </div>
       )}
@@ -139,14 +139,14 @@ export default function SearchPage() {
         {visibleResults.map((result) => (
           <div key={result.id} className="relative">
             {result.suppressed && (
-              <div className="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+              <div className="absolute top-2 right-2 text-xs text-gray-400 bg-gray-950 px-1.5 py-0.5 rounded">
                 suppressed
               </div>
             )}
 
             {/* Signal breakdown when available */}
             {result.composite_score != null && (
-              <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
+              <div className="mb-1 flex items-center gap-2 text-xs text-gray-400">
                 <span className="font-medium">Score: {result.composite_score.toFixed(3)}</span>
                 {result.signals && (
                   <>

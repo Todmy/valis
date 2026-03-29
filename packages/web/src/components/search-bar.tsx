@@ -33,11 +33,11 @@ export function SearchBar({ onSearch, placeholder = 'Search decisions...', initi
           }
         }}
         placeholder={placeholder}
-        className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+        className="flex-1 px-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
       />
       <button
         type="submit"
-        className="px-4 py-2 bg-brand-600 text-white rounded-md font-medium hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
+        className="px-4 py-2 bg-brand-600 text-white rounded-md font-medium hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-950 transition-colors"
       >
         Search
       </button>

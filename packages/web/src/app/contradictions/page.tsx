@@ -49,26 +49,26 @@ export default function ContradictionsPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Contradictions</h1>
-        <span className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-100">Contradictions</h1>
+        <span className="text-sm text-gray-400">
           {contradictions.length} open contradiction{contradictions.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-gray-400 mb-6">
         Contradictions are detected automatically when new decisions conflict with existing ones.
-        Resolution happens through the CLI (<code className="text-xs bg-gray-100 px-1 rounded">teamind dismiss-contradiction</code> or by deprecating one decision).
+        Resolution happens through the CLI (<code className="text-xs bg-gray-950 px-1 rounded">teamind dismiss-contradiction</code> or by deprecating one decision).
       </p>
 
       {loading && (
-        <div className="text-center py-8 text-gray-500">Loading contradictions...</div>
+        <div className="text-center py-8 text-gray-400">Loading contradictions...</div>
       )}
 
       {!loading && contradictions.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-4xl mb-3">&#10003;</div>
-          <p className="text-gray-600 font-medium">No open contradictions</p>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-400 font-medium">No open contradictions</p>
+          <p className="text-gray-400 text-sm mt-1">
             All detected contradictions have been resolved.
           </p>
         </div>

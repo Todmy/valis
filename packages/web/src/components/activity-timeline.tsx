@@ -41,7 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
 
 export function ActivityTimeline({ entries }: ActivityTimelineProps) {
   if (entries.length === 0) {
-    return <p className="text-sm text-gray-500">No recent activity.</p>;
+    return <p className="text-sm text-gray-400">No recent activity.</p>;
   }
 
   return (
@@ -49,14 +49,14 @@ export function ActivityTimeline({ entries }: ActivityTimelineProps) {
       {entries.map((entry) => (
         <div key={entry.id} className="flex items-start gap-3">
           <div
-            className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${ACTION_COLORS[entry.action] ?? 'bg-gray-300'}`}
+            className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${ACTION_COLORS[entry.action] ?? 'bg-gray-600'}`}
           />
           <div className="flex-1 min-w-0">
-            <div className="text-sm text-gray-800">
+            <div className="text-sm text-gray-300">
               {ACTION_LABELS[entry.action] ?? entry.action}
             </div>
             {entry.reason && (
-              <div className="text-xs text-gray-500 truncate">{entry.reason}</div>
+              <div className="text-xs text-gray-400 truncate">{entry.reason}</div>
             )}
           </div>
           <div className="text-xs text-gray-400 whitespace-nowrap">
