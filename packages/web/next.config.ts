@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
+import { resolve } from 'node:path';
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  outputFileTracingRoot: resolve(__dirname, '../../'),
   reactStrictMode: true,
   typescript: {
     // Type checking done in CI; don't block builds

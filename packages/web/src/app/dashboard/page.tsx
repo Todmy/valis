@@ -92,7 +92,10 @@ export default function DashboardPage() {
       }
 
       // Projects
-      setProjects((projectsRes.data ?? []) as ProjectInfo[]);
+      setProjects((projectsRes.data ?? []).map((d: Record<string, unknown>) => ({
+        project_id: d.project_id as string,
+        projects: Array.isArray(d.projects) ? d.projects[0] ?? null : d.projects as { id: string; name: string } | null,
+      })));
 
       setLoading(false);
     }
