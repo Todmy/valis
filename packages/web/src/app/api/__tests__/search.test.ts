@@ -356,9 +356,9 @@ describe('POST /api/search', () => {
   // ---- Limit capping ----
 
   it('caps limit to 100', async () => {
-    mockFetch.mockResolvedValue(
-      mockFetchResponse({ result: { points: [] } }),
-    );
+    mockFetch
+      .mockResolvedValueOnce(mockFetchResponse({ result: { points: [] } }))
+      .mockResolvedValueOnce(mockFetchResponse({ result: { points: [], next_page_offset: null } }));
 
     const req = makeRequest({ query: 'test', limit: 200 }, VALID_JWT);
     const res = await POST(req as never);
@@ -376,9 +376,9 @@ describe('POST /api/search', () => {
   // ---- Type filtering ----
 
   it('passes type filter to Qdrant', async () => {
-    mockFetch.mockResolvedValue(
-      mockFetchResponse({ result: { points: [] } }),
-    );
+    mockFetch
+      .mockResolvedValueOnce(mockFetchResponse({ result: { points: [] } }))
+      .mockResolvedValueOnce(mockFetchResponse({ result: { points: [], next_page_offset: null } }));
 
     const req = makeRequest({ query: 'test', type: 'constraint' }, VALID_JWT);
     const res = await POST(req as never);
