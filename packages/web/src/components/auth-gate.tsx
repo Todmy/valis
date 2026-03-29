@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, type ReactNode, type FormEvent } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 
 interface AuthGateProps {
@@ -15,7 +16,13 @@ interface AuthGateProps {
 }
 
 export function AuthGate({ children }: AuthGateProps) {
+  const pathname = usePathname();
   const { session, loading, login } = useAuth();
+
+  // /auth/* pages handle their own Supabase Auth — bypass AuthGate
+  if (pathname?.startsWith('/auth/')) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
