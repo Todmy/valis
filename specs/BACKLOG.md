@@ -58,6 +58,8 @@
 | 25 | External member invites with task-scoped access | Medium | Prerequisite for #23 |
 | 26 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
 | 27 | **Auto-consolidation via Claude Code hooks** — SessionEnd hook writes flag + timestamp to ~/.valis/consolidation-state.json; SessionStart hook checks 24h+5 sessions elapsed → runs `valis admin consolidate --auto-merge` as background process. Mimics Auto Dream pattern. Also explore Desktop Scheduled Tasks (persistent, cross-session). | Medium | Idea |
+| 28 | **`valis login` — Device Authorization Grant (RFC 8628)** — browser-based login, token persistence in `~/.valis/credentials`, `valis init` skips registration if logged in, project selector from available memberships. Like `gh auth login`. | Medium | Idea |
+| 29 | **Knowledge Bases** — namespace layer inside projects (Org → Project → KB → Decisions). Each KB = separate context/topic (architecture, api-design, infrastructure, product). New table `knowledge_bases`, Qdrant `kb_id` payload field, CLI `valis switch --kb`, search scoped to active KB. Like GitHub repos within an org, but one level deeper. Interim: use `affected_areas` + type filters as lightweight KB proxy. | Large | Idea |
 
 ## Documentation Gaps
 
