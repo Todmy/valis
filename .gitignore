@@ -31,5 +31,8 @@ coverage/
 *.swp
 
 # Valis local config (per-directory, not shared)
+.valis/
 .valis.json
 .claude/worktrees/
+.vercel
+.env*.local
