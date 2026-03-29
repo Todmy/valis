@@ -211,11 +211,15 @@ async function hybridSearch(
 ): Promise<SearchResultPayload[]> {
   try {
     const points = await qdrantQuery(baseUrl, apiKey, filter, query, limit);
-    return points.map((p) => mapPointToResult(p, p.score || 0));
+    if (points.length > 0) {
+      return points.map((p) => mapPointToResult(p, p.score || 0));
+    }
+    // Semantic search returned nothing — fall back to scroll (payload filter)
   } catch {
-    const points = await qdrantScroll(baseUrl, apiKey, filter, limit);
-    return points.map((p) => mapPointToResult(p, 0));
+    // Query failed — fall back to scroll
   }
+  const points = await qdrantScroll(baseUrl, apiKey, filter, limit);
+  return points.map((p) => mapPointToResult(p, 0));
 }
 
 // ---------------------------------------------------------------------------
