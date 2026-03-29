@@ -74,7 +74,7 @@ export default function DecisionDetailPage() {
       setLoading(false);
 
       // Fetch related data in parallel
-      const promises: Promise<void>[] = [];
+      const promises: PromiseLike<void>[] = [];
 
       // Lifecycle history via RPC
       promises.push(
