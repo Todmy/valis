@@ -1,6 +1,3 @@
-[project]
-id = "valis"
-
 [api]
 enabled = true
 port = 54321

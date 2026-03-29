@@ -3,9 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "outputDirectory": ".next",
-  "installCommand": "pnpm install",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@valis-supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@valis-supabase-anon-key"
-  }
+  "installCommand": "pnpm install"
 }
