@@ -30,10 +30,11 @@ function getClientIp(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { org_name, project_name, author_name } = body as {
+    const { org_name, project_name, author_name, email } = body as {
       org_name?: string;
       project_name?: string;
       author_name?: string;
+      email?: string;
     };
 
     if (!org_name || typeof org_name !== 'string' || org_name.trim().length === 0) {
@@ -58,6 +59,14 @@ export async function POST(request: NextRequest) {
     }
     if (trimmedAuthorName.length < 1 || trimmedAuthorName.length > 100) {
       return jsonResponse({ error: 'invalid_name', field: 'author_name' }, 400);
+    }
+
+    // Validate email if provided
+    if (email && email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return jsonResponse({ error: 'invalid_email' }, 400);
+      }
     }
 
     const supabase = createServerClient();
@@ -183,14 +192,19 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'creation_failed', message: orgError.message }, 500);
     }
 
+    const memberInsert: Record<string, unknown> = {
+      org_id: orgId,
+      author_name: trimmedAuthorName,
+      role: 'admin',
+      api_key: memberApiKey,
+    };
+    if (email && email.trim()) {
+      memberInsert.email = email.trim();
+    }
+
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .insert({
-        org_id: orgId,
-        author_name: trimmedAuthorName,
-        role: 'admin',
-        api_key: memberApiKey,
-      })
+      .insert(memberInsert)
       .select('id')
       .single();
 
@@ -200,6 +214,18 @@ export async function POST(request: NextRequest) {
     }
 
     const memberId = memberData.id;
+
+    // Create Supabase Auth user (best-effort, for dashboard magic link login)
+    if (email && email.trim()) {
+      try {
+        await supabase.auth.admin.createUser({
+          email: email.trim(),
+          email_confirm: true,
+        });
+      } catch (authErr) {
+        console.error('register: Supabase Auth user creation failed (non-critical)', (authErr as Error).message);
+      }
+    }
 
     const { error: projectError } = await supabase.from('projects').insert({
       id: projectId,

@@ -61,6 +61,12 @@
 | 28 | **`valis login` — Device Authorization Grant (RFC 8628)** — browser-based login, token persistence in `~/.valis/credentials`, `valis init` skips registration if logged in, project selector from available memberships. Like `gh auth login`. | Medium | Idea |
 | 29 | **Knowledge Bases** — namespace layer inside projects (Org → Project → KB → Decisions). Each KB = separate context/topic (architecture, api-design, infrastructure, product). New table `knowledge_bases`, Qdrant `kb_id` payload field, CLI `valis switch --kb`, search scoped to active KB. Like GitHub repos within an org, but one level deeper. Interim: use `affected_areas` + type filters as lightweight KB proxy. | Large | Idea |
 
+## Infrastructure: Email & Auth
+
+| # | Item | Priority | Notes |
+|---|------|----------|-------|
+| 30 | **Custom SMTP sender domain** — Configure `noreply@krukit.co` (or `noreply@valis.krukit.co`) via Resend/Postmark + Supabase custom SMTP. Requires DNS SPF/DKIM records. Currently using default Supabase sender (`noreply@mail.app.supabase.io`) which may land in spam. | MEDIUM | After device auth login ships |
+
 ## Documentation Gaps
 
 | # | Item | Priority |
