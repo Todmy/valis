@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Decision } from '@/lib/types';
 import { StatusBadge } from './status-badge';
 import { PinBadge } from './pin-badge';
@@ -17,7 +18,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow bg-white">
+    <div className="border border-gray-800 rounded-lg p-4 hover:shadow-sm transition-shadow bg-gray-900">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -25,7 +26,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <StatusBadge status={decision.status} />
           <PinBadge pinned={decision.pinned} />
           {decision.enriched_by && (
-            <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+            <span className="text-xs text-purple-400 bg-purple-950 px-1.5 py-0.5 rounded">
               enriched:{decision.enriched_by}
             </span>
           )}
@@ -37,11 +38,18 @@ export function DecisionCard({ decision }: DecisionCardProps) {
 
       {/* Summary */}
       {decision.summary && (
-        <h3 className="font-medium text-gray-900 mb-1">{decision.summary}</h3>
+        <h3 className="font-medium text-gray-100 mb-1">
+          <Link
+            href={`/decisions/${decision.id}`}
+            className="hover:underline hover:text-white transition-colors"
+          >
+            {decision.summary}
+          </Link>
+        </h3>
       )}
 
       {/* Detail preview or full */}
-      <p className="text-sm text-gray-600 mb-2">
+      <p className="text-sm text-gray-400 mb-2">
         {expanded ? decision.detail : truncate(decision.detail, 200)}
       </p>
 
@@ -55,7 +63,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
       )}
 
       {/* Metadata */}
-      <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+      <div className="flex flex-wrap gap-2 text-xs text-gray-400">
         <span>by {decision.author}</span>
         {decision.confidence != null && (
           <span>confidence: {(decision.confidence * 100).toFixed(0)}%</span>
@@ -71,7 +79,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           {decision.affects.map((area) => (
             <span
               key={area}
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700"
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-950 text-gray-300"
             >
               {area}
             </span>
@@ -81,7 +89,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+        <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-400 space-y-1">
           <div>ID: {decision.id}</div>
           {decision.depends_on && decision.depends_on.length > 0 && (
             <div>Depends on: {decision.depends_on.join(', ')}</div>
@@ -102,11 +110,11 @@ export function DecisionCard({ decision }: DecisionCardProps) {
 
 function TypeBadge({ type }: { type: string }) {
   const styles: Record<string, string> = {
-    decision: 'bg-indigo-100 text-indigo-800',
-    constraint: 'bg-orange-100 text-orange-800',
-    pattern: 'bg-teal-100 text-teal-800',
-    lesson: 'bg-pink-100 text-pink-800',
-    pending: 'bg-gray-100 text-gray-600',
+    decision: 'bg-indigo-950 text-indigo-300',
+    constraint: 'bg-orange-950 text-orange-300',
+    pattern: 'bg-teal-950 text-teal-300',
+    lesson: 'bg-pink-950 text-pink-300',
+    pending: 'bg-gray-950 text-gray-400',
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[type] ?? styles.pending}`}>
