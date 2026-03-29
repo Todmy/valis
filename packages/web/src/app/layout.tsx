@@ -7,7 +7,7 @@ import './globals.css';
 import { AppShell } from './app-shell';
 
 export const metadata: Metadata = {
-  title: 'Teamind Dashboard',
+  title: 'Valis Dashboard',
   description: 'Read-only web dashboard for your team decision brain',
 };
 

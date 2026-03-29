@@ -55,7 +55,7 @@ function LoginForm({ onLogin }: { onLogin: (apiKey: string) => Promise<void> }) 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
       <div className="w-full max-w-md p-8 bg-gray-900 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-100 mb-2">Teamind Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-100 mb-2">Valis Dashboard</h1>
         <p className="text-gray-400 mb-6">
           Enter your member API key to access your team&apos;s decision brain.
         </p>
