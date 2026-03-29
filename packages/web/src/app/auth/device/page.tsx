@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
 export default function DeviceApprovalPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-950"><div className="text-gray-400">Loading...</div></div>}>
+      <DeviceApprovalContent />
+    </Suspense>
+  );
+}
+
+function DeviceApprovalContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get('code') || '';
