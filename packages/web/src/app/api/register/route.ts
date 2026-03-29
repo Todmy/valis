@@ -61,6 +61,14 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'invalid_name', field: 'author_name' }, 400);
     }
 
+    // Validate email if provided
+    if (email && email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return jsonResponse({ error: 'invalid_email' }, 400);
+      }
+    }
+
     const supabase = createServerClient();
 
     // Rate limit: max 10 per IP per hour
@@ -214,8 +222,8 @@ export async function POST(request: NextRequest) {
           email: email.trim(),
           email_confirm: true,
         });
-      } catch {
-        // Auth user creation is non-critical — user can still use API key
+      } catch (authErr) {
+        console.error('register: Supabase Auth user creation failed (non-critical)', (authErr as Error).message);
       }
     }
 

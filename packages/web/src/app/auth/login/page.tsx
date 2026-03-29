@@ -54,13 +54,15 @@ export default function LoginPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
               required
+              autoComplete="email"
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
 

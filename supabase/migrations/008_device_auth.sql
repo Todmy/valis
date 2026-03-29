@@ -20,3 +20,6 @@ CREATE TABLE IF NOT EXISTS device_codes (
 
 CREATE INDEX IF NOT EXISTS idx_device_codes_ip_created
   ON device_codes (ip_address, created_at);
+
+-- members.email UNIQUE constraint creates implicit btree index.
+-- Explicit index not needed — UNIQUE = index.

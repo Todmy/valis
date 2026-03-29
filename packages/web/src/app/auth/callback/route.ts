@@ -7,16 +7,19 @@ export async function GET(request: NextRequest) {
   const redirect = searchParams.get('redirect') || '/dashboard';
 
   if (code) {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      await supabase.auth.exchangeCodeForSession(code);
+    } catch (err) {
+      console.error('auth callback: failed to exchange code', (err as Error).message);
+    }
   }
 
   // Validate redirect is relative (prevent open redirect)
-  const safeRedirect = redirect.startsWith('/') ? redirect : '/dashboard';
+  const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
 
   return NextResponse.redirect(`${origin}${safeRedirect}`);
 }

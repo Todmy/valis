@@ -4,19 +4,22 @@ import { jsonResponse, badRequest, unauthorized } from '@/lib/api-response';
 
 export async function POST(request: NextRequest) {
   try {
-    // Extract Supabase Auth token from Authorization header
+    // Extract Supabase Auth token — accept both Bearer header and cookie
     const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return unauthorized('Missing auth token');
+    const accessToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null;
+
+    if (!accessToken) {
+      return unauthorized('Missing auth token. Log in at /auth/login first.');
     }
-    const accessToken = authHeader.slice(7);
 
     const supabase = createServerClient();
 
-    // Verify the Supabase Auth token and get user email
+    // Verify the Supabase Auth token server-side
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (authError || !user?.email) {
-      return unauthorized('Invalid or expired session');
+      return unauthorized('Invalid or expired session. Log in again.');
     }
 
     const body = await request.json();
@@ -26,33 +29,23 @@ export async function POST(request: NextRequest) {
       return badRequest('user_code and action (approve/deny) required');
     }
 
-    // Validate user_code format (alphanumeric + dash only)
+    // Validate user_code format
     if (!/^[A-Z]{4}-\d{4}$/.test(user_code)) {
       return badRequest('invalid_code_format');
     }
 
-    // Find the device code
-    const { data: code, error: codeErr } = await supabase
-      .from('device_codes')
-      .select('id, status, expires_at')
-      .eq('user_code', user_code)
-      .single();
-
-    if (codeErr || !code) {
-      return jsonResponse({ error: 'code_not_found' }, 404);
-    }
-
-    if (code.status !== 'pending') {
-      return jsonResponse({ error: 'code_already_used', status: code.status }, 409);
-    }
-
-    if (new Date(code.expires_at) < new Date()) {
-      await supabase.from('device_codes').update({ status: 'expired' }).eq('id', code.id);
-      return jsonResponse({ error: 'expired' }, 410);
-    }
-
     if (action === 'deny') {
-      await supabase.from('device_codes').update({ status: 'denied' }).eq('id', code.id);
+      // Atomic deny: only if still pending
+      const { data: denied } = await supabase
+        .from('device_codes')
+        .update({ status: 'denied' })
+        .eq('user_code', user_code)
+        .eq('status', 'pending')
+        .select('id');
+
+      if (!denied?.length) {
+        return jsonResponse({ error: 'code_not_found_or_used' }, 409);
+      }
       return jsonResponse({ status: 'denied' }, 200);
     }
 
@@ -67,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (memberErr || !member) {
       return jsonResponse({
         error: 'no_member_found',
-        message: `No Valis member found for email ${user.email}. Register first with valis init.`,
+        message: `No Valis member found for ${user.email}. Register first with valis init.`,
       }, 404);
     }
 
@@ -77,12 +70,35 @@ export async function POST(request: NextRequest) {
       .eq('id', member.org_id)
       .single();
 
-    // Update device code with member info
-    await supabase.from('device_codes').update({
-      status: 'approved',
-      member_id: member.id,
-      member_api_key: member.api_key,
-    }).eq('id', code.id);
+    // Atomic approve: only if still pending and not expired
+    const { data: approved } = await supabase
+      .from('device_codes')
+      .update({
+        status: 'approved',
+        member_id: member.id,
+        member_api_key: member.api_key,
+      })
+      .eq('user_code', user_code)
+      .eq('status', 'pending')
+      .gte('expires_at', new Date().toISOString())
+      .select('id');
+
+    if (!approved?.length) {
+      // Check if expired or already used
+      const { data: existing } = await supabase
+        .from('device_codes')
+        .select('status, expires_at')
+        .eq('user_code', user_code)
+        .single();
+
+      if (!existing) {
+        return jsonResponse({ error: 'code_not_found' }, 404);
+      }
+      if (new Date(existing.expires_at) < new Date()) {
+        return jsonResponse({ error: 'expired' }, 410);
+      }
+      return jsonResponse({ error: 'code_already_used', status: existing.status }, 409);
+    }
 
     return jsonResponse({
       status: 'approved',
@@ -90,6 +106,7 @@ export async function POST(request: NextRequest) {
       author_name: member.author_name,
     }, 200);
   } catch (err) {
-    return jsonResponse({ error: 'approve_failed', message: (err as Error).message }, 500);
+    console.error('device-approve: error', (err as Error).message);
+    return jsonResponse({ error: 'approve_failed' }, 500);
   }
 }

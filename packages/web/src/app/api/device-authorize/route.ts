@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         return jsonResponse({ error: 'unknown_status' }, 500);
     }
   } catch (err) {
-    return jsonResponse({ error: 'authorization_failed', message: (err as Error).message }, 500);
+    console.error('device-authorize: error', (err as Error).message);
+    return jsonResponse({ error: 'authorization_failed' }, 500);
   }
 }

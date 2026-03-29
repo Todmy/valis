@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
@@ -15,9 +15,15 @@ export default function DeviceApprovalPage() {
   const [result, setResult] = useState<{ status: string; org_name?: string; author_name?: string } | null>(null);
   const [error, setError] = useState('');
 
-  const supabase = createBrowserClient();
+  const supabase = useMemo(() => createBrowserClient(), []);
 
+  // No-code guard runs before auth check
   useEffect(() => {
+    if (!code) {
+      setChecking(false);
+      return;
+    }
+
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -38,6 +44,7 @@ export default function DeviceApprovalPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError('Session expired. Please log in again.');
+        setAction('idle');
         return;
       }
 
@@ -56,9 +63,19 @@ export default function DeviceApprovalPage() {
         if (res.status === 410) {
           setError('This code has expired. Run `valis login` again in your terminal.');
         } else if (res.status === 404) {
-          setError('Code not found. Check the code and try again.');
+          if (data.error === 'no_member_found') {
+            setError('No Valis account found for your email. Register first with `valis init`.');
+          } else {
+            setError('Code not found. Check the code and try again.');
+          }
+        } else if (res.status === 409) {
+          setError(
+            data.status === 'approved'
+              ? 'This device was already approved. You can close this tab.'
+              : 'This code was already used. Run `valis login` again.'
+          );
         } else {
-          setError(data.message || data.error || 'Action failed');
+          setError(data.message || data.error || 'Action failed. Try again.');
         }
         setAction('idle');
         return;
@@ -72,14 +89,7 @@ export default function DeviceApprovalPage() {
     }
   }
 
-  if (checking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
-        <div className="text-gray-400">Checking authentication...</div>
-      </div>
-    );
-  }
-
+  // No device code provided
   if (!code) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950">
@@ -89,6 +99,14 @@ export default function DeviceApprovalPage() {
             Run <code className="text-brand-400 bg-gray-800 px-1 rounded">valis login</code> in your terminal to generate a code.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (checking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+        <div className="text-gray-400">Checking authentication...</div>
       </div>
     );
   }

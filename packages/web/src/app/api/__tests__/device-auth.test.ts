@@ -284,15 +284,20 @@ describe('POST /api/device-approve', () => {
       error: null,
     });
 
+    // Atomic update chain: .update().eq().eq().gte().select() → returns [{ id }]
+    const atomicUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          gte: vi.fn().mockReturnValue({
+            select: vi.fn().mockResolvedValue({ data: [{ id: 'code-1' }] }),
+          }),
+        }),
+      }),
+    });
+
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === 'device_codes') {
-        const chain = mockChain({
-          id: 'code-1',
-          status: 'pending',
-          expires_at: new Date(Date.now() + 60000).toISOString(),
-        });
-        chain.update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-        return chain;
+        return { ...mockChain(null), update: atomicUpdate };
       }
       if (table === 'members') {
         return mockChain({
@@ -325,13 +330,16 @@ describe('POST /api/device-approve', () => {
       error: null,
     });
 
-    const chain = mockChain({
-      id: 'code-1',
-      status: 'pending',
-      expires_at: new Date(Date.now() + 60000).toISOString(),
+    // Atomic deny: .update().eq().eq().select() → returns [{ id }]
+    const atomicDeny = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockResolvedValue({ data: [{ id: 'code-1' }] }),
+        }),
+      }),
     });
-    chain.update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-    mockSupabaseFrom.mockReturnValue(chain);
+
+    mockSupabaseFrom.mockReturnValue({ ...mockChain(null), update: atomicDeny });
 
     const req = makeRequest(
       { user_code: 'ABCD-1234', action: 'deny' },
@@ -349,13 +357,35 @@ describe('POST /api/device-approve', () => {
       error: null,
     });
 
-    const chain = mockChain({
-      id: 'code-1',
+    // Atomic approve returns empty (expired gte check fails)
+    const atomicUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          gte: vi.fn().mockReturnValue({
+            select: vi.fn().mockResolvedValue({ data: [] }),
+          }),
+        }),
+      }),
+    });
+
+    // Fallback lookup shows expired
+    const selectChain = mockChain({
       status: 'pending',
       expires_at: new Date(Date.now() - 60000).toISOString(),
     });
-    chain.update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-    mockSupabaseFrom.mockReturnValue(chain);
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'device_codes') {
+        return { ...selectChain, update: atomicUpdate };
+      }
+      if (table === 'members') {
+        return mockChain({ id: 'm1', api_key: 'tmm_x', author_name: 'Test', org_id: 'o1' });
+      }
+      if (table === 'orgs') {
+        return mockChain({ name: 'test' });
+      }
+      return mockChain(null);
+    });
 
     const req = makeRequest(
       { user_code: 'ABCD-1234', action: 'approve' },
