@@ -48,12 +48,14 @@ function DeviceApprovalContent() {
     checkAuth();
 
     // Listen for auth state change (user returns from magic link)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setAuthenticated(true);
-        setChecking(false);
-      }
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: string, session: unknown) => {
+        if (session) {
+          setAuthenticated(true);
+          setChecking(false);
+        }
+      },
+    );
 
     return () => subscription.unsubscribe();
   }, [supabase, router, code]);
