@@ -75,7 +75,9 @@
       "mcp__claude_ai_Context7__query-docs",
       "Bash(vercel inspect:*)",
       "Bash(vercel logs:*)",
-      "Bash(vercel deploy:*)"
+      "Bash(vercel deploy:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh 'Web Project Management — project detail page with member invite by email, member removal, email notifications via Resend' --json --short-name \"project-member-mgmt\")",
+      "Bash(npx pnpm@9 add --filter ./packages/web resend)"
     ]
   }
 }

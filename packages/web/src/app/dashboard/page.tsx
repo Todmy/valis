@@ -15,6 +15,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useDashboardAuth } from '@/app/app-shell';
 import type { AuditEntry, DecisionStatus, DecisionType, MemberRole } from '@/lib/types';
 import { StatsGrid } from '@/components/stats-grid';
@@ -184,7 +185,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {projects.map((p) => (
-              <a
+              <Link
                 key={p.project_id}
                 href={`/projects/${p.project_id}`}
                 className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-600 transition-colors"
@@ -192,7 +193,7 @@ export default function DashboardPage() {
                 <div className="text-sm font-medium text-gray-100">
                   {p.projects?.name ?? 'Unnamed Project'}
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}
