@@ -5,8 +5,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(__dirname, '../../'),
   reactStrictMode: true,
   typescript: {
-    // Type checking done in CI; don't block builds
     ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   async headers() {
     return [
