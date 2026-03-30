@@ -15,7 +15,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { AuditEntry, DecisionStatus, DecisionType, MemberRole } from '@/lib/types';
 import { StatsGrid } from '@/components/stats-grid';
 import { ActivityTimeline } from '@/components/activity-timeline';
@@ -46,7 +46,7 @@ interface ProjectInfo {
 const FREE_TIER_LIMIT = 100;
 
 export default function DashboardPage() {
-  const { supabase, session } = useAuth();
+  const { supabase, userEmail } = useDashboardAuth();
   const [counts, setCounts] = useState<DecisionCounts | null>(null);
   const [activity, setActivity] = useState<AuditEntry[]>([]);
   const [members, setMembers] = useState<ActiveMember[]>([]);
@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase || !session) return;
+    if (!supabase) return;
 
     async function fetchDashboard() {
       setLoading(true);
@@ -66,7 +66,7 @@ export default function DashboardPage() {
         supabase!.from('audit_entries').select('*').order('created_at', { ascending: false }).limit(50),
         supabase!.from('members').select('id, author_name, role', { count: 'exact' }).is('revoked_at', null),
         supabase!.from('rate_limits').select('store_count, search_count').single(),
-        supabase!.from('project_members').select('project_id, projects(name, id)').eq('member_id', session!.memberId),
+        supabase!.from('project_members').select('project_id, projects(name, id)'),
       ]);
 
       // Count decisions
@@ -119,8 +119,8 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-100">Dashboard</h1>
-        {session && (
-          <p className="text-gray-400 text-sm mt-1">{session.orgName}</p>
+        {userEmail && (
+          <p className="text-gray-400 text-sm mt-1">{userEmail}</p>
         )}
       </div>
 

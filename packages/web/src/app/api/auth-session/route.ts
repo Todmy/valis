@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Find member by email
     const { data: member, error: memberErr } = await supabase
       .from('members')
-      .select('id, author_name, org_id, role, api_key')
+      .select('id, author_name, org_id, role, api_key, auth_user_id')
       .eq('email', user.email)
       .is('revoked_at', null)
       .single();
@@ -40,6 +40,11 @@ export async function POST(request: NextRequest) {
         error: 'no_member',
         message: `No Valis account linked to ${user.email}. Run \`valis init\` first.`,
       }, 404);
+    }
+
+    // Ensure auth_user_id is linked (auto-link on first login)
+    if (!member.auth_user_id && user.id) {
+      await supabase.from('members').update({ auth_user_id: user.id }).eq('id', member.id);
     }
 
     // Get org info

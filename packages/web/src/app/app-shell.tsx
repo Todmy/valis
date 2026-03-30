@@ -2,66 +2,86 @@
  * Client-side app shell.
  *
  * Auth flow:
- * 1. /auth/* pages → bare render (Supabase Auth magic link)
- * 2. All other pages → check Supabase Auth session
- *    → if no session → redirect to /auth/login
- *    → if session → exchange for Valis JWT via /api/auth-session
- *    → provide API key to AuthProvider for dashboard data fetching
+ * - /auth/* pages: bare render (Supabase Auth magic link)
+ * - All other pages: check Supabase Auth session → redirect to /auth/login if not
+ *   → use Supabase Auth session directly for data fetching (RLS via auth.uid())
  */
 
 'use client';
 
-import { type ReactNode, useEffect, useState, useMemo, useCallback } from 'react';
+import { type ReactNode, useEffect, useState, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
-import { AuthProvider } from '@/hooks/use-auth';
-import { Nav } from '@/components/nav';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// Simple context for Supabase client + user info
+import { createContext, useContext } from 'react';
+
+interface DashboardAuth {
+  supabase: SupabaseClient;
+  userEmail: string;
+  userId: string;
+}
+
+const DashboardAuthContext = createContext<DashboardAuth | null>(null);
+
+export function useDashboardAuth() {
+  const ctx = useContext(DashboardAuthContext);
+  if (!ctx) throw new Error('useDashboardAuth must be used within AppShell');
+  return ctx;
+}
+
+// Nav component (simplified — uses DashboardAuth instead of useAuth)
+function DashboardNav({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const pathname = usePathname();
+
+  const links = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/decisions', label: 'Decisions' },
+    { href: '/search', label: 'Search' },
+    { href: '/proposed', label: 'Proposed' },
+    { href: '/contradictions', label: 'Contradictions' },
+  ];
+
+  return (
+    <nav className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col p-4 gap-1">
+      <div className="text-brand-400 font-bold text-lg mb-4">Valis</div>
+      {links.map((link) => (
+        <a
+          key={link.href}
+          href={link.href}
+          className={`px-3 py-2 rounded-md text-sm transition-colors ${
+            pathname === link.href
+              ? 'bg-gray-800 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+          }`}
+        >
+          {link.label}
+        </a>
+      ))}
+
+      <div className="mt-auto border-t border-gray-800 pt-3">
+        <div className="text-xs text-gray-400 mb-2 truncate">{email}</div>
+        <button
+          onClick={onSignOut}
+          className="text-xs text-gray-400 hover:text-white transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
+    </nav>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = useMemo(() => createBrowserClient(), []);
   const [checking, setChecking] = useState(true);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [userId, setUserId] = useState('');
 
   const isAuthPage = pathname?.startsWith('/auth/');
-
-  const exchangeSession = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}`);
-      return;
-    }
-
-    // Exchange Supabase Auth token for Valis session
-    try {
-      const res = await fetch('/api/auth-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setApiKey(data.api_key);
-        setChecking(false);
-      } else if (res.status === 404) {
-        // No member linked to this email — sign out and redirect to login/register
-        await supabase.auth.signOut();
-        router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}&tab=register`);
-        return;
-      } else {
-        setError('Failed to load session. Try refreshing.');
-        setChecking(false);
-      }
-    } catch {
-      setError('Cannot reach server. Check your connection.');
-      setChecking(false);
-    }
-  }, [supabase, pathname, router]);
 
   useEffect(() => {
     if (isAuthPage) {
@@ -69,24 +89,36 @@ export function AppShell({ children }: { children: ReactNode }) {
       return;
     }
 
-    exchangeSession();
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email ?? '');
+        setUserId(session.user.id);
+        setChecking(false);
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}`);
+      }
+    }
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setApiKey(null);
+      if (session?.user) {
+        setUserEmail(session.user.email ?? '');
+        setUserId(session.user.id);
+        setChecking(false);
+      } else if (!isAuthPage) {
         router.push('/auth/login');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, isAuthPage, exchangeSession, router]);
+  }, [supabase, isAuthPage, pathname, router]);
 
   // Auth pages: bare render
   if (isAuthPage) {
     return <>{children}</>;
   }
 
-  // Loading
   if (checking) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950">
@@ -95,52 +127,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  // Error (no member linked)
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
-        <div className="w-full max-w-md p-8 bg-gray-900 rounded-lg border border-gray-800 text-center">
-          <h1 className="text-xl font-bold text-gray-100 mb-3">Account Not Found</h1>
-          <p className="text-gray-400 text-sm mb-4">
-            No Valis account is linked to your email yet.
-          </p>
-          <p className="text-gray-500 text-xs mb-6">
-            To get started, install the CLI and create your account:
-          </p>
-          <div className="bg-gray-800 rounded-md p-3 mb-6 text-left">
-            <code className="text-brand-400 text-sm">
-              npm install -g valis<br />
-              valis init
-            </code>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push('/auth/login');
-              }}
-              className="px-4 py-2 bg-gray-700 text-gray-200 rounded-md text-sm hover:bg-gray-600 transition-colors"
-            >
-              Try different email
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (!userId) return null;
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/auth/login');
   }
 
-  // Not ready
-  if (!apiKey) {
-    return null;
-  }
-
-  // Authenticated — auto-login AuthProvider with the API key
   return (
-    <AuthProvider autoLoginKey={apiKey}>
+    <DashboardAuthContext value={{ supabase, userEmail, userId }}>
       <div className="flex min-h-screen">
-        <Nav />
+        <DashboardNav email={userEmail} onSignOut={handleSignOut} />
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
-    </AuthProvider>
+    </DashboardAuthContext>
   );
 }

@@ -215,13 +215,17 @@ export async function POST(request: NextRequest) {
 
     const memberId = memberData.id;
 
-    // Create Supabase Auth user (best-effort, for dashboard magic link login)
+    // Create Supabase Auth user and link to member
     if (email && email.trim()) {
       try {
-        await supabase.auth.admin.createUser({
+        const { data: authUser } = await supabase.auth.admin.createUser({
           email: email.trim(),
           email_confirm: true,
         });
+        // Link auth user ID to member record
+        if (authUser?.user?.id) {
+          await supabase.from('members').update({ auth_user_id: authUser.user.id }).eq('id', memberId);
+        }
       } catch (authErr) {
         console.error('register: Supabase Auth user creation failed (non-critical)', (authErr as Error).message);
       }

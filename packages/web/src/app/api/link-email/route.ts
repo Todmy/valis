@@ -51,10 +51,17 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'email_mismatch', message: 'This member is already linked to a different email' }, 409);
     }
 
-    // Update member with email
+    // Get auth user ID for RLS linking
+    const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+    const authUserId = authUser?.id ?? null;
+
+    // Update member with email + auth_user_id
+    const updateData: Record<string, unknown> = { email };
+    if (authUserId) updateData.auth_user_id = authUserId;
+
     const { error: updateErr } = await supabase
       .from('members')
-      .update({ email })
+      .update(updateData)
       .eq('id', member.id);
 
     if (updateErr) {
