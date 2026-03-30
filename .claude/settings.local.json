@@ -65,7 +65,17 @@
       "Bash(npx pnpm@9 --filter ./packages/cli run build)",
       "mcp__claude_ai_Supabase__execute_sql",
       "Bash(.specify/scripts/bash/create-new-feature.sh 'Device Authorization Login for Valis CLI — browser-based login flow \\(RFC 8628\\) for valis login command, with magic link email auth on dashboard, device code approval, and CLI polling.' --json --short-name \"device-auth-login\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(curl -s -X POST \"https://valis.krukit.co/api/exchange-token\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer tmm_ef0cf9cea7378d8b857a211b32ca4a05\")",
+      "Bash(curl -sv -X POST \"https://valis.krukit.co/api/exchange-token\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer tmm_ef0cf9cea7378d8b857a211b32ca4a05\")",
+      "Bash(curl -s -X POST \"https://valis.krukit.co/api/exchange-token\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer tmm_9396ea9096a23fa01941fdea47ba4f7f\")",
+      "Bash(vercel env:*)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__claude_ai_Context7__resolve-library-id",
+      "mcp__claude_ai_Context7__query-docs",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel logs:*)",
+      "Bash(vercel deploy:*)"
     ]
   }
 }

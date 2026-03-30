@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { Decision, Contradiction } from '@/lib/types';
 import { StatusBadge } from '@/components/status-badge';
 import { PinBadge } from '@/components/pin-badge';
@@ -37,7 +37,7 @@ const TYPE_STYLES: Record<string, string> = {
 
 export default function DecisionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { supabase } = useAuth();
+  const { supabase } = useDashboardAuth();
 
   const [decision, setDecision] = useState<Decision | null>(null);
   const [loading, setLoading] = useState(true);

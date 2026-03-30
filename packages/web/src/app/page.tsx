@@ -7,17 +7,13 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
 
 export default function HomePage() {
-  const { session } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (session) {
-      router.replace('/dashboard');
-    }
-  }, [session, router]);
+    router.replace('/dashboard');
+  }, [router]);
 
   // AuthGate shows login when no session; this is the post-login redirect
   return (

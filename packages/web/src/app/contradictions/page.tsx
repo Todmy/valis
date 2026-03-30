@@ -12,12 +12,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { Contradiction } from '@/lib/types';
 import { ContradictionPair } from '@/components/contradiction-pair';
 
 export default function ContradictionsPage() {
-  const { supabase } = useAuth();
+  const { supabase } = useDashboardAuth();
   const [contradictions, setContradictions] = useState<Contradiction[]>([]);
   const [loading, setLoading] = useState(true);
 

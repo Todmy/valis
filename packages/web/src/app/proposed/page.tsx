@@ -11,12 +11,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { Decision } from '@/lib/types';
 import { DecisionCard } from '@/components/decision-card';
 
 export default function ProposedPage() {
-  const { supabase } = useAuth();
+  const { supabase } = useDashboardAuth();
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
 

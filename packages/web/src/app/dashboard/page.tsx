@@ -101,7 +101,7 @@ export default function DashboardPage() {
     }
 
     fetchDashboard();
-  }, [supabase, session]);
+  }, [supabase]);
 
   if (loading) {
     return (

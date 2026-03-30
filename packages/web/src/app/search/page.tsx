@@ -11,7 +11,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { Decision } from '@/lib/types';
 import { DecisionCard } from '@/components/decision-card';
 import { SearchBar } from '@/components/search-bar';
@@ -32,7 +32,7 @@ interface SearchResultItem extends Decision {
 }
 
 export default function SearchPage() {
-  const { supabase } = useAuth();
+  const { supabase } = useDashboardAuth();
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);

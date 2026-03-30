@@ -12,7 +12,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useDashboardAuth } from '@/app/app-shell';
 import type { Decision, DecisionStatus, DecisionType } from '@/lib/types';
 import { DecisionCard } from '@/components/decision-card';
 import { SearchBar } from '@/components/search-bar';
@@ -22,7 +22,7 @@ const PAGE_SIZE = 20;
 type SortField = 'created_at' | 'confidence';
 
 export default function DecisionsPage() {
-  const { supabase } = useAuth();
+  const { supabase } = useDashboardAuth();
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
