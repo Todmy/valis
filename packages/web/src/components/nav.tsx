@@ -90,7 +90,13 @@ export function Nav() {
           <div className="text-xs text-gray-400 mb-1 truncate">{session.authorName}</div>
           <div className="text-xs text-gray-500 mb-2">{session.role}</div>
           <button
-            onClick={logout}
+            onClick={async () => {
+              logout();
+              const { createBrowserClient } = await import('@/lib/supabase-browser');
+              const sb = createBrowserClient();
+              await sb.auth.signOut();
+              window.location.href = '/auth/login';
+            }}
             className="text-xs text-gray-400 hover:text-white transition-colors"
           >
             Sign out
