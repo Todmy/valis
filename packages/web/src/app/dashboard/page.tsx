@@ -92,11 +92,19 @@ export default function DashboardPage() {
         setUsage(usageRes.data as UsageCounts);
       }
 
-      // Projects
-      setProjects((projectsRes.data ?? []).map((d: Record<string, unknown>) => ({
-        project_id: d.project_id as string,
-        projects: Array.isArray(d.projects) ? d.projects[0] ?? null : d.projects as { id: string; name: string } | null,
-      })));
+      // Projects — deduplicate by project_id (RLS may return multiple rows per project)
+      const seen = new Set<string>();
+      const uniqueProjects: ProjectInfo[] = [];
+      for (const d of (projectsRes.data ?? []) as Array<Record<string, unknown>>) {
+        const pid = d.project_id as string;
+        if (seen.has(pid)) continue;
+        seen.add(pid);
+        uniqueProjects.push({
+          project_id: pid,
+          projects: Array.isArray(d.projects) ? d.projects[0] ?? null : d.projects as { id: string; name: string } | null,
+        });
+      }
+      setProjects(uniqueProjects);
 
       setLoading(false);
     }
