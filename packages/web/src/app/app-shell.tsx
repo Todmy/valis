@@ -6,11 +6,20 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { AuthProvider } from '@/hooks/use-auth';
 import { AuthGate } from '@/components/auth-gate';
 import { Nav } from '@/components/nav';
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  // /auth/* pages have their own auth flow (Supabase Auth magic link).
+  // No AuthGate, no Nav sidebar, no AuthProvider needed.
+  if (pathname?.startsWith('/auth/')) {
+    return <>{children}</>;
+  }
+
   return (
     <AuthProvider>
       <AuthGate>
