@@ -1,7 +1,4 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import tsParser from '@typescript-eslint/parser';
 
 export default [
   {
@@ -9,8 +6,14 @@ export default [
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
-    rules: {
-      // Keep it minimal — TypeScript handles most checks
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+      },
     },
+    rules: {},
   },
 ];

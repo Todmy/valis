@@ -86,8 +86,7 @@ export function AuthProvider({ children, autoLoginKey }: { children: ReactNode; 
     } else {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoLoginKey]);
+  }, [autoLoginKey]); // login is stable (useCallback)
 
   return (
     <AuthContext value={{ session, supabase, loading, error, login, logout }}>
