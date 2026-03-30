@@ -65,7 +65,7 @@
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 30 | **Custom SMTP sender domain** — Configure `noreply@krukit.co` (or `noreply@valis.krukit.co`) via Resend/Postmark + Supabase custom SMTP. Requires DNS SPF/DKIM records. Currently using default Supabase sender (`noreply@mail.app.supabase.io`) which may land in spam. | MEDIUM | After device auth login ships |
+| 30 | ~~**Custom SMTP sender domain**~~ | ✅ Done | Configured via Resend (valis.krukit.co) + Supabase custom SMTP. Rate limit increased from 2/hr to 100/day. |
 
 ## Documentation Gaps
 
@@ -81,6 +81,43 @@
 | 30 | ~~Delete `export-cmd.ts` dead code~~ | ✅ Done |
 | 31 | Golden test set — 50 query-result pairs for NDCG | Medium — after dog fooding (needs real queries) |
 | 32 | ~~`.gitignore` for `.valis.json`~~ | ✅ Done |
+
+## Phase 6: Competitive Intelligence Ideas
+
+Source: Analysis of MUSE (KnowledgeXLab), TRIBES (private project), Archgate, Grov, CodeScene, Greptile, mem0, Pieces. Date: 2026-03-30.
+
+### Tier 1 — High impact, feasible now
+
+| # | Feature | Inspired by | Effort | Notes |
+|---|---------|-------------|--------|-------|
+| 33 | **CI Enforcement** — GitHub Action that checks PRs against VALIS decisions. Takes `constraint` + `pattern` decisions for changed files, runs through Haiku: "does this diff violate any of these decisions?" Blocks merge with explanation. Turns VALIS from documentation tool into infrastructure tool. | Archgate (executable ADRs) | Medium | New API endpoint + GitHub Action. Builds on existing search API. Changes product category. |
+| 34 | **PR Review Auto-Capture** — Webhook on PR review comments → Haiku extraction → decision objects automatically. "Don't use raw SQL here" becomes a `pattern` decision with zero friction. Higher signal-to-noise than session trace capture. | Greptile (learns from PRs) | Medium | GitHub webhook + extraction pipeline. Reuses existing Haiku enrichment. |
+| 35 | **Drift Score** — Not binary contradiction but trend metric. "Last 2 weeks: 7 new decisions in area X deviate from pattern Y by 40%." Gives eng managers a reason to check dashboard weekly. | Grov (anti-drift) + CodeScene (temporal analysis) | Medium | New scoring algorithm on top of existing contradiction detection + relationship graph. |
+
+### Tier 2 — Strong differentiators, more complex
+
+| # | Feature | Inspired by | Effort | Notes |
+|---|---------|-------------|--------|-------|
+| 36 | **Knowledge Map** — Visual graph: which decisions are connected, who decided what, where knowledge concentrates. Bus factor per area. "Petro is the only one who understands auth layer. Bus factor = 1." Eng managers buy visibility, not documentation. | CodeScene (knowledge distribution maps, bus factor) | Large | Requires `decided_by` data + graph visualization in dashboard. |
+| 37 | **Reflect Loop** — On auto-consolidation (SessionEnd → SessionStart spawn), don't just cluster — reflect: "what new decisions were made implicitly? any contradictions with existing?" Reflection produces structured experience, not raw log. | MUSE (Plan-Execute-Reflect-Memorize loop) | Medium | Extends existing Auto Dream pattern (#27). Haiku-powered reflection step. |
+| 38 | **Cross-Project Transfer** — When new project created, VALIS proposes: "Project X has 5 relevant decisions for your stack. Import?" Accumulated experience generalizes to new tasks. Strong for consultancy teams starting new projects every 2-3 months. | MUSE (zero-shot improvement from accumulated experience) | Medium | Requires cross-project search + import/clone mechanism. Builds on multi-project (#004). |
+| 42 | **Session Recording & Decision Provenance** — Capture structured agent session logs (tool calls, file reads, model responses, errors) via MCP hooks and link them to extracted decisions. Enables decision replay: "why was this decided?" → see full agent context at decision time. Gives audit trail, drift debugging, and reproducible decision context. No one in the market captures the decision *process*, only results. Think Chrome DevTools recording but for AI agent sessions. | AgentFS concept (SQLite-backed agent filesystem) | Large | New MCP hooks (SessionStart/Stop) + structured session storage. Builds on existing extraction pipeline. Unique competitive feature — no competitor has this. |
+
+### Tier 3 — Inspiration, lower priority
+
+| # | Feature | Inspired by | Effort | Notes |
+|---|---------|-------------|--------|-------|
+| 39 | **Proactive Context Push** — On `SessionStart`, VALIS analyzes working directory → injects top-5 relevant decisions into agent context. Don't wait for agent to query — push context proactively. | TRIBES concept (agents fail from lack of context, not coordination) | Medium | Claude Code hook or CLAUDE.md injection. MCP limitations apply. |
+| 40 | **Hierarchical Decision Types** — Principle (never changes: "We're TypeScript-first") → Decision (rarely: "Use Zod for validation") → Implementation (often: "Zod schema for User"). Hierarchy affects search ranking — principles weigh more in conflict resolution. | MUSE (Strategic → Procedural → Tool memory hierarchy) | Medium | Schema change + ranking weight adjustments. |
+| 41 | **Universal HTTP API** — REST API for non-MCP integrations: GitHub Copilot, Windsurf, any LLM tool. Broader TAM beyond Claude Code / Cursor. | mem0 (works with any LLM) | Large | Phase 3+. Win one niche first, then expand. |
+
+### Explicitly rejected
+
+| Idea | Source | Why not |
+|------|--------|---------|
+| OS-level capture (desktop app, 9-month rolling memory) | Pieces | Too noisy, privacy concerns, requires desktop app — not for solo founder |
+| Agent-to-agent memory sharing (swarm infra) | TRIBES core concept | Different market. VALIS is for human teams, not agent swarms |
+| Generic memory infrastructure (universal key-value) | mem0 | Race to bottom. VALIS wins through typed decisions, not generic storage |
 
 ## Completed Phases
 
