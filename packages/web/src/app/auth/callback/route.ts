@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 /**
  * Auth callback — exchanges Supabase magic link code for session.
- * Supabase sends ?code= when user clicks the magic link.
+ * Uses @supabase/ssr with cookie management so session persists in browser.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -12,9 +13,26 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     try {
-      const supabase = createClient(
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options),
+                );
+              } catch {
+                // Called from Server Component — ignored
+              }
+            },
+          },
+        },
       );
       await supabase.auth.exchangeCodeForSession(code);
     } catch (err) {
@@ -22,7 +40,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Validate redirect
   const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
   return NextResponse.redirect(`${origin}${safeRedirect}`);
 }
