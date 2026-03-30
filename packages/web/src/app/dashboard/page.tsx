@@ -65,7 +65,7 @@ export default function DashboardPage() {
         supabase!.from('decisions').select('type, status'),
         supabase!.from('audit_entries').select('*').order('created_at', { ascending: false }).limit(50),
         supabase!.from('members').select('id, author_name, role', { count: 'exact' }).is('revoked_at', null),
-        supabase!.from('rate_limits').select('store_count, search_count').single(),
+        supabase!.from('rate_limits').select('store_count, search_count').maybeSingle(),
         supabase!.from('project_members').select('project_id, projects(name, id)'),
       ]);
 
