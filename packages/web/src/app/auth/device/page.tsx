@@ -28,7 +28,7 @@ function DeviceApprovalContent() {
 
   const supabase = useMemo(() => createBrowserClient(), []);
 
-  // No-code guard runs before auth check
+  // Auth check + listen for auth state changes (magic link return)
   useEffect(() => {
     if (!code) {
       setChecking(false);
@@ -37,14 +37,25 @@ function DeviceApprovalContent() {
 
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push(`/auth/login?redirect=${encodeURIComponent(`/auth/device?code=${code}`)}`);
+      if (session) {
+        setAuthenticated(true);
+        setChecking(false);
         return;
       }
-      setAuthenticated(true);
-      setChecking(false);
+      // Not authenticated — redirect to login
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/auth/device?code=${code}`)}`);
     }
     checkAuth();
+
+    // Listen for auth state change (user returns from magic link)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setAuthenticated(true);
+        setChecking(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [supabase, router, code]);
 
   async function handleAction(actionType: 'approve' | 'deny') {
