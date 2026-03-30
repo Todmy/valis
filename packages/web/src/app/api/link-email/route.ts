@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get auth user ID for RLS linking
-    const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+    const { data: { user: authUser } } = await supabase.auth.getUser(accessToken!);
     const authUserId = authUser?.id ?? null;
 
     // Update member with email + auth_user_id
