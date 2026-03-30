@@ -77,7 +77,11 @@
       "Bash(vercel logs:*)",
       "Bash(vercel deploy:*)",
       "Bash(.specify/scripts/bash/create-new-feature.sh 'Web Project Management — project detail page with member invite by email, member removal, email notifications via Resend' --json --short-name \"project-member-mgmt\")",
-      "Bash(npx pnpm@9 add --filter ./packages/web resend)"
+      "Bash(npx pnpm@9 add --filter ./packages/web resend)",
+      "Bash(# Copy API agent files \\(better endpoints with Resend + full logic\\)\ncp .claude/worktrees/agent-acd64c94/packages/web/src/lib/resend.ts packages/web/src/lib/resend.ts\n\nmkdir -p packages/web/src/app/api/invite-member packages/web/src/app/api/remove-member\ncp .claude/worktrees/agent-acd64c94/packages/web/src/app/api/invite-member/route.ts packages/web/src/app/api/invite-member/route.ts\ncp .claude/worktrees/agent-acd64c94/packages/web/src/app/api/remove-member/route.ts packages/web/src/app/api/remove-member/route.ts\n\n# Copy page agent files \\(page + dashboard update\\)\nmkdir -p \"packages/web/src/app/projects/[id]\"\ncp \".claude/worktrees/agent-a342b013/packages/web/src/app/projects/[id]/page.tsx\" \"packages/web/src/app/projects/[id]/page.tsx\"\ncp .claude/worktrees/agent-a342b013/packages/web/src/app/dashboard/page.tsx packages/web/src/app/dashboard/page.tsx\n\necho \"Files copied from worktrees to main\")",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git cherry-pick:*)"
     ]
   }
 }
