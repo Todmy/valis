@@ -101,15 +101,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUserEmail(session.user.email ?? '');
-        setUserId(session.user.id);
-        setChecking(false);
-      } else if (!isAuthPage) {
-        router.push('/auth/login');
-      }
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: string, session: { user?: { email?: string; id: string } } | null) => {
+        if (session?.user) {
+          setUserEmail(session.user.email ?? '');
+          setUserId(session.user.id);
+          setChecking(false);
+        } else if (!isAuthPage) {
+          router.push('/auth/login');
+        }
+      },
+    );
 
     return () => subscription.unsubscribe();
   }, [supabase, isAuthPage, pathname, router]);
