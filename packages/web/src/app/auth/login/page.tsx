@@ -15,7 +15,8 @@ export default function LoginPage() {
 function AuthContent() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const defaultTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
+  const [mode, setMode] = useState<'login' | 'register'>(defaultTab);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-950">

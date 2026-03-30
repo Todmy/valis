@@ -49,9 +49,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         setApiKey(data.api_key);
         setChecking(false);
       } else if (res.status === 404) {
-        // No member linked to this email
-        setError('No Valis account linked to your email. Run `valis init` with your email first.');
-        setChecking(false);
+        // No member linked to this email — sign out and redirect to login/register
+        await supabase.auth.signOut();
+        router.push(`/auth/login?redirect=${encodeURIComponent(pathname || '/')}&tab=register`);
+        return;
       } else {
         setError('Failed to load session. Try refreshing.');
         setChecking(false);
