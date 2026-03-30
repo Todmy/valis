@@ -38,7 +38,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, autoLoginKey }: { children: ReactNode; autoLoginKey?: string }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,19 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionRef.current = null;
   }, []);
 
-  // On mount, try to restore session from stored API key
+  // On mount, auto-login with provided key or restore from storage
   useEffect(() => {
-    const stored = getStoredApiKey();
-    if (stored) {
-      login(stored).catch(() => {
-        // Stored key is invalid — clear it
+    const key = autoLoginKey || getStoredApiKey();
+    if (key) {
+      login(key).catch(() => {
         clearAuth();
       }).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoLoginKey]);
 
   return (
     <AuthContext value={{ session, supabase, loading, error, login, logout }}>
