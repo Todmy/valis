@@ -100,16 +100,29 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex items-center justify-center min-h-screen bg-gray-950">
         <div className="w-full max-w-md p-8 bg-gray-900 rounded-lg border border-gray-800 text-center">
           <h1 className="text-xl font-bold text-gray-100 mb-3">Account Not Found</h1>
-          <p className="text-gray-400 text-sm mb-4">{error}</p>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/auth/login');
-            }}
-            className="px-4 py-2 bg-brand-600 text-white rounded-md text-sm hover:bg-brand-700 transition-colors"
-          >
-            Try different email
-          </button>
+          <p className="text-gray-400 text-sm mb-4">
+            No Valis account is linked to your email yet.
+          </p>
+          <p className="text-gray-500 text-xs mb-6">
+            To get started, install the CLI and create your account:
+          </p>
+          <div className="bg-gray-800 rounded-md p-3 mb-6 text-left">
+            <code className="text-brand-400 text-sm">
+              npm install -g valis<br />
+              valis init
+            </code>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push('/auth/login');
+              }}
+              className="px-4 py-2 bg-gray-700 text-gray-200 rounded-md text-sm hover:bg-gray-600 transition-colors"
+            >
+              Try different email
+            </button>
+          </div>
         </div>
       </div>
     );
