@@ -97,7 +97,16 @@ function LoginForm({ onLogin }: { onLogin: (apiKey: string) => Promise<void> }) 
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-gray-400 text-center">
+        <div className="mt-4 text-center">
+          <a
+            href="/auth/login"
+            className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            Login with email instead
+          </a>
+        </div>
+
+        <p className="mt-3 text-xs text-gray-500 text-center">
           Read-only dashboard. All mutations happen through the CLI.
         </p>
       </div>
