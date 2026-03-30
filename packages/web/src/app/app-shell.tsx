@@ -11,6 +11,7 @@
 import { type ReactNode, useEffect, useState, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { AuthProvider } from '@/hooks/use-auth';
 import { Nav } from '@/components/nav';
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -73,10 +74,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   // Authenticated — show dashboard with nav
+  // AuthProvider still needed for Nav component (useAuth hook)
   return (
-    <div className="flex min-h-screen">
-      <Nav />
-      <main className="flex-1 p-6 overflow-auto">{children}</main>
-    </div>
+    <AuthProvider>
+      <div className="flex min-h-screen">
+        <Nav />
+        <main className="flex-1 p-6 overflow-auto">{children}</main>
+      </div>
+    </AuthProvider>
   );
 }
