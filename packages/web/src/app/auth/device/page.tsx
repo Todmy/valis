@@ -22,6 +22,9 @@ function DeviceApprovalContent() {
   const [action, setAction] = useState<'idle' | 'approving' | 'denying' | 'done'>('idle');
   const [result, setResult] = useState<{ status: string; org_name?: string; author_name?: string } | null>(null);
   const [error, setError] = useState('');
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [linking, setLinking] = useState(false);
 
   const supabase = useMemo(() => createBrowserClient(), []);
 
@@ -72,7 +75,8 @@ function DeviceApprovalContent() {
           setError('This code has expired. Run `valis login` again in your terminal.');
         } else if (res.status === 404) {
           if (data.error === 'no_member_found') {
-            setError('No Valis account found for your email. Register first with `valis init`.');
+            setError('Your email is not linked to a Valis account. Run `valis init` with your email, or ask your team admin to add your email to your member record.');
+            setShowLinkForm(true);
           } else {
             setError('Code not found. Check the code and try again.');
           }
@@ -152,6 +156,56 @@ function DeviceApprovalContent() {
               </div>
               <p className="text-gray-500 text-xs mt-1">Device code</p>
             </div>
+
+            {showLinkForm && (
+              <div className="mb-4 p-4 bg-gray-800 border border-gray-700 rounded-md">
+                <p className="text-gray-300 text-sm mb-3">Link your API key to this email to continue:</p>
+                <input
+                  type="text"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="tmm_..."
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-100 placeholder-gray-500 text-sm mb-2"
+                />
+                <button
+                  onClick={async () => {
+                    if (!apiKey.startsWith('tmm_')) {
+                      setError('API key must start with tmm_');
+                      return;
+                    }
+                    setLinking(true);
+                    try {
+                      const { data: { session: linkSession } } = await supabase.auth.getSession();
+                      const res = await fetch('/api/link-email', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${linkSession?.access_token}`,
+                        },
+                        body: JSON.stringify({ api_key: apiKey }),
+                      });
+                      if (res.ok) {
+                        setShowLinkForm(false);
+                        setError('');
+                        // Retry approve
+                        handleAction('approve');
+                      } else {
+                        const data = await res.json();
+                        setError(data.message || 'Failed to link email');
+                      }
+                    } catch {
+                      setError('Network error');
+                    } finally {
+                      setLinking(false);
+                    }
+                  }}
+                  disabled={linking || !apiKey}
+                  className="w-full px-3 py-2 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+                >
+                  {linking ? 'Linking...' : 'Link & Approve'}
+                </button>
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 p-3 bg-red-950 border border-red-800 rounded-md text-red-300 text-sm">
