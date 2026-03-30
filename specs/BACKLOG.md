@@ -59,6 +59,7 @@
 | 26 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
 | 27 | **Auto-consolidation via Claude Code hooks** — SessionEnd hook writes flag + timestamp to ~/.valis/consolidation-state.json; SessionStart hook checks 24h+5 sessions elapsed → runs `valis admin consolidate --auto-merge` as background process. Mimics Auto Dream pattern. Also explore Desktop Scheduled Tasks (persistent, cross-session). | Medium | Idea |
 | 28 | **`valis login` — Device Authorization Grant (RFC 8628)** — browser-based login, token persistence in `~/.valis/credentials`, `valis init` skips registration if logged in, project selector from available memberships. Like `gh auth login`. | Medium | Idea |
+| 30 | **Web Project Management** — `/projects/[id]` page with: member list, invite by email (auto-sends email notification), remove member, project settings. When invited user logs in, they automatically see the project. Requires: project detail page, POST /api/invite-member endpoint, email notification via Resend. | Medium | Next |
 | 29 | **Knowledge Bases** — namespace layer inside projects (Org → Project → KB → Decisions). Each KB = separate context/topic (architecture, api-design, infrastructure, product). New table `knowledge_bases`, Qdrant `kb_id` payload field, CLI `valis switch --kb`, search scoped to active KB. Like GitHub repos within an org, but one level deeper. Interim: use `affected_areas` + type filters as lightweight KB proxy. | Large | Idea |
 
 ## Infrastructure: Email & Auth
