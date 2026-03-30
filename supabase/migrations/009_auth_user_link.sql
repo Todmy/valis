@@ -8,10 +8,12 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS auth_user_id UUID UNIQUE REFERENCES
 CREATE INDEX IF NOT EXISTS idx_members_auth_user_id ON members (auth_user_id);
 
 -- Helper function: get org_id for the current auth user
+-- SECURITY DEFINER bypasses RLS to avoid recursion (members RLS calls effective_org_id)
 CREATE OR REPLACE FUNCTION public.auth_user_org_id()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 AS $$
   SELECT m.org_id::text
   FROM members m
@@ -21,10 +23,12 @@ AS $$
 $$;
 
 -- Helper function: get member_id for the current auth user
+-- SECURITY DEFINER bypasses RLS to avoid recursion
 CREATE OR REPLACE FUNCTION public.auth_user_member_id()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 AS $$
   SELECT m.id::text
   FROM members m
