@@ -411,6 +411,60 @@ export async function apiCreateProject(
 }
 
 // ---------------------------------------------------------------------------
+// Enforce API helper — CI Enforcement endpoint
+// ---------------------------------------------------------------------------
+
+export const E2E_ANTHROPIC_API_KEY = process.env.VALIS_E2E_ANTHROPIC_API_KEY ?? '';
+
+/** Returns true when Anthropic API key is available for enforce tests. */
+export function canRunEnforceE2E(): boolean {
+  return canRunE2E() && !!E2E_ANTHROPIC_API_KEY;
+}
+
+export interface EnforceResult {
+  pass: boolean;
+  violations: Array<{
+    decision_id: string;
+    decision_summary: string;
+    decision_type: string;
+    file: string;
+    line: number | null;
+    explanation: string;
+  }>;
+  decisions_checked: number;
+  files_checked: number;
+  areas_searched: string[];
+}
+
+/** Call the /api/enforce endpoint. */
+export async function apiEnforce(
+  apiUrl: string,
+  authToken: string,
+  args: {
+    diff: string;
+    files: string[];
+    project_id?: string;
+    anthropic_api_key: string;
+  },
+): Promise<EnforceResult> {
+  const res = await fetch(`${apiUrl}/api/enforce`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`enforce failed (${res.status}): ${text}`);
+  }
+
+  return res.json() as Promise<EnforceResult>;
+}
+
+// ---------------------------------------------------------------------------
 // Retry helper — Qdrant indexing is eventually consistent
 // ---------------------------------------------------------------------------
 
