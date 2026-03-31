@@ -4,14 +4,14 @@
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Deploy Supabase migrations (001-007) | Not started | `supabase db push` |
-| 2 | Deploy Vercel API routes (replaces Edge Functions for hosted) | Not started | `vercel deploy` |
-| 3 | Set env vars (JWT_SECRET, QDRANT_URL, QDRANT_API_KEY, STRIPE_*) | Not started | Via Vercel Dashboard |
+| 1 | ~~Deploy Supabase migrations (001-009)~~ | ✅ Done | 9 migrations applied including auth_user_link |
+| 2 | ~~Deploy Vercel API routes~~ | ✅ Done | 15+ API routes live at valis.krukit.co |
+| 3 | ~~Set env vars~~ | ✅ Done | All required vars + RESEND_API_KEY configured |
 | 4 | ~~Set HOSTED URLs~~ | ✅ Done | Real URLs now in types.ts |
-| 5 | Enable Supabase Realtime | Not started | **Blocker** — required for cross-session push |
-| 6 | npm link + rebuild + test `valis init` e2e | Not started | |
-| 7 | Deploy web dashboard UI | Not started | **Blocker** — dashboard route exists, needs UI deploy |
-| 8 | Deploy runbook (step-by-step guide) | Not started | **Blocker** — write before deploy |
+| 5 | ~~Enable Supabase Realtime~~ | ✅ Done | `decisions` + `audit_entries` in `supabase_realtime` publication |
+| 6 | ~~npm link + rebuild + test `valis init` e2e~~ | ✅ Done | Build + link + init + seed 63 decisions + IDE config — all OK |
+| 7 | ~~Deploy web dashboard UI~~ | ✅ Done | Dashboard + auth + projects live |
+| 8 | ~~Deploy runbook~~ | ✅ Done | `docs/DEPLOY-RUNBOOK.md` written |
 | 9 | E2E tests per quickstart.md | Not started | **Blocker** — verify full flow before release |
 | 10 | **Dog fooding** (several weeks) | Not started | Owner: Todmy. Real project testing. |
 
@@ -32,7 +32,7 @@
 | 14 | Billing integration (Stripe) — deploy products, prices, webhook | 3-5 days | Code exists, deploy after dog fooding |
 | 15 | Pricing page at valis.krukit.co | 3-5 days | |
 | 16 | Annual prepay discount (20%) | 1-2 days | Depends on Stripe |
-| 17 | Device Authorization Grant (RFC 8628) | 2-3 days | Better dashboard auth UX |
+| 17 | ~~Device Authorization Grant (RFC 8628)~~ | ✅ Done | `valis login` + `/auth/device` page (spec 007) |
 
 ## Infrastructure Optimization
 
@@ -58,15 +58,15 @@
 | 25 | External member invites with task-scoped access | Medium | Prerequisite for #23 |
 | 26 | Validation pipeline — KB checks PR against decisions | Medium | Idea |
 | 27 | **Auto-consolidation via Claude Code hooks** — SessionEnd hook writes flag + timestamp to ~/.valis/consolidation-state.json; SessionStart hook checks 24h+5 sessions elapsed → runs `valis admin consolidate --auto-merge` as background process. Mimics Auto Dream pattern. Also explore Desktop Scheduled Tasks (persistent, cross-session). | Medium | Idea |
-| 28 | **`valis login` — Device Authorization Grant (RFC 8628)** — browser-based login, token persistence in `~/.valis/credentials`, `valis init` skips registration if logged in, project selector from available memberships. Like `gh auth login`. | Medium | Idea |
-| 30 | **Web Project Management** — `/projects/[id]` page with: member list, invite by email (auto-sends email notification), remove member, project settings. When invited user logs in, they automatically see the project. Requires: project detail page, POST /api/invite-member endpoint, email notification via Resend. | Medium | Next |
+| 28 | ~~**`valis login` — Device Authorization Grant (RFC 8628)**~~ | ✅ Done | Spec 007 |
+| 30 | ~~**Web Project Management**~~ | ✅ Done | Spec 008: invite by email, remove member, Resend emails |
 | 29 | **Knowledge Bases** — namespace layer inside projects (Org → Project → KB → Decisions). Each KB = separate context/topic (architecture, api-design, infrastructure, product). New table `knowledge_bases`, Qdrant `kb_id` payload field, CLI `valis switch --kb`, search scoped to active KB. Like GitHub repos within an org, but one level deeper. Interim: use `affected_areas` + type filters as lightweight KB proxy. | Large | Idea |
 
 ## Infrastructure: Email & Auth
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 30 | ~~**Custom SMTP sender domain**~~ | ✅ Done | Configured via Resend (valis.krukit.co) + Supabase custom SMTP. Rate limit increased from 2/hr to 100/day. |
+| 30 | ~~**Custom SMTP sender domain**~~ | ✅ Done | Resend (valis.krukit.co) + Supabase custom SMTP |
 
 ## Documentation Gaps
 
