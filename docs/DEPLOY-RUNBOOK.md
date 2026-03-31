@@ -182,6 +182,12 @@ Add all 7 required variables for Production, Preview, and Development scopes:
 | `NEXT_PUBLIC_SUPABASE_URL` | Same value as `SUPABASE_URL` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard -> Settings -> API -> `anon` key | Production, Preview, Development |
 
+**Email notifications (required for member invites):**
+
+| Variable | Value source |
+|----------|-------------|
+| `RESEND_API_KEY` | [resend.com](https://resend.com) -> API Keys -> Create key. Domain must be verified for `valis.krukit.co` |
+
 **Optional (enrichment):**
 
 | Variable | Value source | Default |

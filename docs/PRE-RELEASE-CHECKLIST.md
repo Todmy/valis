@@ -51,6 +51,11 @@ vercel deploy --prod
 | `STRIPE_PRICE_BUSINESS_MONTHLY` | Stripe Dashboard → Products → Business → Monthly price ID |
 | `STRIPE_PRICE_BUSINESS_ANNUAL` | Stripe Dashboard → Products → Business → Annual price ID |
 
+**Email notifications (required for invites):**
+| Variable | How to get |
+|---|---|
+| `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys → Create key |
+
 **Enrichment (optional):**
 | Variable | Default |
 |---|---|
