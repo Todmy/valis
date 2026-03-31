@@ -1,0 +1,38 @@
+# Example: VALIS CI Enforcement workflow
+# Copy this to your project's .github/workflows/valis-enforce.yml
+#
+# Required secrets:
+#   VALIS_API_KEY      — Your VALIS API key (tmm_ or tm_ prefix)
+#   ANTHROPIC_API_KEY  — Anthropic API key for Claude Haiku analysis
+#
+# Optional:
+#   Add a .valis.json in your repo root with {"project_id": "your-uuid"}
+#   for automatic project scoping. Or pass project-id input explicitly.
+
+name: VALIS Enforce
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enforce:
+    name: Check team decisions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: VALIS Enforce
+        uses: todmy/valis@main
+        with:
+          api-key: ${{ secrets.VALIS_API_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Uncomment to override defaults:
+          # api-url: https://valis.krukit.co
+          # project-id: your-project-uuid
+          # fail-on-violation: 'true'
