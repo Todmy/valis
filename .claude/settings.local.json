@@ -81,7 +81,21 @@
       "Bash(# Copy API agent files \\(better endpoints with Resend + full logic\\)\ncp .claude/worktrees/agent-acd64c94/packages/web/src/lib/resend.ts packages/web/src/lib/resend.ts\n\nmkdir -p packages/web/src/app/api/invite-member packages/web/src/app/api/remove-member\ncp .claude/worktrees/agent-acd64c94/packages/web/src/app/api/invite-member/route.ts packages/web/src/app/api/invite-member/route.ts\ncp .claude/worktrees/agent-acd64c94/packages/web/src/app/api/remove-member/route.ts packages/web/src/app/api/remove-member/route.ts\n\n# Copy page agent files \\(page + dashboard update\\)\nmkdir -p \"packages/web/src/app/projects/[id]\"\ncp \".claude/worktrees/agent-a342b013/packages/web/src/app/projects/[id]/page.tsx\" \"packages/web/src/app/projects/[id]/page.tsx\"\ncp .claude/worktrees/agent-a342b013/packages/web/src/app/dashboard/page.tsx packages/web/src/app/dashboard/page.tsx\n\necho \"Files copied from worktrees to main\")",
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(vercel ls:*)",
+      "mcp__chrome-devtools__select_page",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__claude_ai_Gmail__gmail_search_messages",
+      "Bash(pnpm test:*)",
+      "Bash(npx pnpm@9 lint)",
+      "Bash(npx pnpm@9 build)",
+      "Bash(valis status:*)",
+      "Bash(valis init:*)",
+      "Bash(valis search:*)",
+      "Bash(valis store:*)",
+      "Bash(valis --help)"
     ]
   }
 }
