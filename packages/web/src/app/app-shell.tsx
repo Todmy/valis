@@ -59,6 +59,16 @@ function DashboardNav({ email, onSignOut }: { email: string; onSignOut: () => vo
           {link.label}
         </a>
       ))}
+      <a
+        href="/dashboard#projects"
+        className={`px-3 py-2 rounded-md text-sm transition-colors ${
+          pathname?.startsWith('/projects/')
+            ? 'bg-gray-800 text-white'
+            : 'text-gray-400 hover:text-white hover:bg-gray-800'
+        }`}
+      >
+        Projects
+      </a>
 
       <div className="mt-auto border-t border-gray-800 pt-3">
         <div className="text-xs text-gray-400 mb-2 truncate">{email}</div>
