@@ -1,0 +1,59 @@
+name: 'VALIS Enforce'
+description: 'Check PR changes against team architectural decisions stored in VALIS. Blocks merge when violations are found.'
+author: 'todmy'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  api-key:
+    description: 'VALIS API key (tmm_ or tm_ prefix)'
+    required: true
+  api-url:
+    description: 'VALIS API base URL'
+    required: false
+    default: 'https://valis.krukit.co'
+  project-id:
+    description: 'VALIS project ID (auto-detected from .valis.json if absent)'
+    required: false
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude Haiku violation analysis'
+    required: true
+  fail-on-violation:
+    description: 'Fail the check when violations are found'
+    required: false
+    default: 'true'
+  github-token:
+    description: 'GitHub token for posting PR reviews'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  pass:
+    description: 'Whether the check passed (true/false)'
+    value: ${{ steps.enforce.outputs.pass }}
+  violations-count:
+    description: 'Number of violations found'
+    value: ${{ steps.enforce.outputs.violations_count }}
+  decisions-checked:
+    description: 'Number of decisions checked'
+    value: ${{ steps.enforce.outputs.decisions_checked }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: VALIS Enforce Check
+      id: enforce
+      shell: bash
+      env:
+        VALIS_API_KEY: ${{ inputs.api-key }}
+        VALIS_API_URL: ${{ inputs.api-url }}
+        VALIS_PROJECT_ID: ${{ inputs.project-id }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        FAIL_ON_VIOLATION: ${{ inputs.fail-on-violation }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPO_FULL_NAME: ${{ github.repository }}
+      run: |
+        node "${{ github.action_path }}/enforce.mjs"

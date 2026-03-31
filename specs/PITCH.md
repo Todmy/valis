@@ -94,11 +94,16 @@ The market thinks the problem is *"store context."* The real problem is *"verify
 | Offline resilience (local queue, sync on reconnect) | Shipped |
 | Self-hosted option (Docker Compose) | Shipped |
 
-### 🔜 Next (Phase 3-4)
+### 🔜 Ready (Phase 3 — MVP)
 
 | Feature | Impact |
 |---------|--------|
-| **CI Enforcement** — GitHub Action blocks PRs violating decisions | **10× differentiation moment** |
+| **CI Enforcement** — GitHub Action + `/api/enforce` endpoint, Claude Haiku analysis | **10× differentiation moment** |
+
+### 🔜 Next (Phase 4)
+
+| Feature | Impact |
+|---------|--------|
 | PR Review Auto-Capture — extract decisions from code reviews | Grow knowledge base passively |
 | Billing integration (Stripe) | Revenue |
 | Knowledge Bases — namespace layer for organizing decisions | Enterprise readiness |
