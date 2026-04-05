@@ -1,5 +1,5 @@
 import type { AuthResult } from './api-auth';
-import type { ServerConfig } from 'valis/dist/src/types.js';
+import type { ServerConfig } from 'valis/types';
 
 /**
  * Build a ServerConfig from an authenticated API key result + env vars.
