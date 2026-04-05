@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createMcpServer } from 'valis/dist/src/mcp/server.js';
+import { createMcpServer } from 'valis/mcp/server';
 import { extractBearerToken, authenticateApiKey } from '@/lib/api-auth';
 import { buildServerConfig } from '@/lib/mcp-config';
 import { createServerClient } from '@/lib/supabase-server';
