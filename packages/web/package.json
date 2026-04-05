@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.49.4",
     "jose": "^5.10.0",
@@ -17,7 +18,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "resend": "^6.10.0",
-    "stripe": "^14.25.0"
+    "stripe": "^14.25.0",
+    "valis": "workspace:*",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/node": "^20.17.32",

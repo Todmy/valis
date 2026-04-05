@@ -112,6 +112,16 @@ Source: Analysis of MUSE (KnowledgeXLab), TRIBES (private project), Archgate, Gr
 | 40 | **Hierarchical Decision Types** — Principle (never changes: "We're TypeScript-first") → Decision (rarely: "Use Zod for validation") → Implementation (often: "Zod schema for User"). Hierarchy affects search ranking — principles weigh more in conflict resolution. | MUSE (Strategic → Procedural → Tool memory hierarchy) | Medium | Schema change + ranking weight adjustments. |
 | 41 | **Universal HTTP API** — REST API for non-MCP integrations: GitHub Copilot, Windsurf, any LLM tool. Broader TAM beyond Claude Code / Cursor. | mem0 (works with any LLM) | Large | Phase 3+. Win one niche first, then expand. |
 
+### Phase 7 — Knowledge Intelligence
+
+Source: Karpathy "LLM Wiki" post analysis + brainstorm. Date: 2026-04-05.
+
+| # | Feature | Effort | Notes |
+|---|---------|--------|-------|
+| 43 | **Rich Output Formats** — Dashboard generates slides (Marp), charts, visual reports from KB data. Export decisions as ADR docs, comparison tables, onboarding guides. Not just text in MCP — structured visual output for stakeholders who don't use CLI. | Medium | Dashboard feature. Karpathy uses Marp + matplotlib in Obsidian. We do it in web dashboard. |
+| 44 | **KB Self-Improvement Loop (Socratic KB)** — Scheduled analysis where KB reviews itself: identifies gaps, contradictions, underdocumented areas, missing cross-references. Generates targeted questions for the user. User answers → KB restructures and enriches itself. Configurable frequency (daily/weekly/on-demand). Extends Drift Score (#35) and Reflect Loop (#37) — but user-facing, interactive. Think "KB interviews you to get smarter." | Medium | Combines #35 (drift) + #37 (reflect) into user-facing flow. Could be CLI command (`valis reflect`) or dashboard page. Unique — no competitor does this. |
+| 45 | **Configurable Health Check** — Automated KB lint with user-defined schedule (daily/weekly/custom cron). Checks: stale decisions (no references in N days), orphan decisions (no connections), contradiction clusters, coverage gaps per affected_area. Sends summary via Realtime push or email (Resend). | Small | Extends #35. Karpathy does this monthly by hand. We automate it. |
+
 ### Explicitly rejected
 
 | Idea | Source | Why not |
